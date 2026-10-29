@@ -2,25 +2,41 @@
 
 ## 0.4.1
 
-- Lowered the minimum VS Code version to 1.96 and the source build Node.js requirement to 22.0. Clarified that VSIX users do not need a separate Node.js installation.
-- Made native MCP registration optional. VS Code 1.96–1.100 supports authenticated manual MCP connections; 1.101 and later keeps automatic registration.
-- Fixed state synchronization races that could revert mode changes or lose edits made during a save.
-- Fixed stale Java requirements after server upgrades, restored profiles when version saving fails, and avoided orphan directories on failed Velocity creation.
-- Validated nested MCP settings, redacted source URL credentials recursively, and made MCP language changes clear workspace overrides. Memory, ports and counts now require integers.
-- Kept native resizable sidebar views, balanced the initial space allocation and added Show Sidebar View to reveal or focus a section.
-- Limited More to Java settings, tasks, logs and agreements. Proxy credentials, MCP and storage utilities are grouped under Settings.
-- Fixed the native Settings filter after the publisher ID change.
+### Changes
+
+- Lowered the minimum VS Code version from 1.103 to 1.96, and the minimum Node.js version for source builds from 22.14 to 22.0.
+- Added manual MCP connection support for VS Code 1.96–1.100 through **Copy MCP connection**.
+- Added **Show Sidebar View** to reveal and focus sidebar views. Adjusted the initial space allocated to sidebar sections.
+- Added Java settings and Tasks shortcuts under **More**. Moved proxy credentials, MCP controls, storage and documentation into the expandable **Settings** group.
+
+### Fixes
+
+- Fixed mode changes reverting and new edits being lost during state-file synchronization or saving.
+- Fixed server version changes reusing outdated Java requirements.
+- Restored server profiles when saving version changes fails, and prevented leftover directories when Velocity creation fails.
+- Rejected malformed argument arrays, unknown download-source fields and non-finite numeric settings. Memory limits, window dimensions, ports and count settings now require integers.
+- Fixed download-source credentials being exposed in MCP settings responses, including nested URLs and username-only authentication.
+- Fixed MCP language changes being overridden by workspace settings.
+- Fixed the Settings command using an outdated extension ID and showing no matching settings.
 
 ### 简体中文
 
-- 最低 VS Code 版本降至 1.96，源码构建所需 Node.js 降至 22.0；明确安装 VSIX 无需额外安装 Node.js。
-- MCP 原生注册改为可选；VS Code 1.96–1.100 可手动配置带认证的 MCP 连接，1.101 及以上保持自动注册。
-- 修复状态文件同步导致模式切换回退，以及保存期间新改动丢失的时序问题。
-- 修复服务端升级后 Java 要求未更新、版本保存失败后档案未恢复，以及 Velocity 创建失败遗留目录的问题。
-- 补齐 MCP 嵌套设置校验、下载源凭据遮蔽和语言切换覆盖工作区设置；内存、端口和数量设置改为整数校验。
-- 保留原生可拖动分栏，调整初始空间比例，增加“显示侧栏分类”以找回隐藏或位于下方的分类。
-- 更多分组只保留 Java 设置、任务、日志和协议；代理凭据、MCP 和存储工具归入设置。
-- 修复 Publisher ID 变更后原生设置筛选条件仍使用旧 ID 的问题。
+#### 更新
+
+- 最低 VS Code 版本从 1.103 降至 1.96，源码构建所需的最低 Node.js 版本从 22.14 降至 22.0。
+- 新增 VS Code 1.96–1.100 的 MCP 手动接入支持，可通过 **复制 MCP 连接** 获取配置。
+- 新增 **显示侧栏分类** 命令，用于显示并定位侧栏视图；调整侧栏各区域的初始空间比例。
+- 在 **更多** 中增加 Java 设置和任务入口；将代理凭据、MCP、存储目录和文档入口移入可展开的 **设置** 分组。
+
+#### 修复
+
+- 修复状态文件同步或保存期间，模式切换回退、新编辑内容丢失的问题。
+- 修复服务端更换版本后仍沿用旧 Java 要求的问题。
+- 修复服务端版本变更保存失败后档案未恢复，以及 Velocity 创建失败后遗留目录的问题。
+- 拒绝无效的启动参数数组、未知下载源字段和非有限数值；内存限制、窗口尺寸、端口和数量设置改为整数校验。
+- 修复 MCP 设置响应中下载源凭据未被遮蔽的问题，覆盖嵌套 URL 和仅用户名认证的地址。
+- 修复通过 MCP 切换语言后仍被工作区设置覆盖的问题。
+- 修复设置命令使用旧扩展 ID，导致无法显示扩展设置的问题。
 
 ## 0.4.0
 
