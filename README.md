@@ -10,7 +10,7 @@ Native sidebar views, commands, settings, tasks and output channels keep the ext
 
 ## Requirements and installation
 
-- Desktop VS Code **1.103 or later**. Minecraft **Java Edition** only.
+- Desktop VS Code **1.96 or later**. Minecraft **Java Edition** only.
 - A compatible Java runtime for the selected game version; use **Java → Detect Local Java** or **Download JDK**. Mod development requires a JDK.
 - Internet access for initial downloads. A fully installed instance can launch with an offline account without refreshing the version manifest.
 - In SSH, WSL or container workspaces, files and processes live on the **extension host machine**. Launching a game there requires a graphical session.
@@ -22,7 +22,7 @@ Native sidebar views, commands, settings, tasks and output channels keep the ext
 
 Use a trusted workspace to enable operations that download files or run processes. Development builds are available from successful [CI runs](https://github.com/lopleec/VSCode-minecraft-workbench/actions/workflows/ci.yml) under **Artifacts → minecraft-workbench-vsix**; unzip the artifact before installing its VSIX.
 
-To build from source, use Node.js **22.14 or later**:
+Installing the VSIX does not require a separate Node.js installation; the extension uses VS Code's bundled runtime. Building and packaging from source requires Node.js **22 or later** because the packaging tools depend on it:
 
 ```sh
 git clone https://github.com/lopleec/VSCode-minecraft-workbench.git
@@ -113,7 +113,7 @@ New game servers bind to `127.0.0.1` by default. Change **Settings → Network �
 
 ## AI tools over MCP
 
-MCP is **off by default**. Select **Workbench → Settings → Register MCP**, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
+MCP is **off by default**. Select **Workbench → Settings → Register MCP**, or enable `minecraftWorkbench.mcp.enabled`. On VS Code 1.101 or later, Minecraft Workbench appears in the MCP providers and chat tool picker. On VS Code 1.96–1.100, use **Settings → Copy MCP connection** to configure a compatible MCP client; the same tools and access controls are available. **Unregister MCP** removes the definition and closes the listener.
 
 Tools cover instance creation and launch, game/loader versions, Modrinth content and dependencies, accounts, Java, tasks, backups, Gradle projects, server management and extension settings. `workbench_state` lists the current entries. Operations requiring a file picker or confirmation open the native VS Code UI. AI tools cannot accept the first-use agreements; server EULA acceptance remains interactive.
 
@@ -168,12 +168,15 @@ npm run format:check
 npm run legal -- --check
 npm run compile
 npm run test:host
+npm run test:compat
 npm run package
 ```
 
 Press **F5** to open an Extension Development Host. Unit tests cover path safety, state persistence and recovery, accounts, range downloads, hashes, dependency resolution, backups and project customization. CI checks formatting, tests, compilation and packaging on Linux, Windows and macOS.
 
 Host tests require network access and a local or downloadable VS Code. `VSCODE_EXECUTABLE` selects a local executable; `MW_LIVE_INSTALL=1` also downloads a test Fabric instance. Microsoft sign-in needs an approved application and account and is not exercised automatically. Game launch, Gradle builds and installation/start/stop of Paper, Fabric, Quilt, Forge and NeoForge 1.21.4 servers have been checked on macOS Apple Silicon; other platforms and every historical game/loader combination have not been manually verified.
+
+`npm run test:compat` checks extension activation, consent, mode switching and MCP against the minimum supported VS Code in an isolated profile.
 
 Screenshots show the running extension in VS Code with sample instances and live Modrinth metadata. Project icons and descriptions belong to their respective authors.
 
@@ -201,7 +204,7 @@ Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://
 
 ### 安装与开始使用
 
-需要桌面版 **VS Code 1.103+**，仅支持 **Minecraft Java 版**。游戏所需 Java 可在插件中检测、手动添加或下载；开发模组需要 JDK。首次下载需要网络，完整安装后可使用离线账户启动，无需重新获取版本清单。
+需要桌面版 **VS Code 1.96+**，仅支持 **Minecraft Java 版**。游戏所需 Java 可在插件中检测、手动添加或下载；开发模组需要 JDK。首次下载需要网络，完整安装后可使用离线账户启动，无需重新获取版本清单。
 
 1. 打开 [最新 Release](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest)。
 2. 在 **Assets** 中下载 `minecraft-workbench-<版本号>.vsix`。
@@ -210,7 +213,7 @@ Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://
 
 下载和启动进程需要受信任的工作区。开发构建可从成功的 [CI 运行](https://github.com/lopleec/VSCode-minecraft-workbench/actions/workflows/ci.yml) 中下载 **Artifacts → minecraft-workbench-vsix**，解压后安装其中的 VSIX。
 
-也可使用 **Node.js 22.14+** 从源码打包：
+安装 VSIX 不需要额外安装 Node.js，扩展使用 VS Code 自带的运行时。从源码构建、打包需要 **Node.js 22+**，这是打包工具链的要求：
 
 ```sh
 git clone https://github.com/lopleec/VSCode-minecraft-workbench.git
@@ -302,7 +305,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 ### AI 与 MCP
 
-MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
+MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，VS Code 1.101 及以上可在 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench；1.96–1.100 使用 **设置 → 复制 MCP 连接** 配置支持 MCP 的客户端，工具和访问控制保持一致。**取消注册 MCP** 会移除服务定义并关闭监听。
 
 工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
 
@@ -361,12 +364,15 @@ npm run format:check
 npm run legal -- --check
 npm run compile
 npm run test:host
+npm run test:compat
 npm run package
 ```
 
 按 **F5** 打开扩展开发宿主。单元测试覆盖路径安全、状态保存及失败恢复、账户、续传、哈希、依赖、备份和项目定制。CI 在 Linux、Windows 和 macOS 检查格式、测试、编译和打包。
 
 宿主测试需要网络与本地或可下载的 VS Code。`VSCODE_EXECUTABLE` 可指定本地程序，`MW_LIVE_INSTALL=1` 会额外下载安装 Fabric 测试实例。Microsoft 登录需要获批应用和账户，不自动测试。游戏启动和 Gradle 构建，以及 Paper、Fabric、Quilt、Forge、NeoForge 1.21.4 服务端的安装、启动和停服，已在 macOS Apple Silicon 验证；其他平台及所有历史游戏 / Loader 组合尚未逐一人工验证。
+
+`npm run test:compat` 会在隔离配置中使用最低支持的 VS Code，检查激活、协议保护、模式切换和 MCP。
 
 截图来自 VS Code 中运行的插件，使用示例实例和实时 Modrinth 元数据。项目图标、简介属于各自作者。
 

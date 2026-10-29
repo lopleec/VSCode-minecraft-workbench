@@ -11,9 +11,37 @@ import { describeError } from './errors';
 import { redact } from './files';
 import { extensionVersion } from './build-info';
 
+export interface NativeMcpDefinition {
+  label: string;
+  uri: vscode.Uri;
+  headers: Record<string, string>;
+  version?: string;
+}
+export interface NativeMcpProvider {
+  onDidChangeMcpServerDefinitions: vscode.Event<void>;
+  provideMcpServerDefinitions(token?: vscode.CancellationToken): Promise<NativeMcpDefinition[]>;
+  resolveMcpServerDefinition(
+    definition: NativeMcpDefinition,
+  ): Promise<NativeMcpDefinition | undefined>;
+}
+interface McpHost {
+  lm?: {
+    registerMcpServerDefinitionProvider?: (
+      id: string,
+      provider: NativeMcpProvider,
+    ) => vscode.Disposable;
+  };
+  McpHttpServerDefinition?: new (
+    label: string,
+    uri: vscode.Uri,
+    headers: Record<string, string>,
+    version: string,
+  ) => NativeMcpDefinition;
+}
+
 export class WorkbenchMcp implements vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<void>();
-  private readonly provider: vscode.Disposable;
+  private readonly provider?: vscode.Disposable;
   private http?: http.Server;
   private endpoint?: vscode.Uri;
   private readonly token = randomBytes(32).toString('hex');
@@ -26,31 +54,35 @@ export class WorkbenchMcp implements vscode.Disposable {
     private readonly handle: (method: string, params: Record<string, unknown>) => Promise<unknown>,
     private readonly output: vscode.LogOutputChannel,
   ) {
-    this.provider = vscode.lm.registerMcpServerDefinitionProvider(
-      'com.lopleec.minecraftWorkbench',
-      {
-        onDidChangeMcpServerDefinitions: this.changed.event,
-        provideMcpServerDefinitions: async () => {
-          if (!this.enabled) return [];
-          await this.start();
-          return this.endpoint
-            ? [
-                new vscode.McpHttpServerDefinition(
-                  'Minecraft Workbench',
-                  this.endpoint,
-                  { Authorization: `Bearer ${this.token}` },
-                  extensionVersion,
-                ),
-              ]
-            : [];
-        },
-        resolveMcpServerDefinition: async (definition) => {
-          await trusted();
-          if (!this.enabled) return undefined;
-          return definition;
-        },
+    const host = vscode as unknown as McpHost;
+    const register = host.lm?.registerMcpServerDefinitionProvider;
+    const Definition = host.McpHttpServerDefinition;
+    if (typeof register !== 'function' || typeof Definition !== 'function') return;
+    this.provider = register.call(host.lm, 'com.lopleec.minecraftWorkbench', {
+      onDidChangeMcpServerDefinitions: this.changed.event,
+      provideMcpServerDefinitions: async () => {
+        if (!this.enabled) return [];
+        await this.start();
+        return this.endpoint
+          ? [
+              new Definition(
+                'Minecraft Workbench',
+                this.endpoint,
+                { Authorization: `Bearer ${this.token}` },
+                extensionVersion,
+              ),
+            ]
+          : [];
       },
-    );
+      resolveMcpServerDefinition: async (definition) => {
+        await trusted();
+        if (!this.enabled) return undefined;
+        return definition;
+      },
+    });
+  }
+  get nativeIntegration() {
+    return Boolean(this.provider);
   }
   get enabled() {
     return (
@@ -64,6 +96,8 @@ export class WorkbenchMcp implements vscode.Disposable {
     if (this.registered === this.enabled) return;
     this.registered = this.enabled;
     if (!this.enabled) this.stop();
+    else if (!this.nativeIntegration)
+      void this.start().catch((error) => this.output.warn(redact(describeError(error))));
     this.changed.fire();
   }
   async toggle() {
@@ -74,12 +108,18 @@ export class WorkbenchMcp implements vscode.Disposable {
       .getConfiguration('minecraftWorkbench')
       .update('mcp.enabled', enabled, vscode.ConfigurationTarget.Global);
     this.refresh();
+    if (this.enabled) await this.start();
     void vscode.window.showInformationMessage(
       this.enabled
-        ? t(
-            'Minecraft Workbench MCP registered. Enable it in the chat tools picker.',
-            'Minecraft Workbench MCP 已注册，可在聊天工具选择器中启用。',
-          )
+        ? this.nativeIntegration
+          ? t(
+              'Minecraft Workbench MCP registered. Enable it in the chat tools picker.',
+              'Minecraft Workbench MCP 已注册，可在聊天工具选择器中启用。',
+            )
+          : t(
+              'MCP enabled. Use Copy MCP connection to configure a compatible client. Automatic registration requires VS Code 1.101 or later.',
+              'MCP 已启用。使用“复制 MCP 连接”配置兼容客户端。自动注册需要 VS Code 1.101 或更高版本。',
+            )
         : t('Minecraft Workbench MCP unregistered.', 'Minecraft Workbench MCP 已取消注册。'),
     );
   }
@@ -267,7 +307,7 @@ export class WorkbenchMcp implements vscode.Disposable {
   dispose() {
     this.disposed = true;
     this.stop();
-    this.provider.dispose();
+    this.provider?.dispose();
     this.changed.dispose();
   }
 }

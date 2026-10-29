@@ -313,12 +313,21 @@ export class ServerActions {
           const level = properties['level-name'] || 'world';
           if (await exists(path.join(server.directory, filename(level))))
             await this.servers.backups.create(server, level);
+          const previous = { ...server };
           if (server.engine === 'velocity') server.softwareVersion = version;
           else server.minecraft = version;
           server.build = build?.label;
+          server.requiredJava = undefined;
           server.installed = false;
           server.launchArgs = undefined;
-          await this.servers.store.save();
+          try {
+            await this.servers.store.save();
+          } catch (error) {
+            for (const key of Object.keys(server))
+              delete (server as unknown as Record<string, unknown>)[key];
+            Object.assign(server, previous);
+            throw error;
+          }
         });
         return this.servers.install(server);
       }

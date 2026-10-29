@@ -6,8 +6,8 @@
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.103.0",
-    "node": ">=22.14.0"
+    "vscode": "^1.96.0",
+    "node": ">=22.0.0"
   },
   "categories": [
     "Other",
@@ -48,7 +48,8 @@
     "licenses": "node scripts/licenses.mjs",
     "format": "prettier --write src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json",
     "format:check": "prettier --check src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json",
-    "legal": "node scripts/legal.mjs"
+    "legal": "node scripts/legal.mjs",
+    "test:compat": "node scripts/test-host.mjs --compat"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -65,7 +66,7 @@
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.14.0",
     "@types/semver": "^7.8.0",
-    "@types/vscode": "1.103.0",
+    "@types/vscode": "1.96.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.0",
@@ -1847,14 +1848,14 @@
             "scope": "machine"
           },
           "minecraftWorkbench.minMemory": {
-            "type": "number",
+            "type": "integer",
             "default": 0,
             "markdownDescription": "%setting.minMemory%",
             "minimum": 0,
             "maximum": 1048576
           },
           "minecraftWorkbench.maxMemory": {
-            "type": "number",
+            "type": "integer",
             "default": 0,
             "markdownDescription": "%setting.maxMemory%",
             "minimum": 0,
@@ -1894,14 +1895,14 @@
             }
           },
           "minecraftWorkbench.windowWidth": {
-            "type": "number",
+            "type": "integer",
             "default": 1280,
             "markdownDescription": "%setting.windowWidth%",
             "minimum": 320,
             "maximum": 16384
           },
           "minecraftWorkbench.windowHeight": {
-            "type": "number",
+            "type": "integer",
             "default": 720,
             "markdownDescription": "%setting.windowHeight%",
             "minimum": 320,
@@ -1923,7 +1924,7 @@
             "markdownDescription": "%setting.checkConflictsBeforeLaunch%"
           },
           "minecraftWorkbench.debugPort": {
-            "type": "number",
+            "type": "integer",
             "default": 5005,
             "markdownDescription": "%setting.debugPort%",
             "minimum": 1024,
@@ -1948,7 +1949,7 @@
             ]
           },
           "minecraftWorkbench.modrinthPageSize": {
-            "type": "number",
+            "type": "integer",
             "default": 20,
             "markdownDescription": "%setting.modrinthPageSize%",
             "minimum": 10,
@@ -2052,21 +2053,21 @@
             }
           },
           "minecraftWorkbench.downloadConcurrency": {
-            "type": "number",
+            "type": "integer",
             "default": 6,
             "markdownDescription": "%setting.downloadConcurrency%",
             "minimum": 1,
             "maximum": 32
           },
           "minecraftWorkbench.downloadRetries": {
-            "type": "number",
+            "type": "integer",
             "default": 2,
             "markdownDescription": "%setting.downloadRetries%",
             "minimum": 0,
             "maximum": 8
           },
           "minecraftWorkbench.networkTimeout": {
-            "type": "number",
+            "type": "integer",
             "default": 30000,
             "markdownDescription": "%setting.networkTimeout%",
             "minimum": 5000,
@@ -2117,7 +2118,7 @@
             "markdownDescription": "%setting.backupBeforeLaunch%"
           },
           "minecraftWorkbench.backupRetention": {
-            "type": "number",
+            "type": "integer",
             "default": 0,
             "markdownDescription": "%setting.backupRetention%",
             "minimum": 0,

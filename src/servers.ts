@@ -172,6 +172,11 @@ export class Servers implements vscode.Disposable {
     );
     if (!path.isAbsolute(parent) || parent.includes('\0'))
       throw new Error('Server directory must be absolute');
+    let minecraft = version;
+    if (engine === 'velocity') {
+      minecraft = String(value.minecraft || '') || (await this.catalog.latestGameVersion());
+      await this.catalog.metadata(minecraft);
+    }
     const id = randomUUID();
     const directory = path.join(parent, id);
     await rejectSymlinkParents(parent, directory);
@@ -181,17 +186,12 @@ export class Servers implements vscode.Disposable {
       id,
       name,
       engine,
-      minecraft: version,
+      minecraft,
+      ...(engine === 'velocity' ? { softwareVersion: version } : {}),
       build: build?.id,
       directory,
       createdAt: new Date().toISOString(),
     };
-    if (engine === 'velocity') {
-      server.softwareVersion = version;
-      server.minecraft = String(value.minecraft || '');
-      if (!server.minecraft) server.minecraft = await this.catalog.latestGameVersion();
-      await this.catalog.metadata(server.minecraft);
-    }
     this.store.state.servers.push(server);
     const previous = this.store.state.selectedServer;
     this.store.state.selectedServer = id;

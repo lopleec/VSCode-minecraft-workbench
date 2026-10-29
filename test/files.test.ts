@@ -41,6 +41,12 @@ test('tokens and proxy passwords are redacted', () => {
   );
   for (const secret of ['secret', 'hidden', 'abc', 'def', 'user:pass', 'name:password'])
     assert.ok(!result.includes(secret));
+  assert.equal(redact('socks://:password@proxy.test'), 'socks://[redacted]@proxy.test');
+  assert.equal(redact('https://token@mirror.test/file'), 'https://[redacted]@mirror.test/file');
+  assert.equal(
+    redact('https://mirror.test?email=user@example.test'),
+    'https://mirror.test?email=user@example.test',
+  );
 });
 test('atomic state writes are serialized and invalid JSON is preserved', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-store-'));

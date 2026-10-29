@@ -115,5 +115,5 @@ export function redact(text: string): string {
       '$1[redacted]',
     )
     .replace(/(--accessToken\s+)\S+/g, '$1[redacted]')
-    .replace(/((?:https?|socks5h?):\/\/)[^/\s:@]+:[^/\s@]+@/gi, '$1[redacted]@');
+    .replace(/((?:https?|socks(?:5h?)?):\/\/)[^/\s@?#"'<>]+@/gi, '$1[redacted]@');
 }

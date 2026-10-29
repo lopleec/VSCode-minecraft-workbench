@@ -5,6 +5,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import type * as VSCode from 'vscode';
 import manifest from '../package.json';
 import { mcpOperations } from '../src/mcp-operations';
+import type { NativeMcpDefinition, NativeMcpProvider } from '../src/mcp';
 
 test('MCP tools are unique and cannot bypass native command or agreement controls', () => {
   const setting = manifest.contributes.configuration
@@ -24,7 +25,7 @@ test('MCP tools are unique and cannot bypass native command or agreement control
 test('MCP uses authenticated loopback, interoperates with the official client and closes on unregister', async () => {
   const vscode = require('vscode') as Record<string, unknown>;
   let enabled = true;
-  let provider: VSCode.McpServerDefinitionProvider | undefined;
+  let provider: NativeMcpProvider | undefined;
   class EventEmitter {
     event = () => ({ dispose() {} });
     fire() {}
@@ -54,10 +55,7 @@ test('MCP uses authenticated loopback, interoperates with the official client an
     },
   });
   vscode.lm = {
-    registerMcpServerDefinitionProvider: (
-      _id: string,
-      value: VSCode.McpServerDefinitionProvider,
-    ) => {
+    registerMcpServerDefinitionProvider: (_id: string, value: NativeMcpProvider) => {
       provider = value;
       return { dispose() {} };
     },
@@ -81,7 +79,7 @@ test('MCP uses authenticated loopback, interoperates with the official client an
   const client = new Client({ name: 'test', version: '1.0.0' });
   try {
     const definitions = await provider!.provideMcpServerDefinitions({} as VSCode.CancellationToken);
-    const definition = definitions![0] as VSCode.McpHttpServerDefinition;
+    const definition = definitions![0] as NativeMcpDefinition;
     const url = new URL(definition.uri.toString());
     assert.equal(url.hostname, '127.0.0.1');
     assert.equal((await fetch(url, { method: 'POST', body: '{}' })).status, 401);

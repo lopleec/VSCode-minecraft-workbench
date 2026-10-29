@@ -8,7 +8,7 @@
 
 ### 安装与开始使用
 
-需要桌面版 **VS Code 1.103+**，仅支持 **Minecraft Java 版**。游戏所需 Java 可在插件中检测、手动添加或下载；开发模组需要 JDK。首次下载需要网络，完整安装后可使用离线账户启动，无需重新获取版本清单。
+需要桌面版 **VS Code 1.96+**，仅支持 **Minecraft Java 版**。游戏所需 Java 可在插件中检测、手动添加或下载；开发模组需要 JDK。首次下载需要网络，完整安装后可使用离线账户启动，无需重新获取版本清单。
 
 1. 打开 [最新 Release](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest)。
 2. 在 **Assets** 中下载 `minecraft-workbench-<版本号>.vsix`。
@@ -17,7 +17,7 @@
 
 下载和启动进程需要受信任的工作区。开发构建可从成功的 [CI 运行](https://github.com/lopleec/VSCode-minecraft-workbench/actions/workflows/ci.yml) 中下载 **Artifacts → minecraft-workbench-vsix**，解压后安装其中的 VSIX。
 
-也可使用 **Node.js 22.14+** 从源码打包：
+安装 VSIX 不需要额外安装 Node.js，扩展使用 VS Code 自带的运行时。从源码构建、打包需要 **Node.js 22+**，这是打包工具链的要求：
 
 ```sh
 git clone https://github.com/lopleec/VSCode-minecraft-workbench.git
@@ -109,7 +109,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 ### AI 与 MCP
 
-MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
+MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，VS Code 1.101 及以上可在 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench；1.96–1.100 使用 **设置 → 复制 MCP 连接** 配置支持 MCP 的客户端，工具和访问控制保持一致。**取消注册 MCP** 会移除服务定义并关闭监听。
 
 工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
 
@@ -168,12 +168,15 @@ npm run format:check
 npm run legal -- --check
 npm run compile
 npm run test:host
+npm run test:compat
 npm run package
 ```
 
 按 **F5** 打开扩展开发宿主。单元测试覆盖路径安全、状态保存及失败恢复、账户、续传、哈希、依赖、备份和项目定制。CI 在 Linux、Windows 和 macOS 检查格式、测试、编译和打包。
 
 宿主测试需要网络与本地或可下载的 VS Code。`VSCODE_EXECUTABLE` 可指定本地程序，`MW_LIVE_INSTALL=1` 会额外下载安装 Fabric 测试实例。Microsoft 登录需要获批应用和账户，不自动测试。游戏启动和 Gradle 构建，以及 Paper、Fabric、Quilt、Forge、NeoForge 1.21.4 服务端的安装、启动和停服，已在 macOS Apple Silicon 验证；其他平台及所有历史游戏 / Loader 组合尚未逐一人工验证。
+
+`npm run test:compat` 会在隔离配置中使用最低支持的 VS Code，检查激活、协议保护、模式切换和 MCP。
 
 截图来自 VS Code 中运行的插件，使用示例实例和实时 Modrinth 元数据。项目图标、简介属于各自作者。
 

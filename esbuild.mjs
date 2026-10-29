@@ -9,7 +9,7 @@ const ctx = await context({
   entryPoints: ['src/extension.ts'],
   bundle: true,
   platform: 'node',
-  target: 'node22',
+  target: 'node20.18',
   format: 'cjs',
   outfile: 'dist/extension.js',
   external: ['vscode'],
