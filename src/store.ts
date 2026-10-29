@@ -45,13 +45,17 @@ export class Store {
       if (String(name) !== 'state.json') return;
       clearTimeout(this.watchTimer);
       this.watchTimer = setTimeout(() => {
-        void this.pending
+        const pending = this.pending;
+        void pending
           .then(async () => {
+            if (pending !== this.pending) return;
+            const baseline = this.baseline;
             const external = await readJson<State>(path.join(this.root, 'state.json'));
+            if (pending !== this.pending) return;
             if (external.schema !== 1) return;
             external.servers ??= [];
-            this.apply(mergeState(external, this.baseline, this.state));
-            this.baseline = structuredClone(this.state);
+            this.apply(mergeState(external, baseline, this.state));
+            this.baseline = structuredClone(external);
             this.changed();
           })
           .catch(() => {});
@@ -113,7 +117,7 @@ export class Store {
           await writeJson(path.join(this.root, 'state.json'), merged);
           if (revision === this.revision) {
             this.apply(mergeState(merged, snapshot, this.state));
-            this.baseline = structuredClone(this.state);
+            this.baseline = structuredClone(merged);
           }
         } finally {
           await lock.close();

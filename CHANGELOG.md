@@ -4,6 +4,7 @@
 
 - Lowered the minimum VS Code version to 1.96 and the source build Node.js requirement to 22.0. Clarified that VSIX users do not need a separate Node.js installation.
 - Made native MCP registration optional. VS Code 1.96–1.100 supports authenticated manual MCP connections; 1.101 and later keeps automatic registration.
+- Fixed state synchronization races that could revert mode changes or lose edits made during a save.
 - Fixed stale Java requirements after server upgrades, restored profiles when version saving fails, and avoided orphan directories on failed Velocity creation.
 - Validated nested MCP settings, redacted source URL credentials recursively, and made MCP language changes clear workspace overrides. Memory, ports and counts now require integers.
 - Kept native resizable sidebar views, balanced the initial space allocation and added Show Sidebar View to reveal or focus a section.
@@ -14,6 +15,7 @@
 
 - 最低 VS Code 版本降至 1.96，源码构建所需 Node.js 降至 22.0；明确安装 VSIX 无需额外安装 Node.js。
 - MCP 原生注册改为可选；VS Code 1.96–1.100 可手动配置带认证的 MCP 连接，1.101 及以上保持自动注册。
+- 修复状态文件同步导致模式切换回退，以及保存期间新改动丢失的时序问题。
 - 修复服务端升级后 Java 要求未更新、版本保存失败后档案未恢复，以及 Velocity 创建失败遗留目录的问题。
 - 补齐 MCP 嵌套设置校验、下载源凭据遮蔽和语言切换覆盖工作区设置；内存、端口和数量设置改为整数校验。
 - 保留原生可拖动分栏，调整初始空间比例，增加“显示侧栏分类”以找回隐藏或位于下方的分类。
