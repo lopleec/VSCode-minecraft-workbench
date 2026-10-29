@@ -113,7 +113,7 @@ New game servers bind to `127.0.0.1` by default. Change **Settings → Network �
 
 ## AI tools over MCP
 
-MCP is **off by default**. Select **Register MCP** in the sidebar, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
+MCP is **off by default**. Select **Workbench → More → Register MCP**, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
 
 Tools cover instance creation and launch, game/loader versions, Modrinth content and dependencies, accounts, Java, tasks, backups, Gradle projects, server management and extension settings. `workbench_state` lists the current entries. Operations requiring a file picker or confirmation open the native VS Code UI. AI tools cannot accept the first-use agreements; server EULA acceptance remains interactive.
 
@@ -135,7 +135,7 @@ Gradle runs through the project's wrapper in VS Code Tasks. The first run downlo
 
 ## Settings, downloads and storage
 
-Open **Minecraft Workbench: Settings** to see the native grouped Settings page. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code.
+Open **Minecraft Workbench: Settings** to see the native grouped Settings page. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. The collapsed **More** group contains agreements, MCP and maintenance commands.
 
 ```json
 {
@@ -272,7 +272,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 ![浅色主题下的中文实例设置](docs/images/settings-zh-light.png)
 
-通过 **切换语言**、侧栏语言入口或 **EN / 中** 按钮即时切换。语言可独立于 VS Code 设置。
+通过侧栏 **语言**、命令面板 **切换语言** 或 **EN / 中** 按钮即时切换。语言可独立于 VS Code 设置。
 
 修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除实例会将整个游戏目录移至系统废纸篓（系统支持时）。
 
@@ -302,7 +302,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 ### AI 与 MCP
 
-MCP **默认关闭**。点击侧栏 **注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
+MCP **默认关闭**。点击 **工作台 → 更多 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
 
 工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
 
@@ -321,6 +321,8 @@ MCP **默认关闭**。点击侧栏 **注册 MCP**，或启用 `minecraftWorkben
 Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle 与依赖。模板提供对应的游戏、Loader 和 Gradle 版本，部分历史版本没有维护中的模板。生成的是模组项目，并非反编译后的独立游戏客户端。插件代理用于插件管理的下载；Gradle 的仓库与代理遵循项目及 Gradle 配置。
 
 ### 网络、目录与诊断
+
+工作台保留模式、语言和设置；协议、MCP 和维护命令位于默认收起的 **更多** 分组。MCP 默认关闭。
 
 全局选项位于 **Minecraft Workbench：设置** 的原生分组中。
 

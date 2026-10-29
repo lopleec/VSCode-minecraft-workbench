@@ -41,6 +41,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
     workbench?.refresh();
     mcp?.refresh();
+    void vscode.commands.executeCommand(
+      'setContext',
+      'minecraftWorkbench.mcpEnabled',
+      mcp?.enabled ?? false,
+    );
     void vscode.commands.executeCommand('setContext', 'minecraftWorkbench.mode', store.state.mode);
     void vscode.commands.executeCommand(
       'setContext',
@@ -188,6 +193,8 @@ export async function activate(context: vscode.ExtensionContext) {
     agreements: () => workbench!.open('agreements'),
     mode: () => ui.mode(),
     mcp: () => mcp!.toggle(),
+    registerMcp: () => mcp!.setEnabled(true),
+    unregisterMcp: () => mcp!.setEnabled(false),
     mcpCopy: () => mcp!.copyConnection(),
     manageServers: () => workbench!.open('servers'),
     createServer: () => workbench!.open('serverCreate'),

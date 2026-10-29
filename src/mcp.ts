@@ -67,9 +67,12 @@ export class WorkbenchMcp implements vscode.Disposable {
     this.changed.fire();
   }
   async toggle() {
+    return this.setEnabled(!config('mcp.enabled', false));
+  }
+  async setEnabled(enabled: boolean) {
     await vscode.workspace
       .getConfiguration('minecraftWorkbench')
-      .update('mcp.enabled', !config('mcp.enabled', false), vscode.ConfigurationTarget.Global);
+      .update('mcp.enabled', enabled, vscode.ConfigurationTarget.Global);
     this.refresh();
     void vscode.window.showInformationMessage(
       this.enabled

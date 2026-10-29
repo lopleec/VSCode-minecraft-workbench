@@ -3,9 +3,14 @@ import assert from 'node:assert/strict';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type * as VSCode from 'vscode';
+import manifest from '../package.json';
 import { mcpOperations } from '../src/mcp-operations';
 
 test('MCP tools are unique and cannot bypass native command or agreement controls', () => {
+  const setting = manifest.contributes.configuration
+    .flatMap((group) => Object.entries(group.properties))
+    .find(([key]) => key === 'minecraftWorkbench.mcp.enabled');
+  assert.equal((setting?.[1] as { default: boolean }).default, false);
   assert.equal(new Set(mcpOperations.map((op) => op.name)).size, mcpOperations.length);
   assert.equal(
     mcpOperations.some((op) => op.method === 'consent.accept'),

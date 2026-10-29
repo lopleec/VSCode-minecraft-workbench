@@ -746,6 +746,30 @@
         "title": "复制 MCP 连接",
         "category": "Minecraft Workbench",
         "icon": "$(copy)"
+      },
+      {
+        "command": "minecraftWorkbench.registerMcp",
+        "title": "Register MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "minecraftWorkbench.unregisterMcp",
+        "title": "Unregister MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "minecraftWorkbench.registerMcp.zh",
+        "title": "注册 MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "minecraftWorkbench.unregisterMcp.zh",
+        "title": "取消注册 MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-disconnect)"
       }
     ],
     "viewsContainers": {
@@ -886,16 +910,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "minecraftWorkbench.mode",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "navigation"
-        },
-        {
-          "command": "minecraftWorkbench.mode.zh",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "navigation"
-        },
-        {
           "command": "minecraftWorkbench.createInstance",
           "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
@@ -1023,26 +1037,6 @@
         {
           "command": "minecraftWorkbench.conflicts.zh",
           "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "tools"
-        },
-        {
-          "command": "minecraftWorkbench.help",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "tools"
-        },
-        {
-          "command": "minecraftWorkbench.help.zh",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "tools"
-        },
-        {
-          "command": "minecraftWorkbench.openStorage",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
-          "group": "tools"
-        },
-        {
-          "command": "minecraftWorkbench.openStorage.zh",
-          "when": "(view == minecraftWorkbench.home && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1735,19 +1729,35 @@
         },
         {
           "command": "minecraftWorkbench.mcp",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "false"
         },
         {
           "command": "minecraftWorkbench.mcp.zh",
-          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "false"
         },
         {
           "command": "minecraftWorkbench.mcpCopy",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         },
         {
           "command": "minecraftWorkbench.mcpCopy.zh",
-          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+        },
+        {
+          "command": "minecraftWorkbench.registerMcp",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
+        },
+        {
+          "command": "minecraftWorkbench.unregisterMcp",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+        },
+        {
+          "command": "minecraftWorkbench.registerMcp.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
+        },
+        {
+          "command": "minecraftWorkbench.unregisterMcp.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         }
       ]
     },

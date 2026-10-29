@@ -558,6 +558,8 @@ export const mcpOperations: McpOperation[] = [
         'inspectInstance',
         'mcp',
         'mcpCopy',
+        'registerMcp',
+        'unregisterMcp',
       ]),
     },
     required: ['command'],

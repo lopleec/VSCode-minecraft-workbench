@@ -74,15 +74,65 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             new Item(t('Language', '语言'), 'action', undefined, 'globe', 'language'),
           ]
         : [];
-    if (this.section === 'home')
+    if (this.section === 'home') {
+      if (_parent?.kind === 'moreHome')
+        return [
+          new Item(
+            t('Agreements & About', '协议与关于'),
+            'action',
+            undefined,
+            'shield',
+            'agreements',
+          ),
+          new Item(t('Documentation', '使用文档'), 'action', undefined, 'book', 'help'),
+          new Item(
+            config('mcp.enabled', false)
+              ? t('Unregister MCP', '取消注册 MCP')
+              : t('Register MCP', '注册 MCP'),
+            'action',
+            undefined,
+            'plug',
+            config('mcp.enabled', false) ? 'unregisterMcp' : 'registerMcp',
+          ),
+          ...(config('mcp.enabled', false)
+            ? [
+                new Item(
+                  t('Copy MCP connection', '复制 MCP 连接'),
+                  'action',
+                  undefined,
+                  'copy',
+                  'mcpCopy',
+                ),
+              ]
+            : []),
+          new Item(t('Show output', '显示输出'), 'action', undefined, 'output', 'output'),
+          new Item(
+            t('Open storage directory', '打开存储目录'),
+            'action',
+            undefined,
+            'folder-opened',
+            'openStorage',
+          ),
+          new Item(
+            t('Proxy credentials', '代理凭据'),
+            'action',
+            undefined,
+            'key',
+            'proxyCredentials',
+          ),
+        ];
+      if (_parent) return [];
+      const more = new Item(
+        t('More', '更多'),
+        'moreHome',
+        undefined,
+        'ellipsis',
+        undefined,
+        undefined,
+        true,
+      );
+      more.id = 'minecraftWorkbench.more';
       return [
-        new Item(
-          t('Agreements & About', '协议与关于'),
-          'action',
-          undefined,
-          'shield',
-          'agreements',
-        ),
         new Item(
           state.mode === 'launcher'
             ? t('Launcher Mode', '启动模式')
@@ -93,7 +143,6 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           undefined,
           state.mode === 'launcher' ? 'game' : state.mode === 'server' ? 'server' : 'code',
           'mode',
-          t('Switch mode', '切换模式'),
         ),
         new Item(
           t('Language', '语言'),
@@ -103,28 +152,10 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           'language',
           t('English', '简体中文'),
         ),
-        new Item(
-          config('mcp.enabled', false)
-            ? t('Unregister MCP', '取消注册 MCP')
-            : t('Register MCP', '注册 MCP'),
-          'action',
-          undefined,
-          'plug',
-          'mcp',
-        ),
-        ...(config('mcp.enabled', false)
-          ? [
-              new Item(
-                t('Copy MCP connection', '复制 MCP 连接'),
-                'action',
-                undefined,
-                'copy',
-                'mcpCopy',
-              ),
-            ]
-          : []),
         new Item(t('Settings', '设置'), 'action', undefined, 'settings-gear', 'settings'),
+        more,
       ];
+    }
     if (this.section === 'instances') {
       return state.instances.map((instance) => {
         const running = this.minecraft.running.has(instance.id);
