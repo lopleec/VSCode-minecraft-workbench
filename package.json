@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -770,6 +770,18 @@
         "title": "取消注册 MCP",
         "category": "Minecraft Workbench",
         "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "minecraftWorkbench.showView",
+        "title": "Show Sidebar View...",
+        "category": "Minecraft Workbench",
+        "icon": "$(layout-sidebar-left)"
+      },
+      {
+        "command": "minecraftWorkbench.showView.zh",
+        "title": "显示侧栏分类…",
+        "category": "Minecraft Workbench",
+        "icon": "$(layout-sidebar-left)"
       }
     ],
     "viewsContainers": {
@@ -786,31 +798,31 @@
         {
           "id": "minecraftWorkbench.home",
           "name": "%view.home%",
-          "initialSize": 1
+          "initialSize": 2
         },
         {
           "id": "minecraftWorkbench.instances",
           "name": "%view.instances%",
           "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 4
+          "initialSize": 3
         },
         {
           "id": "minecraftWorkbench.projects",
           "name": "%view.projects%",
           "when": "minecraftWorkbench.mode == developer && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 4
+          "initialSize": 3
         },
         {
           "id": "minecraftWorkbench.servers",
           "name": "%view.servers%",
           "when": "minecraftWorkbench.mode == server && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 4
+          "initialSize": 3
         },
         {
           "id": "minecraftWorkbench.content",
           "name": "%view.content%",
           "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 1
+          "initialSize": 2
         },
         {
           "id": "minecraftWorkbench.accounts",
@@ -1118,6 +1130,16 @@
           "command": "minecraftWorkbench.manageServers.zh",
           "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
           "group": "navigation@2"
+        },
+        {
+          "command": "minecraftWorkbench.showView",
+          "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "views"
+        },
+        {
+          "command": "minecraftWorkbench.showView.zh",
+          "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "views"
         }
       ],
       "view/item/context": [
@@ -1758,6 +1780,14 @@
         {
           "command": "minecraftWorkbench.unregisterMcp.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+        },
+        {
+          "command": "minecraftWorkbench.showView",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.showView.zh",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
         }
       ]
     },

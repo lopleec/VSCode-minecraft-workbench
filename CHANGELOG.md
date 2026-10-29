@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1
+
+- Kept native resizable sidebar views, balanced the initial space allocation and added Show Sidebar View to reveal or focus a section.
+- Limited More to Java settings, tasks, logs and agreements. Proxy credentials, MCP and storage utilities are grouped under Settings.
+- Fixed the native Settings filter after the publisher ID change.
+
+### 简体中文
+
+- 保留原生可拖动分栏，调整初始空间比例，增加“显示侧栏分类”以找回隐藏或位于下方的分类。
+- 更多分组只保留 Java 设置、任务、日志和协议；代理凭据、MCP 和存储工具归入设置。
+- 修复 Publisher ID 变更后原生设置筛选条件仍使用旧 ID 的问题。
+
 ## 0.4.0
 
 - Added Server Mode with isolated Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge, Velocity and custom JAR profiles, automatic JDK preparation, console commands, settings, version changes and world backups.

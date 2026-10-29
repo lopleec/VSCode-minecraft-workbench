@@ -113,7 +113,7 @@ New game servers bind to `127.0.0.1` by default. Change **Settings → Network �
 
 ## AI tools over MCP
 
-MCP is **off by default**. Select **Workbench → More → Register MCP**, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
+MCP is **off by default**. Select **Workbench → Settings → Register MCP**, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
 
 Tools cover instance creation and launch, game/loader versions, Modrinth content and dependencies, accounts, Java, tasks, backups, Gradle projects, server management and extension settings. `workbench_state` lists the current entries. Operations requiring a file picker or confirmation open the native VS Code UI. AI tools cannot accept the first-use agreements; server EULA acceptance remains interactive.
 
@@ -135,7 +135,7 @@ Gradle runs through the project's wrapper in VS Code Tasks. The first run downlo
 
 ## Settings, downloads and storage
 
-Open **Minecraft Workbench: Settings** to see the native grouped Settings page. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. The collapsed **More** group contains agreements, MCP and maintenance commands.
+Open **Minecraft Workbench: Settings** to see the native grouped Settings page. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, tasks, logs and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens the native Settings page.
 
 ```json
 {
@@ -152,7 +152,7 @@ Open **Minecraft Workbench: Settings** to see the native grouped Settings page. 
 ```
 
 - **Download sources:** choose `official`, `bmclapi` or an HTTPS base per resource type: `manifest`, `client`, `server`, `assets`, `libraries`, `loader`, `modrinth`, `java`, `project`. Custom bases preserve the original path/query. BMCLAPI applies only to supported endpoints; failed mirrors fall back to the original source. Authentication always uses official endpoints.
-- **Proxy:** HTTP, HTTPS, SOCKS5 and SOCKS5h are supported. SOCKS5 resolves names locally; SOCKS5h resolves through the proxy. An empty setting falls back to VS Code `http.proxy`. Use **Set Proxy Credentials** to save credentials in SecretStorage. Reload after network or storage changes.
+- **Proxy:** HTTP, HTTPS, SOCKS5 and SOCKS5h are supported. SOCKS5 resolves names locally; SOCKS5h resolves through the proxy. An empty setting falls back to VS Code `http.proxy`. Use **Workbench → Settings → Proxy credentials** to save credentials in SecretStorage. Reload after network or storage changes.
 - **Reuse and speed:** verified files share a content-addressed cache across instances. Existing isolated runtimes can seed it after checksum verification. Reusing a version copies its verified files and downloads only missing or changed resources. Files of at least 16 MiB use up to four HTTP Range connections with 8 MiB segments; the global connection limit defaults to six. Completed segments survive retries, and unsupported hosts fall back to a single connection. Configure `sharedDownloadCache`, `downloadConnectionsPerFile`, `downloadChunkSize` and `downloadConcurrency`. Instance files are independent copies, so edits cannot change the shared cache.
 - **Download recovery:** `.part` files and HTTP Range validators allow resuming when the server supports it. A server ignoring ranges restarts the file. Published Minecraft/Modrinth hashes and JDK SHA-256 checks verify downloads.
 - **Directories:** storage, game, server and project locations are configurable. Each game directory contains `.runtime` for dependencies and `.workbench` for metadata, history and backups; move them with the instance.
@@ -302,7 +302,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 ### AI 与 MCP
 
-MCP **默认关闭**。点击 **工作台 → 更多 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
+MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
 
 工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
 
@@ -322,7 +322,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 
 ### 网络、目录与诊断
 
-工作台保留模式、语言和设置；协议、MCP 和维护命令位于默认收起的 **更多** 分组。MCP 默认关闭。
+工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、日志和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字仍打开原生设置页。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
 
 全局选项位于 **Minecraft Workbench：设置** 的原生分组中。
 
@@ -341,7 +341,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 ```
 
 - **下载源：** 可按 `manifest`、`client`、`server`、`assets`、`libraries`、`loader`、`modrinth`、`java`、`project` 设置 `official`、`bmclapi` 或 HTTPS 基地址。自定义地址保留原路径和查询参数；BMCLAPI 仅用于支持的端点。镜像失败回退原始地址，认证始终走官方端点。
-- **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **设置代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
+- **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **工作台 → 设置 → 代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
 - **断点与校验：** 保留 `.part`，在服务器支持时使用 HTTP Range 和校验器续传；服务器忽略范围则重新下载。校验 Minecraft / Modrinth 公布的哈希及 JDK SHA-256。
 - **目录：** 存储、游戏、服务端和项目目录可配置。游戏目录中的 `.runtime` 保存运行依赖，`.workbench` 保存元数据、历史和备份，移动实例时应一起保留。
 - **日志：** 使用 **显示输出** 或 **打开游戏日志**。插件输出会隐藏认证令牌和代理凭据；分享外部游戏或模组日志前仍需检查内容。

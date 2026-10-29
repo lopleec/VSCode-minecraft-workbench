@@ -78,13 +78,31 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       if (_parent?.kind === 'moreHome')
         return [
           new Item(
+            t('Java settings', 'Java 设置'),
+            'action',
+            undefined,
+            'symbol-method',
+            'manageJava',
+          ),
+          new Item(t('Tasks', '任务'), 'action', undefined, 'tasklist', 'manageTasks'),
+          new Item(t('Logs', '日志'), 'action', undefined, 'output', 'output'),
+          new Item(
             t('Agreements & About', '协议与关于'),
             'action',
             undefined,
             'shield',
             'agreements',
           ),
-          new Item(t('Documentation', '使用文档'), 'action', undefined, 'book', 'help'),
+        ];
+      if (_parent?.kind === 'settingsHome')
+        return [
+          new Item(
+            t('Proxy credentials', '代理凭据'),
+            'action',
+            undefined,
+            'key',
+            'proxyCredentials',
+          ),
           new Item(
             config('mcp.enabled', false)
               ? t('Unregister MCP', '取消注册 MCP')
@@ -105,7 +123,6 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
                 ),
               ]
             : []),
-          new Item(t('Show output', '显示输出'), 'action', undefined, 'output', 'output'),
           new Item(
             t('Open storage directory', '打开存储目录'),
             'action',
@@ -113,13 +130,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             'folder-opened',
             'openStorage',
           ),
-          new Item(
-            t('Proxy credentials', '代理凭据'),
-            'action',
-            undefined,
-            'key',
-            'proxyCredentials',
-          ),
+          new Item(t('Documentation', '使用文档'), 'action', undefined, 'book', 'help'),
         ];
       if (_parent) return [];
       const more = new Item(
@@ -132,6 +143,16 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
         true,
       );
       more.id = 'minecraftWorkbench.more';
+      const settings = new Item(
+        t('Settings', '设置'),
+        'settingsHome',
+        undefined,
+        'settings-gear',
+        'settings',
+        undefined,
+        true,
+      );
+      settings.id = 'minecraftWorkbench.settings';
       return [
         new Item(
           state.mode === 'launcher'
@@ -152,7 +173,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           'language',
           t('English', '简体中文'),
         ),
-        new Item(t('Settings', '设置'), 'action', undefined, 'settings-gear', 'settings'),
+        settings,
         more,
       ];
     }

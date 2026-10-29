@@ -191,6 +191,25 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
     agreements: () => workbench!.open('agreements'),
+    showView: async () => {
+      const sections: Section[] = [
+        'home',
+        store.state.mode === 'launcher'
+          ? 'instances'
+          : store.state.mode === 'server'
+            ? 'servers'
+            : 'projects',
+        ...(store.state.mode === 'launcher' ? (['content', 'accounts'] as Section[]) : []),
+        'java',
+        'downloads',
+      ];
+      const selected = await vscode.window.showQuickPick(
+        sections.map((section) => ({ label: t(...titles[section]), section })),
+        { title: t('Show Sidebar View', '显示侧栏分类') },
+      );
+      if (selected)
+        await vscode.commands.executeCommand(`minecraftWorkbench.${selected.section}.focus`);
+    },
     mode: () => ui.mode(),
     mcp: () => mcp!.toggle(),
     registerMcp: () => mcp!.setEnabled(true),

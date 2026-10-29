@@ -18,6 +18,7 @@ import { describeError } from './errors';
 import { InstanceFiles } from './instance-files';
 import { ContentInstallOptions, contentFile } from './modrinth';
 import { validateInstanceSettings } from './instance-settings';
+import { extensionId } from './build-info';
 
 class Cancelled extends Error {}
 async function input(
@@ -540,10 +541,7 @@ export class UI {
     );
   }
   async settings() {
-    await vscode.commands.executeCommand(
-      'workbench.action.openSettings',
-      '@ext:minecraft-workbench.minecraft-workbench',
-    );
+    await vscode.commands.executeCommand('workbench.action.openSettings', `@ext:${extensionId}`);
   }
   async trusted() {
     await trusted();

@@ -549,6 +549,7 @@ export const mcpOperations: McpOperation[] = [
         'manageAccounts',
         'manageJava',
         'manageTasks',
+        'showView',
         'manageProjects',
         'manageServers',
         'createServer',
