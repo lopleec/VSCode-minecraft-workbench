@@ -19,14 +19,14 @@ export function mergeState(current: State, base: State, next: State): State {
     base as unknown as Record<string, unknown>,
     next as unknown as Record<string, unknown>,
   ) as unknown as State;
-  for (const field of ['instances', 'accounts', 'projects', 'java'] as const) {
+  for (const field of ['instances', 'accounts', 'projects', 'java', 'servers'] as const) {
     const id = (item: unknown): string => {
       const value = item as { id?: string; path?: string };
       return value.id || value.path || '';
     };
-    const before = new Map(base[field].map((item) => [id(item), item]));
-    const after = new Map(next[field].map((item) => [id(item), item]));
-    const result = new Map(current[field].map((item) => [id(item), structuredClone(item)]));
+    const before = new Map((base[field] || []).map((item) => [id(item), item]));
+    const after = new Map((next[field] || []).map((item) => [id(item), item]));
+    const result = new Map((current[field] || []).map((item) => [id(item), structuredClone(item)]));
     for (const key of before.keys()) if (!after.has(key)) result.delete(key);
     for (const [key, item] of after) {
       const old = before.get(key);
@@ -47,5 +47,7 @@ export function mergeState(current: State, base: State, next: State): State {
     merged.selectedInstance = merged.instances[0]?.id;
   if (!merged.accounts.some((a) => a.id === merged.selectedAccount))
     merged.selectedAccount = merged.accounts[0]?.id;
+  if (!merged.servers.some((s) => s.id === merged.selectedServer))
+    merged.selectedServer = merged.servers[0]?.id;
   return merged;
 }

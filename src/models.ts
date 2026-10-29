@@ -1,6 +1,45 @@
 export type Loader = 'vanilla' | 'fabric' | 'quilt' | 'forge' | 'neoforge';
-export type Mode = 'launcher' | 'developer';
-export type ContentKind = 'mod' | 'resourcepack' | 'shader';
+export type Mode = 'launcher' | 'developer' | 'server';
+export type ContentKind = 'mod' | 'plugin' | 'resourcepack' | 'shader';
+export interface ContentTarget {
+  id: string;
+  directory: string;
+  minecraft: string;
+  loader: string;
+  loaderVersion?: string;
+  side?: 'client' | 'server';
+}
+export type ServerEngine =
+  | 'vanilla'
+  | 'paper'
+  | 'purpur'
+  | 'folia'
+  | 'fabric'
+  | 'quilt'
+  | 'forge'
+  | 'neoforge'
+  | 'velocity'
+  | 'custom';
+export interface ServerProfile {
+  id: string;
+  name: string;
+  engine: ServerEngine;
+  minecraft: string;
+  build?: string;
+  softwareVersion?: string;
+  directory: string;
+  java?: string;
+  javaMajor?: number;
+  requiredJava?: number;
+  minMemory?: number;
+  maxMemory?: number;
+  jvmArgs?: string[];
+  launchArgs?: string[];
+  installed?: boolean;
+  eulaAccepted?: boolean;
+  createdAt: string;
+  lastStarted?: string;
+}
 export interface Instance {
   id: string;
   name: string;
@@ -66,6 +105,8 @@ export interface State {
   instances: Instance[];
   accounts: Account[];
   projects: Project[];
+  servers: ServerProfile[];
+  selectedServer?: string;
   selectedInstance?: string;
   selectedAccount?: string;
   java: JavaRuntime[];

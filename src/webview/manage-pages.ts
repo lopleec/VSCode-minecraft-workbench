@@ -23,13 +23,21 @@ export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: Pa
     h(
       'nav',
       { class: 'segments management-tabs', 'aria-label': L('Management pages', '管理页面') },
-      ...managementPages.map((value) =>
-        ctx.button(
-          labels[value],
-          () => ctx.navigate(value),
-          value === page ? 'segment active' : 'segment',
+      ...managementPages
+        .filter((value) =>
+          ctx.state().mode === 'server'
+            ? ['java', 'downloads'].includes(value)
+            : ctx.state().mode === 'developer'
+              ? ['projects', 'java', 'downloads'].includes(value)
+              : true,
+        )
+        .map((value) =>
+          ctx.button(
+            labels[value],
+            () => ctx.navigate(value),
+            value === page ? 'segment active' : 'segment',
+          ),
         ),
-      ),
     ),
   );
   const body = h('div', { class: 'management-body' });

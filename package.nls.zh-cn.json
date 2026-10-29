@@ -1,5 +1,5 @@
 {
-  "extension.description": "VS Code 中的 Minecraft 启动器与模组开发工具。",
+  "extension.description": "集 Minecraft 启动、模组开发和开服于一体，支持 Java、Modrinth 和 AI MCP 工具。",
   "command.mode": "切换模式",
   "command.createInstance": "新建实例",
   "command.selectInstance": "选择实例",
@@ -89,5 +89,13 @@
   "group.network": "下载与账户",
   "group.backups": "存档备份",
   "setting.showSnapshots.deprecated": "请使用实例安装页面中的版本类型筛选。",
-  "setting.memoryPercentage": "自动推荐的最大堆内存占系统内存的百分比，向下取整至 128 MB，上限 8 GiB。手动内存值优先。"
+  "setting.memoryPercentage": "自动推荐的最大堆内存占系统内存的百分比，向下取整至 128 MB，上限 8 GiB。手动内存值优先。",
+  "view.servers": "服务端",
+  "config.serverDirectory": "独立服务端的父目录，留空使用扩展存储目录。",
+  "config.serverBindAddress": "默认服务端绑定地址，使用 0.0.0.0 允许局域网连接。",
+  "config.mcp.enabled": "注册 AI MCP 工具。关闭时取消注册并关闭本地接口。",
+  "group.server": "开服与 AI",
+  "config.sharedDownloadCache": "在实例间复用已校验下载。带校验和的客户端、服务端、库、资源、JDK 和内容文件使用共享缓存。",
+  "config.downloadConnectionsPerFile": "大文件分段下载连接数；不支持时自动回退单连接。所有下载共用全局并发上限。",
+  "config.downloadChunkSize": "至少 16 MiB 文件的下载分段大小（MiB），重试可复用已完成分段。"
 }

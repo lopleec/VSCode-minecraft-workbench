@@ -25,4 +25,10 @@ for (const folder of [...new Set(stdout.trim().split(/\r?\n/))].filter(
   else if (pkg.name === 'boolbase') blocks.push(await readFile('licenses/boolbase.txt', 'utf8'));
   else throw new Error(`Missing license file: ${pkg.name}`);
 }
-await writeFile('THIRD_PARTY_LICENSES.txt', blocks.join('\n'));
+await writeFile(
+  'THIRD_PARTY_LICENSES.txt',
+  blocks
+    .join('\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+$/gm, ''),
+);

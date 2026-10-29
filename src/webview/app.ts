@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { renderServers, renderServerCreate, renderServer, serverContent } from './server-page';
 import { renderAgreements } from './agreements-page';
 import { renderInstances, renderSetup } from './setup-page';
 import { renderManagement, managementPages } from './manage-pages';
@@ -34,7 +35,14 @@ function call<T>(method: string, params: Record<string, unknown> = {}): Promise<
     bridge.postMessage({
       id,
       method,
-      params: { instanceId: boot?.selectedInstance, kind, ...params },
+      params: {
+        instanceId: boot?.selectedInstance,
+        ...(boot?.mode === 'server' && boot.selectedServer
+          ? { serverId: boot.selectedServer }
+          : {}),
+        kind,
+        ...params,
+      },
     });
   });
 }
@@ -48,6 +56,7 @@ let onlyCompatible = true;
 let hits: BrowserHit[] = [];
 let totalHits = 0;
 let installed: InstalledEntry[] = [];
+let serverUpdates = new Map<string, string>();
 let detail: ProjectDetail | undefined;
 let detailTab: 'about' | 'versions' = 'about';
 let versions: ModVersion[] = [];
@@ -71,6 +80,10 @@ let debounce: ReturnType<typeof setTimeout>;
 const root = document.getElementById('app')!;
 const L = (en: string, zh: string) => (boot?.locale === 'zh-cn' ? zh : en);
 const currentInstance = () => boot.instances.find((i) => i.id === boot.selectedInstance);
+const currentTarget = () =>
+  boot.mode === 'server'
+    ? boot.servers.find((s) => s.id === boot.selectedServer)
+    : currentInstance();
 function find(id: string) {
   return document.getElementById(id)!;
 }
@@ -181,33 +194,127 @@ function notice(text: string) {
   );
 }
 async function action(name: string) {
-  await call('action', { action: name });
+  let resultMessage = '';
+  if (boot.mode === 'server' && ['importContent', 'updates', 'conflicts'].includes(name)) {
+    const serverId = boot.selectedServer;
+    if (name === 'importContent')
+      await call('server.action', { serverId, action: 'importContent' });
+    else {
+      const result = await call<unknown[]>('server.content', {
+        serverId,
+        action: name === 'updates' ? 'updates' : 'conflicts',
+      });
+      if (name === 'updates') {
+        const updates = result as { item: { file: string; kind: string } }[];
+        serverUpdates = new Map(updates.map((update) => [update.item.file, update.item.kind]));
+        resultMessage = updates.length
+          ? L(
+              `${updates.length} updates available. Review the installed files below.`,
+              `${updates.length} 个可用更新，可在下方逐个安装。`,
+            )
+          : L('No updates available.', '暂无可用更新。');
+      } else
+        resultMessage = result.length
+          ? result.join('\n')
+          : L('No conflicts found.', '未发现冲突。');
+    }
+  } else await call('action', { action: name });
   boot = await call<Bootstrap>('ready');
   render();
+  if (resultMessage) notice(resultMessage);
 }
 function shell() {
   document.documentElement.lang = boot.locale === 'zh-cn' ? 'zh-CN' : 'en';
   document.body.dataset.density = boot.preferences.density;
+  const isServer = boot.mode === 'server';
   const instance = currentInstance();
+  const server = boot.servers.find((s) => s.id === boot.selectedServer);
+  const pages: [WorkbenchPage, string][] = isServer
+    ? [
+        ['servers', L('Servers', '服务端')],
+        ['server', L('Console & settings', '控制台与设置')],
+        ['discover', L('Discover', '发现')],
+        ['installed', L('Installed', '已安装')],
+        ['java', L('Manage', '管理')],
+      ]
+    : boot.mode === 'developer'
+      ? [
+          ['projects', L('Projects', '项目')],
+          ['java', L('Manage', '管理')],
+        ]
+      : [
+          ['instances', L('Instances', '实例')],
+          ['discover', L('Discover', '发现')],
+          ['installed', L('Installed', '已安装')],
+          ['instance', L('Instance settings', '实例设置')],
+          ['accounts', L('Manage', '管理')],
+        ];
+  const modePicker = dropdown(
+    L('Mode', '模式'),
+    boot.mode,
+    [
+      ['launcher', L('Launcher', '启动')],
+      ['developer', L('Developer', '开发')],
+      ['server', L('Server', '开服')],
+    ],
+    async (mode) => {
+      boot = await call<Bootstrap>('mode', { mode });
+      page = mode === 'server' ? 'servers' : mode === 'developer' ? 'projects' : 'instances';
+      kind =
+        mode === 'server'
+          ? serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
+            'plugin'
+          : 'mod';
+      detail = undefined;
+      plan = undefined;
+      query = '';
+      persist();
+      render();
+    },
+    'mode-picker',
+  );
+  const picker =
+    boot.mode === 'developer'
+      ? undefined
+      : dropdown(
+          isServer ? L('Active server', '当前服务端') : L('Active instance', '当前实例'),
+          (isServer ? server?.id : instance?.id) || '',
+          [
+            [
+              '',
+              isServer ? L('Select a server', '选择服务端') : L('Select an instance', '选择实例'),
+            ],
+            ...(isServer ? boot.servers : boot.instances).map(
+              (i) => [i.id, `${i.name} · ${i.minecraft}`] as [string, string],
+            ),
+          ],
+          async (value) => {
+            if (!value) return;
+            if (isServer) {
+              await call('server.action', { serverId: value, action: 'select' });
+              boot = await call<Bootstrap>('ready');
+              kind = serverContent(boot.servers.find((s) => s.id === value)!.engine) || 'plugin';
+            } else boot = await call<Bootstrap>('selectInstance', { instanceId: value });
+            detail = undefined;
+            plan = undefined;
+            render();
+          },
+          'instance-picker',
+        );
   root.replaceChildren(
     h(
       'header',
       { class: 'app-header' },
       h(
-        'nav',
-        { class: 'tabs', 'aria-label': L('Workbench pages', '工作台页面') },
-        ...(['instances', 'discover', 'installed', 'instance', 'accounts'] as WorkbenchPage[]).map(
-          (value) =>
+        'div',
+        { class: 'mode-navigation' },
+        modePicker,
+        h(
+          'nav',
+          { class: 'tabs', 'aria-label': L('Workbench pages', '工作台页面') },
+          ...pages.map(([value, label]) =>
             button(
-              value === 'instances'
-                ? L('Instances', '实例')
-                : value === 'accounts'
-                  ? L('Manage', '管理')
-                  : value === 'discover'
-                    ? L('Discover', '发现')
-                    : value === 'installed'
-                      ? L('Installed', '已安装')
-                      : L('Instance settings', '实例设置'),
+              label,
               () => {
                 page = value;
                 detail = undefined;
@@ -217,34 +324,20 @@ function shell() {
               },
               value === page ||
                 (value === 'instances' && ['create', 'version'].includes(page)) ||
-                (value === 'accounts' && managementPages.includes(page))
+                (value === 'servers' && page === 'serverCreate') ||
+                (['accounts', 'java'].includes(value) &&
+                  managementPages.includes(page) &&
+                  page !== 'projects')
                 ? 'tab active'
                 : 'tab',
             ),
+          ),
         ),
       ),
       h(
         'div',
         { class: 'header-actions' },
-        dropdown(
-          L('Active instance', '当前实例'),
-          instance?.id || '',
-          [
-            ['', L('Select an instance', '选择实例')],
-            ...boot.instances.map((i) => [i.id, `${i.name} · ${i.minecraft}`] as [string, string]),
-          ],
-          async (value) => {
-            if (!value) {
-              (find('instance-picker') as HTMLSelectElement).value = instance?.id || '';
-              return;
-            }
-            boot = await call<Bootstrap>('selectInstance', { instanceId: value });
-            detail = undefined;
-            plan = undefined;
-            render();
-          },
-          'instance-picker',
-        ),
+        picker,
         button(
           boot.locale === 'en' ? 'EN' : '中',
           () => action('language'),
@@ -275,12 +368,20 @@ function updateJobs() {
   );
 }
 function categories() {
-  const options: [ProjectKind, string][] = [
-    ['mod', L('Mods', '模组')],
-    ['modpack', L('Modpacks', '整合包')],
-    ['resourcepack', L('Resource packs', '资源包')],
-    ['shader', L('Shaders', '光影包')],
-  ];
+  const server =
+    boot.mode === 'server' ? boot.servers.find((s) => s.id === boot.selectedServer) : undefined;
+  const serverKind = serverContent(server?.engine || '');
+  const options: [ProjectKind, string][] =
+    boot.mode === 'server'
+      ? serverKind
+        ? [[serverKind, serverKind === 'plugin' ? L('Plugins', '插件') : L('Mods', '模组')]]
+        : []
+      : [
+          ['mod', L('Mods', '模组')],
+          ['modpack', L('Modpacks', '整合包')],
+          ['resourcepack', L('Resource packs', '资源包')],
+          ['shader', L('Shaders', '光影包')],
+        ];
   return h(
     'div',
     { class: 'segments', 'aria-label': L('Content type', '内容类型') },
@@ -336,8 +437,23 @@ function render() {
     });
     return;
   }
+  if (boot.mode === 'server' && !['mod', 'plugin'].includes(kind))
+    kind =
+      serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
+      'plugin';
+  if (boot.mode !== 'server' && kind === 'plugin') kind = 'mod';
   shell();
-  if (['instances', 'create', 'version', ...managementPages].includes(page)) {
+  if (
+    [
+      'servers',
+      'serverCreate',
+      'server',
+      'instances',
+      'create',
+      'version',
+      ...managementPages,
+    ].includes(page)
+  ) {
     const main = find('main');
     main.className = 'management-page';
     const sequence = generation;
@@ -363,7 +479,10 @@ function render() {
         render();
       },
     };
-    if (page === 'instances') updateManaged = renderInstances(main, ctx);
+    if (page === 'servers') updateManaged = renderServers(main, ctx);
+    else if (page === 'serverCreate') updateManaged = renderServerCreate(main, ctx);
+    else if (page === 'server') updateManaged = renderServer(main, ctx);
+    else if (page === 'instances') updateManaged = renderInstances(main, ctx);
     else if (page === 'create' || page === 'version')
       updateManaged = renderSetup(main, page === 'version', ctx);
     else updateManaged = renderManagement(main, page, ctx);
@@ -371,6 +490,24 @@ function render() {
   }
   if (page === 'instance') {
     renderInstance();
+    return;
+  }
+  if (
+    boot.mode === 'server' &&
+    (!boot.selectedServer ||
+      !serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || ''))
+  ) {
+    find('main').append(
+      empty(
+        L('Select a mod or plugin server', '请选择模组端或插件端'),
+        '',
+        () => {
+          page = 'servers';
+          render();
+        },
+        L('Servers', '服务端'),
+      ),
+    );
     return;
   }
   if (page === 'installed' && kind === 'modpack') kind = 'mod';
@@ -448,14 +585,16 @@ function renderToolbar() {
         'div',
         { class: 'filter-row' },
         check(
-          L('Compatible with instance', '兼容当前实例'),
-          onlyCompatible && !!currentInstance(),
+          boot.mode === 'server'
+            ? L('Compatible with server', '兼容当前服务端')
+            : L('Compatible with instance', '兼容当前实例'),
+          onlyCompatible && !!currentTarget(),
           (value) => {
             onlyCompatible = value;
             persist();
             return loadSearch(false);
           },
-          !currentInstance(),
+          !currentTarget(),
         ),
         h('span', { class: 'muted', id: 'result-count' }),
       ),
@@ -467,6 +606,8 @@ function renderToolbar() {
         { class: 'search-row' },
         search,
         button(L('Import files', '导入文件'), () => action('importContent'), 'secondary'),
+        boot.mode === 'launcher' &&
+          button(L('Import modpack…', '导入整合包…'), () => action('importPack'), 'secondary'),
       ),
       h(
         'div',
@@ -475,8 +616,8 @@ function renderToolbar() {
         h(
           'div',
           { class: 'inline-actions' },
-          button(L('Check updates', '检查更新'), () => action('updates'), 'text-button'),
-          button(L('Check conflicts', '检查冲突'), () => action('conflicts'), 'text-button'),
+          button(L('Check updates', '检查更新'), () => action('updates'), 'secondary'),
+          button(L('Check conflicts', '检查冲突'), () => action('conflicts'), 'secondary'),
         ),
       ),
     );
@@ -570,12 +711,13 @@ async function loadSearch(append: boolean) {
 }
 async function loadInstalled() {
   const sequence = ++generation;
-  if (!currentInstance()) {
+  if (!currentTarget()) {
     find('results').replaceChildren(
       empty(
         L('Select an instance', '选择实例'),
         L('Choose an instance above to manage its files.', '在上方选择实例以管理文件。'),
         () => action('createInstance'),
+        L('New instance', '新建实例'),
       ),
     );
     return;
@@ -627,13 +769,16 @@ function renderInstalled() {
   if (!filtered.length)
     results.append(
       empty(
-        L('No content installed', '尚未安装内容'),
-        L('Browse Modrinth or import local files.', '浏览 Modrinth，或导入本地文件。'),
+        query
+          ? L('No matching files', '没有匹配的文件')
+          : L('No content installed', '尚未安装内容'),
+        '',
         () => {
-          page = 'discover';
+          if (!query) page = 'discover';
           query = '';
           render();
         },
+        query ? L('Clear filter', '清除筛选') : L('Browse Modrinth', '浏览 Modrinth'),
       ),
     );
   for (const entry of filtered)
@@ -663,6 +808,21 @@ function renderInstalled() {
         h(
           'div',
           { class: 'installed-actions' },
+          boot.mode === 'server' &&
+            serverUpdates.has(entry.file) &&
+            button(
+              L('Update', '更新'),
+              async () => {
+                await call('server.content', {
+                  action: 'update',
+                  file: entry.file,
+                  kind: entry.kind,
+                });
+                serverUpdates.delete(entry.file);
+                await loadInstalled();
+              },
+              'secondary',
+            ),
           button(
             entry.enabled ? L('Disable', '禁用') : L('Enable', '启用'),
             async () => {
@@ -683,13 +843,13 @@ function renderInstalled() {
       ),
     );
 }
-function empty(title: string, body: string, retry?: () => unknown) {
+function empty(title: string, body: string, retry?: () => unknown, label = L('Retry', '重试')) {
   return h(
     'div',
     { class: 'empty-state' },
     h('h2', {}, title),
     h('p', {}, body),
-    retry && button(L('Continue', '继续'), retry, 'secondary'),
+    retry && button(label, retry, 'secondary'),
   );
 }
 async function openProject(id: string, tab: 'about' | 'versions') {
@@ -1219,6 +1379,7 @@ function renderInstance() {
           '创建或选择实例以配置启动设置。',
         ),
         () => action('createInstance'),
+        L('New instance', '新建实例'),
       ),
     );
     return;
@@ -1438,9 +1599,7 @@ function renderInstance() {
       h(
         'span',
         { class: 'muted' },
-        running
-          ? L('Stop the game to edit settings.', '停止游戏后可修改设置。')
-          : L('These settings apply only to this instance.', '设置仅应用于当前实例。'),
+        running ? L('Stop the game to edit settings.', '停止游戏后可修改设置。') : '',
       ),
     ),
     h(
@@ -1540,6 +1699,10 @@ window.addEventListener('message', (event: MessageEvent) => {
   if (message.event === 'navigate') {
     page = message.page;
     kind = message.kind;
+    if (boot.mode === 'server' && ['discover', 'installed'].includes(page))
+      kind =
+        serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
+        'plugin';
     detail = undefined;
     plan = undefined;
     persist();
@@ -1555,9 +1718,24 @@ window.addEventListener('message', (event: MessageEvent) => {
       next.consent.accepted !== boot.consent.accepted ||
       next.consent.version !== boot.consent.version ||
       next.locale !== boot.locale ||
+      next.mode !== boot.mode ||
+      (['server', 'discover', 'installed'].includes(page) &&
+        next.selectedServer !== boot.selectedServer) ||
       (['discover', 'installed', 'instance', 'backups', 'version'].includes(page) &&
         next.selectedInstance !== boot.selectedInstance) ||
       JSON.stringify(next.preferences) !== JSON.stringify(boot.preferences);
+    if (next.mode !== boot.mode) {
+      page =
+        next.mode === 'server' ? 'servers' : next.mode === 'developer' ? 'projects' : 'instances';
+      kind = next.mode === 'server' ? 'plugin' : 'mod';
+      query = '';
+    }
+    if (next.selectedServer !== boot.selectedServer) {
+      kind =
+        serverContent(next.servers.find((s) => s.id === next.selectedServer)?.engine || '') ||
+        'plugin';
+      serverUpdates.clear();
+    }
     boot = next;
     updateJobs();
     if (changed) {

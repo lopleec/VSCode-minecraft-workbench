@@ -1,6 +1,7 @@
 export type Resource =
   | 'manifest'
   | 'client'
+  | 'server'
   | 'assets'
   | 'libraries'
   | 'loader'
@@ -10,6 +11,7 @@ export type Resource =
 export function resourceOf(url: string): Resource {
   const host = new URL(url).hostname;
   if (/modrinth/.test(host)) return 'modrinth';
+  if (/papermc|purpurmc/.test(host)) return 'server';
   if (/adoptium|temurin/.test(host)) return 'java';
   if (/resources\.download\.minecraft\.net/.test(host)) return 'assets';
   if (/libraries\.minecraft\.net/.test(host)) return 'libraries';

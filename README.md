@@ -1,6 +1,6 @@
 # Minecraft Workbench
 
-A Minecraft Java Edition launcher and mod development workspace for VS Code.
+A Minecraft Java Edition launcher, mod development workspace and server manager for VS Code.
 
 [Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [MIT License](LICENSE)
 
@@ -32,6 +32,8 @@ npm run package
 ```
 
 Install the generated `.vsix` using the same steps above.
+
+The publisher is `Lopleec`; the extension ID is `Lopleec.minecraft-workbench`. If upgrading from the old `minecraft-workbench.minecraft-workbench` development build, uninstall that build before installing this one. Existing default storage is detected and reused. Microsoft accounts must sign in again because SecretStorage is scoped to the extension ID.
 
 ### First use and agreements
 
@@ -77,7 +79,7 @@ Required dependencies resolve recursively. Optional dependencies can be included
 
 The **Installed** tab supports filtering, local imports, toggling files, removal and updates. Updates preserve disabled state and archive replaced files in `.workbench/history`. Shader packs require a compatible shader mod such as Iris or Oculus.
 
-Import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge packs are not supported.**
+Use **Instances → Import modpack** or **Installed → Import modpack…** to import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge packs are not supported.**
 
 ### Memory and instance settings
 
@@ -92,6 +94,30 @@ Stop a running instance before changing its content, versions or restoring world
 For Microsoft sign-in, enter your own public-client application ID in **Manage → Accounts** or `minecraftWorkbench.microsoftClientId`. It must support device code flow, personal Microsoft accounts, Xbox sign-in and Minecraft Services access. An application ID alone does not guarantee Minecraft Services approval. No client secret is needed or collected.
 
 Sign-in uses Microsoft's device login page. Refresh and Minecraft access tokens are stored in **VS Code SecretStorage**, refreshed before expiry and before launch. A failed refresh requires signing in again. Removing an account deletes its saved credentials. Account names and UUIDs are local metadata. The extension collects no telemetry.
+
+## Server Mode
+
+Choose **Server** in the mode selector, then **Servers → New server**. Select software, Minecraft/software version and a build. **Create and start** downloads the server, detects or downloads the required JDK and starts it. You can choose installation only, or create the entry and install later. The first game-server start asks you to accept the Minecraft EULA.
+
+![Server installation in VS Code](docs/images/server-create-dark.png)
+
+Supported software: **Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge and Velocity**. **Custom JAR** creates a directory where you can import an executable server JAR. Availability follows each project's published versions; not every historical Minecraft version has a dedicated server. Experimental builds require an explicit selection.
+
+**Console & settings** contains the console, commands, normal stop/restart, Java and memory settings, server properties, version changes, repair and world backups. Stop before editing content or restoring worlds. Normal stop sends the server's save/shutdown command; force stop asks for confirmation. A server can be removed from the list while retaining its files.
+
+![Paper console and controls in VS Code](docs/images/server-console-dark.png)
+
+**Discover** and **Installed** use the selected server. Paper/Purpur list compatible Bukkit, Spigot and Paper plugins; Folia requires declared Folia support. Velocity filters for Velocity plugins. Fabric, Quilt, Forge and NeoForge use server mods. Modrinth versions, descriptions, icons, dependency review, updates, enable/disable and removal use the same pages as client content. Client-only projects are rejected. Local JARs can be imported. Custom JAR entries have no inferred plugin/mod platform.
+
+New game servers bind to `127.0.0.1` by default. Change **Settings → Network → Bind address** to `0.0.0.0` for LAN access. Firewall rules, router forwarding and public hosting are configured separately. Velocity is a proxy; configure its backend servers in `velocity.toml` using **Open configuration**.
+
+## AI tools over MCP
+
+MCP is **off by default**. Select **Register MCP** in the sidebar, or enable `minecraftWorkbench.mcp.enabled`. Minecraft Workbench then appears in VS Code's MCP providers and chat tool picker. **Unregister MCP** removes the definition and closes the listener.
+
+Tools cover instance creation and launch, game/loader versions, Modrinth content and dependencies, accounts, Java, tasks, backups, Gradle projects, server management and extension settings. `workbench_state` lists the current entries. Operations requiring a file picker or confirmation open the native VS Code UI. AI tools cannot accept the first-use agreements; server EULA acceptance remains interactive.
+
+For another MCP client, run **Copy MCP Connection** and adapt the copied Streamable HTTP configuration to that client's format. It contains a local URL and authorization header, valid for the current extension-host session. The listener accepts authenticated requests only on `127.0.0.1`; keep the copied header private. In remote workspaces it runs on the extension host. Tool results may contain local paths, project details and console logs; the connected AI client's data policy applies. Login tokens are never returned.
 
 ## Developer Mode
 
@@ -125,10 +151,12 @@ Open **Minecraft Workbench: Settings** to see the native grouped Settings page. 
 }
 ```
 
-- **Download sources:** choose `official`, `bmclapi` or an HTTPS base per resource type: `manifest`, `client`, `assets`, `libraries`, `loader`, `modrinth`, `java`, `project`. Custom bases preserve the original path/query. BMCLAPI applies only to supported endpoints; failed mirrors fall back to the original source. Authentication always uses official endpoints.
+- **Download sources:** choose `official`, `bmclapi` or an HTTPS base per resource type: `manifest`, `client`, `server`, `assets`, `libraries`, `loader`, `modrinth`, `java`, `project`. Custom bases preserve the original path/query. BMCLAPI applies only to supported endpoints; failed mirrors fall back to the original source. Authentication always uses official endpoints.
 - **Proxy:** HTTP, HTTPS, SOCKS5 and SOCKS5h are supported. SOCKS5 resolves names locally; SOCKS5h resolves through the proxy. An empty setting falls back to VS Code `http.proxy`. Use **Set Proxy Credentials** to save credentials in SecretStorage. Reload after network or storage changes.
+- **Reuse and speed:** verified files share a content-addressed cache across instances. Existing isolated runtimes can seed it after checksum verification. Reusing a version copies its verified files and downloads only missing or changed resources. Files of at least 16 MiB use up to four HTTP Range connections with 8 MiB segments; the global connection limit defaults to six. Completed segments survive retries, and unsupported hosts fall back to a single connection. Configure `sharedDownloadCache`, `downloadConnectionsPerFile`, `downloadChunkSize` and `downloadConcurrency`. Instance files are independent copies, so edits cannot change the shared cache.
 - **Download recovery:** `.part` files and HTTP Range validators allow resuming when the server supports it. A server ignoring ranges restarts the file. Published Minecraft/Modrinth hashes and JDK SHA-256 checks verify downloads.
-- **Directories:** storage, game and project locations are configurable. Each game directory contains `.runtime` for dependencies and `.workbench` for metadata, history and backups; move them with the instance.
+- **Directories:** storage, game, server and project locations are configurable. Each game directory contains `.runtime` for dependencies and `.workbench` for metadata, history and backups; move them with the instance.
+- **Process downloads:** these settings cover extension-managed downloads. Gradle and server bootstrappers/installers can make additional downloads under their own configuration.
 - **Diagnostics:** use **Show Output** or **Open Game Log**. Extension output redacts authentication tokens and proxy credentials. Review external game/mod logs before sharing them.
 
 ## Development and validation
@@ -145,7 +173,7 @@ npm run package
 
 Press **F5** to open an Extension Development Host. Unit tests cover path safety, state persistence and recovery, accounts, range downloads, hashes, dependency resolution, backups and project customization. CI checks formatting, tests, compilation and packaging on Linux, Windows and macOS.
 
-Host tests require network access and a local or downloadable VS Code. `VSCODE_EXECUTABLE` selects a local executable; `MW_LIVE_INSTALL=1` also downloads a test Fabric instance. Microsoft sign-in needs an approved application and account and is not exercised automatically. Game launch and Gradle builds have been checked on macOS Apple Silicon; other platforms and every historical game/loader combination have not been manually verified.
+Host tests require network access and a local or downloadable VS Code. `VSCODE_EXECUTABLE` selects a local executable; `MW_LIVE_INSTALL=1` also downloads a test Fabric instance. Microsoft sign-in needs an approved application and account and is not exercised automatically. Game launch, Gradle builds and installation/start/stop of Paper, Fabric, Quilt, Forge and NeoForge 1.21.4 servers have been checked on macOS Apple Silicon; other platforms and every historical game/loader combination have not been manually verified.
 
 Screenshots show the running extension in VS Code with sample instances and live Modrinth metadata. Project icons and descriptions belong to their respective authors.
 
@@ -191,7 +219,10 @@ npm ci
 npm run package
 ```
 
-生成的 `.vsix` 按上面的步骤安装。SSH、WSL、容器中的文件和进程位于扩展宿主机器；在远程机器运行游戏需要图形环境。
+生成的 `.vsix` 按上面的步骤安装。
+
+Publisher 为 `Lopleec`，扩展 ID 为 `Lopleec.minecraft-workbench`。从旧的 `minecraft-workbench.minecraft-workbench` 开发包升级时，请先卸载旧包。扩展会检测并复用原有默认存储；Microsoft 账户需要重新登录，因为 SecretStorage 按扩展 ID 隔离。
+SSH、WSL、容器中的文件和进程位于扩展宿主机器；在远程机器运行游戏需要图形环境。
 
 ### 首次使用与协议
 
@@ -233,7 +264,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 **已安装** 页面支持筛选、导入本地文件、启用、禁用、删除和更新。更新保留禁用状态，旧文件存放在 `.workbench/history`。光影包需配合 Iris、Oculus 等兼容模组。
 
-支持从本地或 Modrinth 导入 `.mrpack`，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。**暂不支持 CurseForge 整合包。**
+可从 **实例 → 导入整合包** 或 **已安装 → 导入整合包…** 导入本地 `.mrpack`，也可从 Modrinth 安装，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。**暂不支持 CurseForge 整合包。**
 
 ### 内存、语言与实例设置
 
@@ -252,6 +283,30 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 正版登录需在 **管理 → 账户** 或 `minecraftWorkbench.microsoftClientId` 中填写自己的公共客户端应用 ID。应用必须支持设备代码流程、个人 Microsoft 账户、Xbox 登录并获得 Minecraft Services 访问许可；仅创建应用 ID 不保证获得 Minecraft Services 许可。不需要也不会收集客户端密钥。
 
 通过 Microsoft 设备登录页面授权。刷新令牌和 Minecraft 访问令牌存于 **VS Code SecretStorage**，到期前及启动前自动刷新；刷新失败需重新登录。移除账户会删除保存的凭据，账户名和 UUID 作为本地元数据保存。插件不收集遥测。
+
+### 开服模式
+
+在模式选择器中选择 **开服**，然后打开 **服务端 → 新建服务端**。选择服务端类型、Minecraft / 软件版本和构建版本。**创建并启动** 会下载服务端、检测或下载所需 JDK，然后启动；也可选择仅安装或仅创建。首次启动游戏服务端时需要确认 Minecraft EULA。
+
+![服务端安装界面](docs/images/server-create-dark.png)
+
+支持 **Vanilla、Paper、Purpur、Folia、Fabric、Quilt、Forge、NeoForge、Velocity**。**自定义 JAR** 可创建独立目录并导入可执行服务端 JAR。版本以各项目发布列表为准，并非每个历史 Minecraft 版本都提供独立服务端；实验构建需明确选择。
+
+**控制台与设置** 包含输出、指令、正常停止和重启、Java 与内存、服务端属性、版本更换、修复和存档备份。编辑内容或恢复存档前需要停服。正常停服会发送保存与关闭指令；强制停止需确认。从列表移除服务端时会保留文件。
+
+![Paper 控制台与服务端管理](docs/images/server-console-dark.png)
+
+**发现** 与 **已安装** 使用当前服务端的兼容条件。Paper / Purpur 可安装兼容的 Bukkit、Spigot、Paper 插件；Folia 仅接受明确声明支持 Folia 的版本；Velocity 筛选其对应插件。Fabric、Quilt、Forge、NeoForge 使用服务端模组。版本、简介、图标、前置预览、更新、启用、禁用和删除与客户端使用同一套页面；拒绝仅客户端项目，也可导入本地 JAR。自定义 JAR 不会自动推断插件或模组平台。
+
+新游戏服务端默认绑定 `127.0.0.1`。局域网访问可在 **设置 → 网络 → 绑定地址** 中改为 `0.0.0.0`。防火墙、路由器端口转发和公网托管需另行配置。Velocity 属于代理端，可通过 **打开配置文件** 编辑 `velocity.toml`，设置后端服务端。
+
+### AI 与 MCP
+
+MCP **默认关闭**。点击侧栏 **注册 MCP**，或启用 `minecraftWorkbench.mcp.enabled`，然后在 VS Code 的 MCP 提供程序和聊天工具选择器中启用 Minecraft Workbench。**取消注册 MCP** 会移除服务定义并关闭监听。
+
+工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
+
+其他 MCP 客户端可使用 **复制 MCP 连接**，按客户端格式填入复制的 Streamable HTTP 配置。配置包含本地 URL 与授权请求头，仅在当前扩展宿主会话中有效；请勿公开请求头。接口只监听 `127.0.0.1` 并检查授权。远程工作区中，接口运行在扩展宿主机器。工具结果可能包含本地路径、项目信息和控制台日志，并适用所连接 AI 客户端的数据政策；工具不会返回登录令牌。
 
 ### 开发模式
 
@@ -283,11 +338,17 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 }
 ```
 
-- **下载源：** 可按 `manifest`、`client`、`assets`、`libraries`、`loader`、`modrinth`、`java`、`project` 设置 `official`、`bmclapi` 或 HTTPS 基地址。自定义地址保留原路径和查询参数；BMCLAPI 仅用于支持的端点。镜像失败回退原始地址，认证始终走官方端点。
+- **下载源：** 可按 `manifest`、`client`、`server`、`assets`、`libraries`、`loader`、`modrinth`、`java`、`project` 设置 `official`、`bmclapi` 或 HTTPS 基地址。自定义地址保留原路径和查询参数；BMCLAPI 仅用于支持的端点。镜像失败回退原始地址，认证始终走官方端点。
 - **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **设置代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
 - **断点与校验：** 保留 `.part`，在服务器支持时使用 HTTP Range 和校验器续传；服务器忽略范围则重新下载。校验 Minecraft / Modrinth 公布的哈希及 JDK SHA-256。
-- **目录：** 存储、游戏和项目目录可配置。游戏目录中的 `.runtime` 保存运行依赖，`.workbench` 保存元数据、历史和备份，移动实例时应一起保留。
+- **目录：** 存储、游戏、服务端和项目目录可配置。游戏目录中的 `.runtime` 保存运行依赖，`.workbench` 保存元数据、历史和备份，移动实例时应一起保留。
 - **日志：** 使用 **显示输出** 或 **打开游戏日志**。插件输出会隐藏认证令牌和代理凭据；分享外部游戏或模组日志前仍需检查内容。
+
+### 下载复用与并发
+
+带校验和的文件在实例间使用共享缓存，包括客户端、库、资源、服务端、JDK 和 Modrinth 文件。旧实例中的文件也会在校验后纳入缓存；相同版本只补缺失或不同的资源，实例文件保持独立副本。
+
+至少 16 MiB 的文件默认使用 4 个 HTTP Range 连接、每段 8 MiB；全局并发上限默认为 6。重试保留已完成分段，不支持分段的源自动回退单连接。可配置 `sharedDownloadCache`、`downloadConnectionsPerFile`、`downloadChunkSize`、`downloadConcurrency`。设置作用于插件管理的下载；Gradle、服务端引导程序和安装器可能另行下载其依赖。
 
 ### 开发与验证
 
@@ -303,7 +364,7 @@ npm run package
 
 按 **F5** 打开扩展开发宿主。单元测试覆盖路径安全、状态保存及失败恢复、账户、续传、哈希、依赖、备份和项目定制。CI 在 Linux、Windows 和 macOS 检查格式、测试、编译和打包。
 
-宿主测试需要网络与本地或可下载的 VS Code。`VSCODE_EXECUTABLE` 可指定本地程序，`MW_LIVE_INSTALL=1` 会额外下载安装 Fabric 测试实例。Microsoft 登录需要获批应用和账户，不自动测试。游戏启动和 Gradle 构建已在 macOS Apple Silicon 验证，其他平台及所有历史游戏 / Loader 组合尚未逐一人工验证。
+宿主测试需要网络与本地或可下载的 VS Code。`VSCODE_EXECUTABLE` 可指定本地程序，`MW_LIVE_INSTALL=1` 会额外下载安装 Fabric 测试实例。Microsoft 登录需要获批应用和账户，不自动测试。游戏启动和 Gradle 构建，以及 Paper、Fabric、Quilt、Forge、NeoForge 1.21.4 服务端的安装、启动和停服，已在 macOS Apple Silicon 验证；其他平台及所有历史游戏 / Loader 组合尚未逐一人工验证。
 
 截图来自 VS Code 中运行的插件，使用示例实例和实时 Modrinth 元数据。项目图标、简介属于各自作者。
 
@@ -322,3 +383,13 @@ npm run package
 [MIT License](LICENSE)，Copyright © 2026 Lopleec。依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
 
 使用 VS Code API、XMCL、Modrinth API，以及 Fabric、Forge、NeoForge 官方模板。本项目独立于 Mojang、Microsoft、Modrinth 和各 Loader 项目。游戏文件、账户与下载内容仍适用各自条款和许可。
+
+### 界面示例
+
+![VS Code 中的 Modrinth 内容浏览](docs/images/discover-dark.png)
+
+![包含愚人节版本的实例安装页面](docs/images/install-dark.png)
+
+![版本选择与依赖安装预览](docs/images/dependencies-dark.png)
+
+![官方 Fabric 模板项目创建](docs/images/projects-dark.png)

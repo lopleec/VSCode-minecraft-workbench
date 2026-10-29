@@ -21,8 +21,14 @@ import { LauncherActions } from './launcher-actions';
 import { memorySettings } from './memory';
 import { Consent } from './consent';
 import legal from './legal.json';
+import { Servers } from './servers';
+import { ServerActions } from './server-actions';
+import { serverTarget } from './server-settings';
+import { serverEngines } from './server-catalog';
+import { settingsAction } from './settings-actions';
+import { mcpOperations } from './mcp-operations';
 
-const kinds: ProjectKind[] = ['mod', 'modpack', 'resourcepack', 'shader'];
+const kinds: ProjectKind[] = ['mod', 'plugin', 'modpack', 'resourcepack', 'shader'];
 export class Workbench implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private page: WorkbenchPage = 'discover';
@@ -35,9 +41,21 @@ export class Workbench implements vscode.Disposable {
     private readonly minecraft: Minecraft,
     private readonly ui: UI,
     private readonly consent: Consent,
+    private readonly servers: Servers,
   ) {}
   async open(page: string = 'discover', kind: ProjectKind = 'mod') {
     if (!this.consent.accepted) page = 'agreements';
+    const mode = ['servers', 'serverCreate', 'server'].includes(page)
+      ? 'server'
+      : page === 'projects'
+        ? 'developer'
+        : ['instances', 'instance', 'create', 'version'].includes(page)
+          ? 'launcher'
+          : undefined;
+    if (mode && this.store.state.mode !== mode) {
+      this.store.state.mode = mode;
+      await this.store.save();
+    }
     if ((workbenchPages as readonly string[]).includes(page)) this.page = page as WorkbenchPage;
     if (kinds.includes(kind)) this.kind = kind;
     if (!this.panel) {
@@ -89,6 +107,12 @@ export class Workbench implements vscode.Disposable {
       selectedAccount: this.store.state.selectedAccount,
       projects: this.store.state.projects,
       mode: this.store.state.mode,
+      servers: this.store.state.servers,
+      selectedServer: this.store.state.selectedServer,
+      serverStatus: Object.fromEntries(
+        this.store.state.servers.map((s) => [s.id, this.servers.status(s)]),
+      ),
+      mcpEnabled: config('mcp.enabled', false),
       java: this.store.state.java,
       running: [...this.minecraft.running.keys()],
       preferences: {
@@ -118,6 +142,7 @@ export class Workbench implements vscode.Disposable {
         javaPath: config('javaPath', ''),
         clientId: config('microsoftClientId', ''),
         autoOpenProject: config('autoOpenProject', true),
+        serverDirectory: config('serverDirectory', '') || path.join(this.store.root, 'servers'),
       },
       jobs: this.ui.jobs.items
         .slice(0, 100)
@@ -157,6 +182,37 @@ export class Workbench implements vscode.Disposable {
         ),
       );
     if (method === 'ready') return this.snapshot();
+    if (method === 'native.command') {
+      const allowed = mcpOperations.find((op) => op.method === 'native.command')!.properties!
+        .command as { enum: string[] };
+      if (!allowed.enum.includes(String(params.command))) throw new Error('Unknown command');
+      await vscode.commands.executeCommand(`minecraftWorkbench.${String(params.command)}`);
+      return true;
+    }
+    if (method === 'mode') {
+      if (!['launcher', 'developer', 'server'].includes(String(params.mode)))
+        throw new Error('Unknown mode');
+      this.store.state.mode = params.mode as Bootstrap['mode'];
+      await this.store.save();
+      return this.snapshot();
+    }
+    if (method === 'settings.read' || method === 'settings.update')
+      return settingsAction(method, params);
+    if (method.startsWith('server.')) {
+      try {
+        return await new ServerActions(this.servers, this.content, this.ui.jobs).handle(
+          method,
+          params,
+        );
+      } finally {
+        this.refresh();
+      }
+    }
+    if (method === 'content.change') {
+      if (!['toggle', 'remove'].includes(String(params.action)))
+        throw new Error('Unknown content action');
+      return this.handle(String(params.action), params);
+    }
     if (method === 'consent.accept') {
       await this.consent.accept(params);
       this.page = 'instances';
@@ -176,6 +232,14 @@ export class Workbench implements vscode.Disposable {
     }
     const kind = kinds.includes(params.kind as ProjectKind) ? (params.kind as ProjectKind) : 'mod';
     const instance = this.instance(params);
+    const server =
+      params.serverId !== undefined
+        ? this.store.state.servers.find((s) => s.id === params.serverId)
+        : this.store.state.mode === 'server'
+          ? this.servers.selected
+          : undefined;
+    if (params.serverId !== undefined && !server) throw new Error('Server not found');
+    const target = server ? serverTarget(server) : instance;
     const id = (name: string) => {
       const value = params[name];
       if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,150}$/.test(value))
@@ -194,7 +258,7 @@ export class Workbench implements vscode.Disposable {
         return this.content.search(
           String(params.query || '').slice(0, 200),
           kind,
-          params.compatible === false ? undefined : instance,
+          params.compatible === false ? undefined : target,
           Math.max(0, Math.min(100000, Number(params.offset) || 0)),
           { order, limit: config('modrinthPageSize', 20), signal: this.searchAbort.signal },
         );
@@ -212,7 +276,7 @@ export class Workbench implements vscode.Disposable {
             (!query || `${v.name} ${v.version_number}`.toLowerCase().includes(query)) &&
             (!params.game || v.game_versions.includes(String(params.game))) &&
             (!params.loader || v.loaders.includes(String(params.loader))) &&
-            (params.compatible !== true || !instance || compatible(v, instance, kind)) &&
+            (params.compatible !== true || !target || compatible(v, target, kind)) &&
             (channel !== 'release' || !v.version_type || v.version_type === 'release') &&
             (channel !== 'beta' || v.version_type !== 'alpha'),
         );
@@ -230,8 +294,12 @@ export class Workbench implements vscode.Disposable {
         const version = await this.content.version(id('versionId'));
         if (kind === 'modpack')
           return { version, plan: { entries: [], optional: [], conflicts: [] }, optionalNames: [] };
-        if (!instance) throw new Error(t('Select an instance first.', '请先选择实例。'));
-        const plan = await this.content.plan(instance, version, kind, params.optional === true);
+        if (!target)
+          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+        if (server && serverEngines.find((e) => e.id === server.engine)?.content !== kind)
+          throw new Error('Unsupported server content type');
+        if (!server && kind === 'plugin') throw new Error('Select a plugin server first');
+        const plan = await this.content.plan(target, version, kind, params.optional === true);
         const optionalNames = await Promise.all(
           plan.optional.map(async (value) => {
             try {
@@ -245,6 +313,27 @@ export class Workbench implements vscode.Disposable {
         return { version, plan, optionalNames };
       }
       case 'install': {
+        if (server) {
+          if (serverEngines.find((e) => e.id === server.engine)?.content !== kind)
+            throw new Error('Unsupported server content type');
+          const version = await this.content.version(id('versionId'));
+          await this.servers.exclusive(server, () =>
+            this.content.exclusive(target!, () =>
+              this.ui.jobs.run(
+                t(`Install ${version.name}`, `安装 ${version.name}`),
+                (signal, report) =>
+                  this.content.install(target!, version, kind as 'mod' | 'plugin', signal, report, {
+                    includeOptional: params.optional === true,
+                    filename: typeof params.filename === 'string' ? params.filename : undefined,
+                  }),
+                () => this.handle('install', params),
+              ),
+            ),
+          );
+          this.refresh();
+          return true;
+        }
+        if (kind === 'plugin') throw new Error('Select a plugin server first');
         await this.ui.installVersion(instance, id('versionId'), kind, {
           includeOptional: params.optional === true,
           filename: typeof params.filename === 'string' ? params.filename : undefined,
@@ -253,14 +342,14 @@ export class Workbench implements vscode.Disposable {
         return true;
       }
       case 'installed': {
-        if (!instance) return [];
-        const entries = await this.content.list(instance, kind === 'modpack' ? undefined : kind);
+        if (!target) return [];
+        const entries = await this.content.list(target, kind === 'modpack' ? undefined : kind);
         return entries;
       }
       case 'installedMetadata': {
-        if (!instance) return [];
+        if (!target) return [];
         const result: InstalledEntry[] = await this.content.list(
-          instance,
+          target,
           kind === 'modpack' ? undefined : kind,
         );
         const projects = [
@@ -280,6 +369,11 @@ export class Workbench implements vscode.Disposable {
       }
       case 'toggle':
       case 'remove': {
+        if (server)
+          return new ServerActions(this.servers, this.content, this.ui.jobs).handle(
+            'server.content',
+            { ...params, action: method },
+          );
         if (!instance) throw new Error(t('Select an instance first.', '请先选择实例。'));
         const entry = (await this.content.list(instance)).find(
           (item) => item.file === params.file && item.kind === kind,

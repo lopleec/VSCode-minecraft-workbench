@@ -2,7 +2,7 @@
 
 ## English
 
-Notice version: 2026-10-28.2
+Notice version: 2026-10-29.1
 
 Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
 
@@ -20,7 +20,7 @@ Minecraft, its trademarks and game assets belong to their respective owners. Thi
 
 ### Mods, packs and redistribution
 
-Mods, resource packs, shaders, templates and runtimes retain their authors’ rights and individual licenses. Downloading or resolving dependencies grants no additional rights. Before sharing a modpack or exported local files, verify permission to redistribute every included item and retain required notices, attribution and source offers. A missing or unknown license is not permission to redistribute.
+Mods, server plugins, resource packs, shaders, templates and runtimes retain their authors’ rights and individual licenses. Downloading or resolving dependencies grants no additional rights. Before sharing a modpack or exported local files, verify permission to redistribute every included item and retain required notices, attribution and source offers. A missing or unknown license is not permission to redistribute.
 
 ### Third-party code, compatibility and backups
 
@@ -29,6 +29,10 @@ Mods, installers and Gradle projects can run code with your local permissions. L
 ### Local data and external services
 
 Paths, account metadata and this confirmation are stored locally; login tokens use VS Code SecretStorage. The extension collects no telemetry. Requests go to relevant services and selected download sources or proxies, under their policies. External services, mirrors and community content can change or become unavailable. Review logs and exported files for private data before sharing.
+
+### Servers and AI tools
+
+Server software and plugins run with your local permissions. Server operators are responsible for access controls, backups and the terms that apply to their server and its content. Enabling MCP allows the AI client you connect to request extension operations and receive tool results, which may include local paths, project metadata and server logs. Review the AI client’s data policy and tool approvals. Login tokens are not returned by MCP. Disabling MCP closes its local endpoint and removes its registration.
 
 ### Warranty and liability
 
@@ -40,7 +44,7 @@ Minecraft use is governed by the official EULA linked below. The links provide t
 
 ## 简体中文
 
-提示版本: 2026-10-28.2
+提示版本: 2026-10-29.1
 
 本软件并非 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准，与其无关联。
 
@@ -58,7 +62,7 @@ Minecraft、相关商标和游戏资源归各自权利人所有。插件不授�
 
 ### 模组、整合包与再分发
 
-模组、资源包、光影、模板和运行时保留作者权利并适用各自许可。下载或自动解析依赖不会授予额外权利。分享整合包或导出的本地文件前，请确认每项内容的再分发权限，并保留许可要求的声明、署名和源码提供义务。许可缺失或未知不代表允许再分发。
+模组、服务端插件、资源包、光影、模板和运行时保留作者权利并适用各自许可。下载或自动解析依赖不会授予额外权利。分享整合包或导出的本地文件前，请确认每项内容的再分发权限，并保留许可要求的声明、署名和源码提供义务。许可缺失或未知不代表允许再分发。
 
 ### 第三方代码、兼容性与备份
 
@@ -67,6 +71,10 @@ Minecraft、相关商标和游戏资源归各自权利人所有。插件不授�
 ### 本地数据与外部服务
 
 目录、账户元数据和确认记录保存在本地，登录令牌使用 VS Code SecretStorage 保存。插件不收集遥测；请求发送至相应服务和所选下载源或代理，并适用其政策。外部服务、镜像和社区内容可能变更或停止提供。分享日志及导出文件前，请检查其中的隐私信息。
+
+### 服务端与 AI 工具
+
+服务端软件和插件以本地权限运行。服主需负责访问控制、备份，以及服务端和内容适用的条款。启用 MCP 后，所连接的 AI 客户端可请求插件操作，并接收包含本地路径、项目元数据或服务端日志的工具结果。请查看 AI 客户端的数据政策与工具审批设置。MCP 不返回登录令牌；关闭 MCP 会关闭其本地接口并取消注册。
 
 ### 担保与责任
 

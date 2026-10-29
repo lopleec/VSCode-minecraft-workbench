@@ -7,6 +7,8 @@ import type {
   JavaRuntime,
   ModVersion,
   Project,
+  ServerProfile,
+  Mode,
 } from '../models';
 import type { ModProject, ProjectKind, SearchOrder, InstallPlan } from '../modrinth';
 
@@ -23,6 +25,9 @@ export const workbenchPages = [
   'downloads',
   'backups',
   'projects',
+  'servers',
+  'serverCreate',
+  'server',
 ] as const;
 export type WorkbenchPage = (typeof workbenchPages)[number];
 export interface Preferences {
@@ -44,7 +49,11 @@ export interface Bootstrap {
   accounts: Account[];
   selectedAccount?: string;
   projects: Project[];
-  mode: 'launcher' | 'developer';
+  mode: Mode;
+  servers: ServerProfile[];
+  selectedServer?: string;
+  serverStatus: Record<string, string>;
+  mcpEnabled: boolean;
   java: JavaRuntime[];
   running: string[];
   preferences: Preferences;
@@ -69,6 +78,7 @@ export interface Bootstrap {
     javaPath: string;
     clientId: string;
     autoOpenProject: boolean;
+    serverDirectory: string;
   };
   jobs: { id: string; label: string; status: string; detail?: string }[];
 }

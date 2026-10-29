@@ -8,6 +8,7 @@ import { Network } from './network';
 import { Store } from './store';
 import { JavaRuntime } from './models';
 import { exists, extractZip } from './files';
+import { waitFor } from './abort';
 
 const exec = promisify(execFile);
 export async function inspectJava(java: string): Promise<JavaRuntime> {
@@ -39,6 +40,8 @@ export async function inspectJava(java: string): Promise<JavaRuntime> {
   };
 }
 export class Java {
+  private readonly preparing = new Map<number, Promise<JavaRuntime>>();
+  private readonly downloads = new Map<number, Promise<void>>();
   constructor(
     private readonly store: Store,
     private readonly net: Network,
@@ -95,7 +98,58 @@ export class Java {
       );
     return runtime;
   }
-  async download(major: number, signal: AbortSignal, report: (text: string) => void) {
+  async ensure(
+    major: number,
+    signal: AbortSignal,
+    report: (text: string) => void,
+    preferred?: string,
+  ) {
+    if (preferred) return this.select(major, preferred);
+    const pending = this.preparing.get(major);
+    if (pending) {
+      await waitFor(pending, signal);
+      signal.throwIfAborted();
+      return this.select(major);
+    }
+    const prepare = (async () => {
+      await this.detect();
+      if (!this.store.state.java.some((j) => j.major === major)) {
+        report(`Eclipse Temurin ${major}`);
+        await this.download(major, signal, report);
+      }
+      return this.select(major);
+    })();
+    this.preparing.set(major, prepare);
+    try {
+      return await prepare;
+    } finally {
+      this.preparing.delete(major);
+    }
+  }
+  async download(
+    major: number,
+    signal: AbortSignal,
+    report: (text: string) => void,
+  ): Promise<void> {
+    const pending = this.downloads.get(major);
+    if (pending) {
+      await waitFor(pending, signal);
+      signal.throwIfAborted();
+      return;
+    }
+    const work = this.downloadRuntime(major, signal, report);
+    this.downloads.set(major, work);
+    try {
+      await work;
+    } finally {
+      this.downloads.delete(major);
+    }
+  }
+  private async downloadRuntime(
+    major: number,
+    signal: AbortSignal,
+    report: (text: string) => void,
+  ) {
     const platform = (
       { darwin: 'mac', win32: 'windows', linux: 'linux' } as Record<string, string>
     )[process.platform];
@@ -125,8 +179,18 @@ export class Java {
         report(`${Math.round(n / 1024 ** 2)} / ${Math.round(total / 1024 ** 2)} MB`),
     });
     const home = path.join(this.store.root, 'java', `temurin-${major}-${platform}-${arch}`);
-    if (await exists(home))
-      throw new Error('This JDK already exists. Detect local Java to use it.');
+    if (await exists(home)) {
+      await inspectJava(
+        path.join(
+          home,
+          ...(platform === 'mac' ? ['Contents', 'Home'] : []),
+          'bin',
+          platform === 'windows' ? 'java.exe' : 'java',
+        ),
+      );
+      await this.detect();
+      return;
+    }
     const stage = home + '.extracting';
     await fs.rm(stage, { recursive: true, force: true });
     await fs.mkdir(stage, { recursive: true });

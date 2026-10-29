@@ -120,3 +120,145 @@ test('download resumes, handles ignored ranges, follows redirects and validates 
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('shared cache deduplicates downloads across instances and keeps instance edits isolated', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-shared-cache-'));
+  const data = Buffer.from('shared minecraft client');
+  const hash = createHash('sha1').update(data).digest('hex');
+  let downloads = 0;
+  const server = createServer((_req, res) => {
+    downloads++;
+    res.writeHead(200, { 'content-length': data.length });
+    res.end(data);
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address() as import('node:net').AddressInfo;
+  const network = new Network({
+    proxy: '',
+    sources: {},
+    concurrency: 4,
+    retries: 0,
+    cacheDirectory: path.join(root, 'cache'),
+  });
+  try {
+    const first = path.join(root, 'one', 'client.jar'),
+      second = path.join(root, 'two', 'client.jar');
+    await Promise.all([
+      network.download(`http://127.0.0.1:${address.port}/client`, first, {
+        hash,
+        size: data.length,
+      }),
+      network.download(`http://127.0.0.1:${address.port}/client`, second, {
+        hash,
+        size: data.length,
+      }),
+    ]);
+    assert.equal(downloads, 1);
+    await fs.writeFile(first, 'modified');
+    assert.deepEqual(await fs.readFile(second), data);
+    await network.download(
+      `http://127.0.0.1:${address.port}/client`,
+      path.join(root, 'three.jar'),
+      { hash, size: data.length },
+    );
+    assert.equal(downloads, 1);
+  } finally {
+    await network.close();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('large downloads use parallel ranges and fall back when a host ignores Range', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-ranges-'));
+  const data = Buffer.alloc(17 * 1024 ** 2, 7);
+  const hash = createHash('sha256').update(data).digest('hex');
+  let active = 0,
+    maxActive = 0,
+    ranges = 0;
+  const server = createServer((req, res) => {
+    if (req.method === 'HEAD') {
+      res.writeHead(200, {
+        'content-length': data.length,
+        'accept-ranges': 'bytes',
+        etag: '"test"',
+      });
+      res.end();
+      return;
+    }
+    const range = /bytes=(\d+)-(\d+)/.exec(req.headers.range || '');
+    if (range && req.url !== '/ignore') {
+      ranges++;
+      active++;
+      maxActive = Math.max(active, maxActive);
+      const start = Number(range[1]),
+        end = Number(range[2]);
+      res.writeHead(206, {
+        'content-range': `bytes ${start}-${end}/${data.length}`,
+        'content-length': end - start + 1,
+      });
+      setTimeout(() => {
+        res.end(data.subarray(start, end + 1));
+        active--;
+      }, 30);
+    } else {
+      res.writeHead(200, { 'content-length': data.length });
+      res.end(data);
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const address = server.address() as import('node:net').AddressInfo;
+  const network = new Network({
+    proxy: '',
+    sources: {},
+    concurrency: 4,
+    retries: 1,
+    connectionsPerFile: 4,
+    chunkSize: 4 * 1024 ** 2,
+  });
+  try {
+    await network.download(
+      `http://127.0.0.1:${address.port}/ranges`,
+      path.join(root, 'ranges.jar'),
+      { hash, algorithm: 'sha256', size: data.length },
+    );
+    assert.ok(ranges >= 4);
+    assert.ok(maxActive > 1);
+    assert.deepEqual(await fs.readFile(path.join(root, 'ranges.jar')), data);
+    await network.download(
+      `http://127.0.0.1:${address.port}/ignore`,
+      path.join(root, 'ignore.jar'),
+      { hash, algorithm: 'sha256', size: data.length },
+    );
+    assert.deepEqual(await fs.readFile(path.join(root, 'ignore.jar')), data);
+  } finally {
+    await network.close();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('verified files from an older isolated runtime seed the shared cache without network', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-legacy-cache-'));
+  const data = Buffer.from('existing minecraft client');
+  const hash = createHash('sha1').update(data).digest('hex');
+  const legacy = path.join(root, 'old', '.runtime');
+  await fs.mkdir(path.join(legacy, 'versions', '1.21.4'), { recursive: true });
+  await fs.writeFile(path.join(legacy, 'versions', '1.21.4', '1.21.4.jar'), data);
+  const network = new Network({
+    proxy: '',
+    sources: {},
+    concurrency: 4,
+    retries: 0,
+    cacheDirectory: path.join(root, 'cache'),
+    runtimeRoots: () => [legacy],
+  });
+  try {
+    const target = path.join(root, 'new', '.runtime', 'versions', '1.21.4', '1.21.4.jar');
+    await network.download('http://127.0.0.1:1/unreachable', target, { hash, size: data.length });
+    assert.deepEqual(await fs.readFile(target), data);
+  } finally {
+    await network.close();
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

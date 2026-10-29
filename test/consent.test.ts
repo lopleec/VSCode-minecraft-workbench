@@ -155,7 +155,9 @@ test('webview bridge blocks launcher and developer requests before services run,
       },
     },
   } as unknown as UI;
-  const workbench = new Workbench({} as ExtensionContext, store, content, minecraft, ui, consent);
+  const workbench = new Workbench({} as ExtensionContext, store, content, minecraft, ui, consent, {
+    status: () => 'stopped',
+  } as never);
   assert.equal(
     ((await workbench.handle('ready', {})) as { consent: { accepted: boolean } }).consent.accepted,
     false,

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 exports.run = async function () {
-  const extension = vscode.extensions.getExtension('minecraft-workbench.minecraft-workbench');
+  const extension = vscode.extensions.getExtension('Lopleec.minecraft-workbench');
   assert.ok(extension, 'Extension is installed in the development host');
   const api = await extension.activate();
   assert.ok(api?.store, 'Extension activates successfully');

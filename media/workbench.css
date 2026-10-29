@@ -1053,3 +1053,72 @@ body[data-density='compact'] .project-icon {
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* Controls share VS Code button metrics; navigation and text links stay compact. */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.secondary, .text-button, .toolbar-button {
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  background: var(--vscode-button-secondaryBackground, var(--vscode-input-background));
+  border-color: var(--vscode-contrastBorder, var(--vscode-button-border, var(--vscode-widget-border, var(--vscode-panel-border))));
+  padding: 3px 10px;
+}
+.secondary:hover, .text-button:hover, .toolbar-button:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-toolbar-hoverBackground));
+}
+.inline-link, .project-title {
+  min-height: 0;
+  white-space: normal;
+}
+.search-row, .version-search-row, .directory-control {
+  align-items: center;
+}
+.search-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-row .search-input { flex-basis: 220px; }
+.mode-navigation { display: flex; align-items: center; min-width: 0; gap: 16px; }
+#mode-picker { width: 112px; flex-shrink: 0; }
+.empty-state { padding: 32px 16px; }
+.empty-state h2 { font-size: 14px; margin: 0 0 16px; font-weight: 600; }
+.empty-state p:empty { display: none; }
+.empty-state > button { margin-right: 8px; }
+.advanced-options { margin: 12px 0 20px; }
+.advanced-options summary { cursor: pointer; margin-bottom: 12px; }
+.server-tabs { padding-left: 0; margin-bottom: 16px; }
+.server-body { min-width: 0; }
+.server-console {
+  height: min(52vh, 540px);
+  min-height: 220px;
+  overflow: auto;
+  background: var(--vscode-terminal-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-panel-border);
+  padding: 10px 12px;
+  margin: 0;
+  font: 12px/1.5 var(--vscode-editor-font-family, monospace);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.console-command { display: flex; gap: 8px; margin-top: 8px; }
+.console-command input { flex: 1; min-width: 0; }
+.status-label { color: var(--vscode-descriptionForeground); }
+@media (max-width: 920px) {
+  .app-header { flex-wrap: wrap; padding: 8px 12px 0; gap: 8px; }
+  .mode-navigation { width: 100%; flex-wrap: wrap; gap: 8px; }
+  .mode-navigation .tabs { flex: 1; overflow-x: auto; gap: 16px; }
+  .header-actions { width: 100%; padding-bottom: 8px; }
+  #instance-picker { width: auto; max-width: none; flex: 1; }
+}
+@media (max-width: 520px) {
+  .mode-navigation .tabs { width: 100%; flex: auto; order: 1; }
+  .search-row .search-input { flex-basis: 100%; }
+}

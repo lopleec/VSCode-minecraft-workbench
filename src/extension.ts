@@ -15,6 +15,11 @@ import { config, t } from './config';
 import { exists } from './files';
 import { Workbench } from './workbench';
 import { Consent } from './consent';
+import { Servers } from './servers';
+import { WorkbenchMcp } from './mcp';
+import { ServerActions } from './server-actions';
+
+let activeServers: Servers | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
@@ -22,6 +27,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(output, status);
   const views: View[] = [];
   let workbench: Workbench | undefined;
+  let mcp: WorkbenchMcp | undefined;
   const refresh = () => {
     for (const view of views) view.refresh();
     updateStatus(status, store);
@@ -34,6 +40,7 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
     workbench?.refresh();
+    mcp?.refresh();
     void vscode.commands.executeCommand('setContext', 'minecraftWorkbench.mode', store.state.mode);
     void vscode.commands.executeCommand(
       'setContext',
@@ -47,7 +54,17 @@ export async function activate(context: vscode.ExtensionContext) {
     );
   };
   const consent = new Consent(context.globalState, refresh);
-  const root = config('storageDirectory', '') || context.globalStorageUri.fsPath;
+  let root = config('storageDirectory', '') || context.globalStorageUri.fsPath;
+  const legacy = path.join(
+    path.dirname(context.globalStorageUri.fsPath),
+    'minecraft-workbench.minecraft-workbench',
+  );
+  if (
+    !config('storageDirectory', '') &&
+    !(await exists(path.join(root, 'state.json'))) &&
+    (await exists(path.join(legacy, 'state.json')))
+  )
+    root = legacy;
   if (!path.isAbsolute(root)) {
     void vscode.window.showErrorMessage(
       t('Storage directory must be an absolute path.', '存储目录必须是绝对路径。'),
@@ -72,12 +89,17 @@ export async function activate(context: vscode.ExtensionContext) {
     config('proxy', '').trim() ||
     vscode.workspace.getConfiguration('http').get<string>('proxy', '').trim();
   const credentials = await context.secrets.get('minecraftWorkbench.proxyCredentials');
+  let proxyError: string | undefined;
   if (proxy && credentials) {
-    const url = new URL(proxy);
-    const value = JSON.parse(credentials);
-    url.username = value.username;
-    url.password = value.password;
-    proxy = url.toString();
+    try {
+      const url = new URL(proxy);
+      const value = JSON.parse(credentials);
+      url.username = value.username;
+      url.password = value.password;
+      proxy = url.toString();
+    } catch (error) {
+      proxyError = String(error);
+    }
   }
   const network = new Network({
     proxy,
@@ -85,7 +107,22 @@ export async function activate(context: vscode.ExtensionContext) {
     concurrency: Math.max(1, Math.min(32, config('downloadConcurrency', 6))),
     retries: config('downloadRetries', 2),
     timeout: config('networkTimeout', 30000),
+    cacheDirectory: config('sharedDownloadCache', true)
+      ? path.join(store.root, 'cache', 'downloads')
+      : undefined,
+    connectionsPerFile: config('downloadConnectionsPerFile', 4),
+    chunkSize: config('downloadChunkSize', 8) * 1024 ** 2,
+    runtimeRoots: () =>
+      store.state.instances.map((instance) => path.join(instance.directory, '.runtime')),
   });
+  network.blockedReason ??= proxyError;
+  if (network.blockedReason)
+    output.error(
+      t(
+        'Invalid proxy configuration. Open extension settings to correct it.',
+        '代理设置无效，请在扩展设置中修正。',
+      ),
+    );
   context.subscriptions.push({
     dispose: () => {
       void network.close();
@@ -97,6 +134,9 @@ export async function activate(context: vscode.ExtensionContext) {
   const minecraft = new Minecraft(store, network, java, accounts, jobs, refresh);
   const content = new ContentService(network, path.join(store.root, 'cache', 'mod-metadata'));
   const developer = new Developer(store, network, java);
+  const servers = new Servers(store, java, jobs, network, minecraft, refresh);
+  activeServers = servers;
+  context.subscriptions.push(servers);
   const ui = new UI(
     store,
     minecraft,
@@ -109,13 +149,16 @@ export async function activate(context: vscode.ExtensionContext) {
     refresh,
   );
   context.subscriptions.push(jobs, accounts);
-  workbench = new Workbench(context, store, content, minecraft, ui, consent);
+  workbench = new Workbench(context, store, content, minecraft, ui, consent, servers);
   ui.browser = (page, kind) => workbench!.open(page, kind);
   context.subscriptions.push(workbench);
+  mcp = new WorkbenchMcp(consent, (method, params) => workbench!.handle(method, params), output);
+  context.subscriptions.push(mcp);
   const titles: Record<Section, [string, string]> = {
     home: ['Workbench', '工作台'],
     instances: ['Instances', '实例'],
     projects: ['Projects', '项目'],
+    servers: ['Servers', '服务端'],
     content: ['Content', '内容'],
     accounts: ['Accounts', '账户'],
     java: ['Java', 'Java'],
@@ -123,7 +166,15 @@ export async function activate(context: vscode.ExtensionContext) {
   };
   const treeViews: { section: Section; tree: vscode.TreeView<Item> }[] = [];
   for (const section of Object.keys(titles) as Section[]) {
-    const provider = new View(section, store, minecraft, content, jobs, () => consent.accepted);
+    const provider = new View(
+      section,
+      store,
+      minecraft,
+      content,
+      jobs,
+      () => consent.accepted,
+      servers,
+    );
     const tree = vscode.window.createTreeView(`minecraftWorkbench.${section}`, {
       treeDataProvider: provider,
       showCollapseAll: section === 'instances' || section === 'content',
@@ -136,6 +187,27 @@ export async function activate(context: vscode.ExtensionContext) {
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
     agreements: () => workbench!.open('agreements'),
     mode: () => ui.mode(),
+    mcp: () => mcp!.toggle(),
+    mcpCopy: () => mcp!.copyConnection(),
+    manageServers: () => workbench!.open('servers'),
+    createServer: () => workbench!.open('serverCreate'),
+    serverActions: async (item) => {
+      if (item?.value && 'engine' in item.value) {
+        store.state.selectedServer = item.value.id;
+        await store.save();
+      }
+      await workbench!.open('server');
+    },
+    startServer: async (item) =>
+      new ServerActions(servers, content, jobs).handle('server.action', {
+        serverId: item?.value && 'engine' in item.value ? item.value.id : servers.selected?.id,
+        action: 'start',
+      }),
+    stopServer: async (item) =>
+      new ServerActions(servers, content, jobs).handle('server.action', {
+        serverId: item?.value && 'engine' in item.value ? item.value.id : servers.selected?.id,
+        action: 'stop',
+      }),
     createInstance: () => ui.createInstance(),
     selectInstance: (item) => ui.selectInstance(item),
     launch: (item) => ui.launch(item),
@@ -261,6 +333,9 @@ export async function activate(context: vscode.ExtensionContext) {
           'downloadConcurrency',
           'downloadRetries',
           'networkTimeout',
+          'sharedDownloadCache',
+          'downloadConnectionsPerFile',
+          'downloadChunkSize',
         ].some((key) => event.affectsConfiguration(`minecraftWorkbench.${key}`))
       ) {
         const reload = t('Reload window', '重新加载窗口');
@@ -285,6 +360,22 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push({ dispose: () => clearInterval(timer) });
   refresh();
   if (!consent.accepted) await workbench.open('agreements');
-  return { store, minecraft, content, java, developer, network, accounts, ui, workbench, consent };
+  return {
+    store,
+    minecraft,
+    content,
+    java,
+    developer,
+    network,
+    accounts,
+    ui,
+    workbench,
+    consent,
+    servers,
+    mcp,
+  };
 }
-export function deactivate() {}
+export async function deactivate() {
+  await activeServers?.close();
+  activeServers = undefined;
+}

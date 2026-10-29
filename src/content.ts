@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import AdmZip from 'adm-zip';
 import { Network, HttpError } from './network';
-import { Content, ContentKind, Instance, ModVersion } from './models';
+import { Content, ContentKind, ContentTarget, Instance, ModVersion } from './models';
 import {
   exists,
   extractZip,
@@ -28,12 +28,14 @@ import {
   InstallPlan,
   ContentInstallOptions,
   compatible,
+  contentLoaders,
   contentFile,
 } from './modrinth';
 
 const api = 'https://api.modrinth.com/v2';
 export const contentFolders: Record<ContentKind, string> = {
   mod: 'mods',
+  plugin: 'plugins',
   resourcepack: 'resourcepacks',
   shader: 'shaderpacks',
 };
@@ -133,7 +135,7 @@ export class ContentService {
       kind: 'modrinth',
     });
   }
-  async exclusive<T>(instance: Instance, work: () => Promise<T>): Promise<T> {
+  async exclusive<T>(instance: ContentTarget, work: () => Promise<T>): Promise<T> {
     if (this.locks.has(instance.id))
       throw new Error(t('Content operation already in progress.', '内容操作正在进行。'));
     this.locks.add(instance.id);
@@ -143,24 +145,33 @@ export class ContentService {
       this.locks.delete(instance.id);
     }
   }
-  isBusy(instance: Instance) {
+  isBusy(instance: ContentTarget) {
     return this.locks.has(instance.id);
   }
-  private index(instance: Instance) {
+  private index(instance: ContentTarget) {
     return path.join(instance.directory, '.workbench', 'content.json');
   }
   async search(
     query: string,
     kind: ContentKind | 'modpack',
-    instance?: Instance,
+    instance?: ContentTarget,
     offset = 0,
     options: SearchOptions = {},
   ) {
-    const facets = [[`project_type:${kind}`]];
+    const facets = [[kind === 'plugin' ? 'all_project_types:plugin' : `project_type:${kind}`]];
+    if (kind === 'plugin' && !instance)
+      facets.push([
+        'categories:paper',
+        'categories:spigot',
+        'categories:bukkit',
+        'categories:folia',
+        'categories:velocity',
+      ]);
     if (instance) {
       facets.push([`versions:${instance.minecraft}`]);
-      if (kind === 'mod' && instance.loader !== 'vanilla')
-        facets.push([`categories:${instance.loader}`]);
+      if (kind === 'mod' || kind === 'plugin')
+        facets.push(contentLoaders(instance, kind).map((l) => `categories:${l}`));
+      if (instance.side === 'server') facets.push(['server_side:required', 'server_side:optional']);
     }
     const params = new URLSearchParams({
       query,
@@ -173,12 +184,12 @@ export class ContentService {
       signal: options.signal,
     });
   }
-  async versions(project: string, instance?: Instance, kind: ContentKind | 'modpack' = 'mod') {
+  async versions(project: string, instance?: ContentTarget, kind: ContentKind | 'modpack' = 'mod') {
     const params = new URLSearchParams();
     if (instance) {
       params.set('game_versions', JSON.stringify([instance.minecraft]));
-      if (kind === 'mod' && instance.loader !== 'vanilla')
-        params.set('loaders', JSON.stringify([instance.loader]));
+      if (kind === 'mod' || kind === 'plugin')
+        params.set('loaders', JSON.stringify(contentLoaders(instance, kind)));
     }
     const key = `versions:${project}:${params}`;
     return this.cached(key, () =>
@@ -188,7 +199,7 @@ export class ContentService {
     );
   }
   async plan(
-    instance: Instance,
+    instance: ContentTarget,
     version: ModVersion,
     kind: ContentKind,
     includeOptional = false,
@@ -284,6 +295,13 @@ export class ContentService {
         return;
       }
       if (previous) return;
+      if (
+        instance.side === 'server' &&
+        (await this.project(current.project_id)).server_side === 'unsupported'
+      )
+        conflicts.add(
+          `${current.name}: ${t('Client-only content cannot be installed on a server.', '仅客户端内容不能安装到服务端。')}`,
+        );
       if (!compatible(current, instance, currentKind))
         conflicts.add(
           `${current.name}: ${t('This version is incompatible with the instance.', '该版本与实例不兼容。')}`,
@@ -303,7 +321,8 @@ export class ContentService {
         let dependencyKind = currentKind;
         if (currentKind !== 'mod' && dependency.project_id) {
           const project = await this.project(dependency.project_id);
-          if (project.project_type !== 'modpack') dependencyKind = project.project_type;
+          if (project.project_type !== 'modpack')
+            dependencyKind = currentKind === 'plugin' ? 'plugin' : project.project_type;
         }
         const next = dependency.version_id
           ? await this.version(dependency.version_id)
@@ -314,7 +333,11 @@ export class ContentService {
           conflicts.add(t('A required dependency is unavailable.', '无法获取必需依赖。'));
           continue;
         }
-        if (currentKind !== 'mod' && contentFile(next).filename.endsWith('.jar'))
+        if (
+          currentKind !== 'mod' &&
+          currentKind !== 'plugin' &&
+          contentFile(next).filename.endsWith('.jar')
+        )
           dependencyKind = 'mod';
         await visit(next, true, dependencyKind);
       }
@@ -456,7 +479,7 @@ export class ContentService {
     };
   }
 
-  async list(instance: Instance, kind?: ContentKind): Promise<Content[]> {
+  async list(instance: ContentTarget, kind?: ContentKind): Promise<Content[]> {
     const known = await readJson<Content[]>(this.index(instance), []);
     const items: Content[] = [];
     for (const current of kind ? [kind] : (Object.keys(contentFolders) as ContentKind[])) {
@@ -475,10 +498,10 @@ export class ContentService {
     }
     return items;
   }
-  private async persist(instance: Instance, items: Content[]) {
+  private async persist(instance: ContentTarget, items: Content[]) {
     await writeJson(this.index(instance), items);
   }
-  async identify(instance: Instance) {
+  async identify(instance: ContentTarget) {
     const items = await this.list(instance);
     const unknown = items.filter((i) => !i.projectId);
     const hashes = new Map<string, Content>();
@@ -503,7 +526,7 @@ export class ContentService {
     return items;
   }
   async install(
-    instance: Instance,
+    instance: ContentTarget,
     version: ModVersion,
     kind: ContentKind,
     signal: AbortSignal,
@@ -639,7 +662,7 @@ export class ContentService {
       await fs.rm(stage, { recursive: true, force: true });
     }
   }
-  async toggle(instance: Instance, item: Content) {
+  async toggle(instance: ContentTarget, item: Content) {
     const items = await this.list(instance);
     const entry = items.find((i) => i.file === item.file && i.kind === item.kind);
     if (!entry) return;
@@ -652,7 +675,7 @@ export class ContentService {
     entry.enabled = !item.enabled;
     await this.persist(instance, items);
   }
-  async remove(instance: Instance, item: Content) {
+  async remove(instance: ContentTarget, item: Content) {
     await rejectSymlinkParents(
       instance.directory,
       path.join(instance.directory, contentFolders[item.kind], filename(item.file)),
@@ -663,7 +686,7 @@ export class ContentService {
       (await this.list(instance)).filter((i) => i.file !== item.file || i.kind !== item.kind),
     );
   }
-  async updates(instance: Instance) {
+  async updates(instance: ContentTarget) {
     const items = await this.identify(instance);
     const result: { item: Content; version: ModVersion }[] = [];
     for (const item of items.filter((i) => i.projectId)) {
@@ -679,7 +702,7 @@ export class ContentService {
     }
     return result;
   }
-  async conflicts(instance: Instance): Promise<string[]> {
+  async conflicts(instance: ContentTarget): Promise<string[]> {
     const items = (await this.list(instance)).filter((i) => i.enabled && i.kind === 'mod');
     const warnings: string[] = [];
     const localModules: FabricModule[] = [];

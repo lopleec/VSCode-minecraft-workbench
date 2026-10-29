@@ -12,6 +12,7 @@ export class Store {
     instances: [],
     accounts: [],
     projects: [],
+    servers: [],
     java: [],
   };
   private pending: Promise<void> = Promise.resolve();
@@ -27,13 +28,15 @@ export class Store {
     const state = await readJson(path.join(this.root, 'state.json'), this.state);
     if (state.schema !== 1) throw new Error('Unsupported state schema');
     if (
-      !['launcher', 'developer'].includes(state.mode) ||
+      !['launcher', 'developer', 'server'].includes(state.mode) ||
       !Array.isArray(state.instances) ||
       !Array.isArray(state.accounts) ||
       !Array.isArray(state.projects) ||
       !Array.isArray(state.java)
     )
       throw new Error('Invalid state file');
+    state.servers ??= [];
+    if (!Array.isArray(state.servers)) throw new Error('Invalid servers in state file');
     this.state = state;
     this.baseline = structuredClone(state);
     await fs.mkdir(this.root, { recursive: true });
@@ -46,6 +49,7 @@ export class Store {
           .then(async () => {
             const external = await readJson<State>(path.join(this.root, 'state.json'));
             if (external.schema !== 1) return;
+            external.servers ??= [];
             this.apply(mergeState(external, this.baseline, this.state));
             this.baseline = structuredClone(this.state);
             this.changed();
@@ -56,7 +60,7 @@ export class Store {
     });
   }
   private apply(next: State) {
-    for (const field of ['instances', 'accounts', 'projects', 'java'] as const) {
+    for (const field of ['instances', 'accounts', 'projects', 'java', 'servers'] as const) {
       const id = (item: unknown) =>
         (item as { id?: string; path?: string }).id || (item as { path?: string }).path;
       const existing = new Map(this.state[field].map((item) => [id(item), item]));
@@ -102,6 +106,7 @@ export class Store {
             instances: [],
             accounts: [],
             projects: [],
+            servers: [],
             java: [],
           });
           const merged = mergeState(current, base, snapshot);

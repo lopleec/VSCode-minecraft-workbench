@@ -2,8 +2,8 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.3.3",
-  "publisher": "minecraft-workbench",
+  "version": "0.4.0",
+  "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
     "vscode": "^1.103.0",
@@ -19,7 +19,10 @@
     "fabric",
     "forge",
     "neoforge",
-    "modrinth"
+    "modrinth",
+    "server",
+    "paper",
+    "mcp"
   ],
   "main": "./dist/extension.js",
   "extensionKind": [
@@ -48,13 +51,15 @@
     "legal": "node scripts/legal.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@xmcl/core": "2.16.2",
     "@xmcl/installer": "6.3.6",
     "adm-zip": "0.6.1",
     "semver": "^7.8.5",
     "socks": "^2.8.7",
     "tar": "^7.5.0",
-    "undici": "^7.29.0"
+    "undici": "^7.29.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
@@ -657,6 +662,90 @@
         "title": "协议与关于",
         "category": "Minecraft Workbench",
         "icon": "$(shield)"
+      },
+      {
+        "command": "minecraftWorkbench.manageServers",
+        "title": "Manage Servers",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.manageServers.zh",
+        "title": "管理服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.createServer",
+        "title": "New Server",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
+        "command": "minecraftWorkbench.createServer.zh",
+        "title": "新建服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
+        "command": "minecraftWorkbench.serverActions",
+        "title": "Server Settings & Console",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.serverActions.zh",
+        "title": "服务端设置与控制台",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.startServer",
+        "title": "Start Server",
+        "category": "Minecraft Workbench",
+        "icon": "$(play)"
+      },
+      {
+        "command": "minecraftWorkbench.startServer.zh",
+        "title": "启动服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(play)"
+      },
+      {
+        "command": "minecraftWorkbench.stopServer",
+        "title": "Stop Server",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "minecraftWorkbench.stopServer.zh",
+        "title": "停止服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "minecraftWorkbench.mcp",
+        "title": "Register / Unregister AI MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "minecraftWorkbench.mcp.zh",
+        "title": "注册 / 取消注册 AI MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "minecraftWorkbench.mcpCopy",
+        "title": "Copy MCP Connection",
+        "category": "Minecraft Workbench",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "minecraftWorkbench.mcpCopy.zh",
+        "title": "复制 MCP 连接",
+        "category": "Minecraft Workbench",
+        "icon": "$(copy)"
       }
     ],
     "viewsContainers": {
@@ -688,6 +777,12 @@
           "initialSize": 4
         },
         {
+          "id": "minecraftWorkbench.servers",
+          "name": "%view.servers%",
+          "when": "minecraftWorkbench.mode == server && minecraftWorkbench.agreementsAccepted",
+          "initialSize": 4
+        },
+        {
           "id": "minecraftWorkbench.content",
           "name": "%view.content%",
           "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
@@ -698,7 +793,7 @@
           "name": "%view.accounts%",
           "visibility": "collapsed",
           "initialSize": 1,
-          "when": "minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted"
         },
         {
           "id": "minecraftWorkbench.java",
@@ -775,6 +870,16 @@
       {
         "view": "minecraftWorkbench.downloads",
         "contents": "安装和下载任务显示在此处。",
+        "when": "minecraftWorkbench.language == zh-cn"
+      },
+      {
+        "view": "minecraftWorkbench.servers",
+        "contents": "[New Server](command:minecraftWorkbench.createServer)",
+        "when": "minecraftWorkbench.language != zh-cn"
+      },
+      {
+        "view": "minecraftWorkbench.servers",
+        "contents": "[新建服务端](command:minecraftWorkbench.createServer)",
         "when": "minecraftWorkbench.language == zh-cn"
       }
     ],
@@ -999,6 +1104,26 @@
           "command": "minecraftWorkbench.manageProjects.zh",
           "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
+        },
+        {
+          "command": "minecraftWorkbench.createServer",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "navigation@1"
+        },
+        {
+          "command": "minecraftWorkbench.manageServers",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "navigation@2"
+        },
+        {
+          "command": "minecraftWorkbench.createServer.zh",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "navigation@1"
+        },
+        {
+          "command": "minecraftWorkbench.manageServers.zh",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -1161,6 +1286,26 @@
           "command": "minecraftWorkbench.exportPack.zh",
           "when": "(viewItem == instance && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
+        },
+        {
+          "command": "minecraftWorkbench.startServer",
+          "when": "view == minecraftWorkbench.servers && viewItem == server && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "inline@1"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer",
+          "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "inline@1"
+        },
+        {
+          "command": "minecraftWorkbench.startServer.zh",
+          "when": "view == minecraftWorkbench.servers && viewItem == server && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "inline@1"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer.zh",
+          "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "inline@1"
         }
       ],
       "commandPalette": [
@@ -1547,6 +1692,62 @@
         {
           "command": "minecraftWorkbench.agreements.zh",
           "when": "minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.manageServers",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.manageServers.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.createServer",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.createServer.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.serverActions",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.serverActions.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.startServer",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.startServer.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.mcp",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.mcp.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.mcpCopy",
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.mcpCopy.zh",
+          "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
         }
       ]
     },
@@ -1803,6 +2004,10 @@
               "project": {
                 "type": "string",
                 "default": "official"
+              },
+              "server": {
+                "type": "string",
+                "default": "official"
               }
             }
           },
@@ -1837,6 +2042,28 @@
             "type": "boolean",
             "default": true,
             "markdownDescription": "%setting.autoUpdateManifest%"
+          },
+          "minecraftWorkbench.sharedDownloadCache": {
+            "type": "boolean",
+            "default": true,
+            "description": "%config.sharedDownloadCache%",
+            "scope": "machine"
+          },
+          "minecraftWorkbench.downloadConnectionsPerFile": {
+            "type": "integer",
+            "default": 4,
+            "description": "%config.downloadConnectionsPerFile%",
+            "minimum": 1,
+            "maximum": 8,
+            "scope": "machine"
+          },
+          "minecraftWorkbench.downloadChunkSize": {
+            "type": "integer",
+            "default": 8,
+            "description": "%config.downloadChunkSize%",
+            "minimum": 1,
+            "maximum": 64,
+            "scope": "machine"
           }
         }
       },
@@ -1857,6 +2084,30 @@
             "maximum": 1000
           }
         }
+      },
+      {
+        "title": "%group.server%",
+        "order": 6,
+        "properties": {
+          "minecraftWorkbench.serverDirectory": {
+            "type": "string",
+            "default": "",
+            "description": "%config.serverDirectory%",
+            "scope": "machine"
+          },
+          "minecraftWorkbench.serverBindAddress": {
+            "type": "string",
+            "default": "127.0.0.1",
+            "description": "%config.serverBindAddress%",
+            "scope": "machine"
+          },
+          "minecraftWorkbench.mcp.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "%config.mcp.enabled%",
+            "scope": "machine"
+          }
+        }
       }
     ],
     "taskDefinitions": [
@@ -1874,6 +2125,12 @@
             "type": "string"
           }
         }
+      }
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "com.lopleec.minecraftWorkbench",
+        "label": "Minecraft Workbench"
       }
     ]
   },

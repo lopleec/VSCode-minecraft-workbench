@@ -5,10 +5,12 @@ import { ContentService } from './content';
 import { Jobs } from './jobs';
 import { Instance, Account, Project, Content, JavaRuntime } from './models';
 import { Job } from './jobs';
-import { t } from './config';
+import { t, config } from './config';
 import { memorySettings } from './memory';
+import { Servers } from './servers';
+import type { ServerProfile } from './models';
 
-export type ItemValue = Instance | Account | Project | Content | JavaRuntime | Job;
+export type ItemValue = Instance | Account | Project | Content | JavaRuntime | Job | ServerProfile;
 export class Item extends vscode.TreeItem {
   constructor(
     label: string,
@@ -34,6 +36,7 @@ export type Section =
   | 'home'
   | 'instances'
   | 'projects'
+  | 'servers'
   | 'content'
   | 'accounts'
   | 'java'
@@ -48,6 +51,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
     private readonly content: ContentService,
     private readonly jobs: Jobs,
     private readonly hasConsent: () => boolean = () => true,
+    private readonly servers?: Servers,
   ) {}
   refresh() {
     this.emitter.fire(undefined);
@@ -82,10 +86,12 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
         new Item(
           state.mode === 'launcher'
             ? t('Launcher Mode', '启动模式')
-            : t('Developer Mode', '开发模式'),
+            : state.mode === 'server'
+              ? t('Server Mode', '开服模式')
+              : t('Developer Mode', '开发模式'),
           'mode',
           undefined,
-          state.mode === 'launcher' ? 'game' : 'code',
+          state.mode === 'launcher' ? 'game' : state.mode === 'server' ? 'server' : 'code',
           'mode',
           t('Switch mode', '切换模式'),
         ),
@@ -97,6 +103,26 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           'language',
           t('English', '简体中文'),
         ),
+        new Item(
+          config('mcp.enabled', false)
+            ? t('Unregister MCP', '取消注册 MCP')
+            : t('Register MCP', '注册 MCP'),
+          'action',
+          undefined,
+          'plug',
+          'mcp',
+        ),
+        ...(config('mcp.enabled', false)
+          ? [
+              new Item(
+                t('Copy MCP connection', '复制 MCP 连接'),
+                'action',
+                undefined,
+                'copy',
+                'mcpCopy',
+              ),
+            ]
+          : []),
         new Item(t('Settings', '设置'), 'action', undefined, 'settings-gear', 'settings'),
       ];
     if (this.section === 'instances') {
@@ -120,6 +146,20 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
         return item;
       });
     }
+    if (this.section === 'servers')
+      return state.servers.map((server) => {
+        const status = this.servers?.status(server) || 'stopped';
+        const item = new Item(
+          server.name,
+          status === 'stopped' ? 'server' : 'runningServer',
+          server,
+          status === 'stopped' ? 'server' : 'vm-running',
+          'serverActions',
+          `${server.minecraft} · ${server.engine} · ${{ stopped: t('Stopped', '已停止'), preparing: t('Preparing', '准备中'), starting: t('Starting', '启动中'), running: t('Running', '运行中'), stopping: t('Stopping', '停止中') }[status] || status}`,
+        );
+        item.id = server.id;
+        return item;
+      });
     if (this.section === 'projects')
       return state.projects.map(
         (project) =>
@@ -226,8 +266,24 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
 }
 export function updateStatus(status: vscode.StatusBarItem, store: Store) {
   const account = store.state.accounts.find((a) => a.id === store.state.selectedAccount);
-  status.text = `$(game) ${store.state.mode === 'launcher' ? t('Launcher', '启动器') : t('Developer', '开发')}${store.selected && store.state.mode === 'launcher' ? ` · ${store.selected.name}` : ''}`;
-  status.tooltip = `${account?.name || t('No account', '未选择账户')} · ${memorySettings(store.selected).maxMemory} MB`;
+  const mode = store.state.mode;
+  const label =
+    mode === 'launcher'
+      ? t('Launcher', '启动器')
+      : mode === 'server'
+        ? t('Servers', '开服')
+        : t('Developer', '开发');
+  const selected =
+    mode === 'launcher'
+      ? store.selected?.name
+      : mode === 'server'
+        ? store.state.servers.find((s) => s.id === store.state.selectedServer)?.name
+        : undefined;
+  status.text = `$(${mode === 'server' ? 'server' : mode === 'developer' ? 'code' : 'game'}) ${label}${selected ? ' · ' + selected : ''}`;
+  status.tooltip =
+    mode === 'launcher'
+      ? `${account?.name || t('No account', '未选择账户')} · ${memorySettings(store.selected).maxMemory} MB`
+      : label;
   status.command = 'minecraftWorkbench.mode';
   status.show();
 }

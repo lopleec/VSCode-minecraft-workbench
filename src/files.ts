@@ -47,10 +47,13 @@ export async function readJson<T>(target: string, fallback?: T): Promise<T> {
   }
 }
 export async function writeJson(target: string, data: unknown): Promise<void> {
+  return writeText(target, JSON.stringify(data, null, 2) + '\n');
+}
+export async function writeText(target: string, data: string): Promise<void> {
   await fs.mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.${randomUUID()}.tmp`;
   try {
-    await fs.writeFile(temporary, JSON.stringify(data, null, 2) + '\n', { mode: 0o600 });
+    await fs.writeFile(temporary, data, { mode: 0o600 });
     await fs.rename(temporary, target);
   } finally {
     await fs.rm(temporary, { force: true });

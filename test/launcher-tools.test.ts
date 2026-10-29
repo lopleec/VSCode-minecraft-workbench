@@ -175,3 +175,59 @@ test('empty search explicitly uses downloads and full project versions have no c
   assert.equal(new URL(urls[1]).searchParams.has('game_versions'), false);
   assert.equal(new URL(urls[2]).searchParams.get('game_versions'), '["1.21.1"]');
 });
+
+test('failed modpack registration rolls back the selected instance and removes only the new directory', async () => {
+  const vscode = require('vscode');
+  vscode.window = { showInputBox: async () => 'Pack' };
+  const { UI } = await import('../src/ui');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-pack-registration-'));
+  const store = new Store(root, () => {});
+  const existing = { id: 'existing', name: 'Existing' } as Instance;
+  store.state.instances = [existing];
+  store.state.selectedInstance = existing.id;
+  store.save = async () => {
+    throw new Error('disk full');
+  };
+  let created = '';
+  const minecraft = {
+    ensureDirectory: async (instance: Instance) => {
+      created = instance.directory;
+      await fs.mkdir(created, { recursive: true });
+    },
+  };
+  const jobs = {
+    run: async (_label: string, work: (s: AbortSignal, r: () => void) => Promise<void>) =>
+      work(new AbortController().signal, () => {}),
+  };
+  const content = {
+    importPack: async (_archive: string, instance: Instance) => {
+      instance.minecraft = '1.21.4';
+    },
+  };
+  const ui = new UI(
+    store,
+    minecraft as never,
+    {} as never,
+    {} as never,
+    jobs as never,
+    content as never,
+    {} as never,
+    {} as never,
+    () => {},
+  );
+  try {
+    await assert.rejects(ui.importPack('test.mrpack'), /disk full/);
+    assert.deepEqual(store.state.instances, [existing]);
+    assert.equal(store.state.selectedInstance, existing.id);
+    assert.equal(
+      await fs.stat(created).then(
+        () => true,
+        () => false,
+      ),
+      false,
+    );
+  } finally {
+    store.dispose();
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

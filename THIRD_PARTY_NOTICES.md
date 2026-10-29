@@ -9,6 +9,8 @@ Bundled runtime packages retain their respective licenses. / 随附运行依赖�
 | undici | MIT | https://github.com/nodejs/undici |
 | semver | ISC | https://github.com/npm/node-semver |
 | socks | MIT | https://github.com/JoshGlazebrook/socks |
+| @modelcontextprotocol/sdk | MIT | https://github.com/modelcontextprotocol/typescript-sdk |
+| zod | MIT | https://github.com/colinhacks/zod |
 | tar | ISC | https://github.com/isaacs/node-tar |
 
 Full bundled runtime license texts are included in `THIRD_PARTY_LICENSES.txt`, generated from the installed dependencies by `npm run licenses`. Official project templates retain their upstream license files when downloaded. / 完整运行依赖许可文本随附于 `THIRD_PARTY_LICENSES.txt`，由 `npm run licenses` 从已安装依赖生成。下载官方项目模板时保留其上游许可文件。

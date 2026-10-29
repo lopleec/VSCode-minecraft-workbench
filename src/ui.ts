@@ -91,7 +91,13 @@ export class UI {
     }
   }
   async instance(item?: Item): Promise<Instance> {
-    if (item?.value && 'minecraft' in item.value && 'createdAt' in item.value) return item.value;
+    if (
+      item?.value &&
+      'minecraft' in item.value &&
+      'createdAt' in item.value &&
+      'loader' in item.value
+    )
+      return item.value;
     if (this.store.selected) return this.store.selected;
     if (!this.store.state.instances.length)
       throw new Error(t('Create an instance first.', '请先创建实例。'));
@@ -147,6 +153,11 @@ export class UI {
           label: `$(code) ${t('Developer Mode', '开发模式')}`,
           value: 'developer' as const,
           description: t('Create, build and debug mods', '创建、构建与调试模组'),
+        },
+        {
+          label: `$(server) ${t('Server Mode', '开服模式')}`,
+          value: 'server' as const,
+          description: t('Install and run Minecraft servers', '安装与管理 Minecraft 服务端'),
         },
       ],
       t('Minecraft Workbench mode', 'Minecraft Workbench 模式'),
@@ -375,6 +386,7 @@ export class UI {
     };
     if (!path.isAbsolute(instance.directory)) throw new Error('Absolute directory path required');
     await this.minecraft.ensureDirectory(instance);
+    const previousSelection = this.store.state.selectedInstance;
     try {
       await this.jobs.run(
         name,
@@ -385,6 +397,9 @@ export class UI {
       this.store.state.selectedInstance = id;
       await this.store.save();
     } catch (error) {
+      this.store.state.instances = this.store.state.instances.filter((item) => item.id !== id);
+      if (this.store.state.selectedInstance === id)
+        this.store.state.selectedInstance = previousSelection;
       await fs.rm(instance.directory, { recursive: true, force: true });
       throw error;
     }

@@ -230,9 +230,11 @@ export class Minecraft {
               versionId = filename(profile.id);
               await writeJson(path.join(root, 'versions', versionId, `${versionId}.json`), profile);
             } else {
-              const java = await this.java.select(
+              const java = await this.java.ensure(
                 resolved.javaVersion?.majorVersion || 8,
-                instance.java || config('javaPath', ''),
+                signal,
+                report,
+                instance.java || config('javaPath', '') || undefined,
               );
               const neo = instance.loader === 'neoforge';
               const artifact = neo ? loaderVersion : `${entry.id}-${loaderVersion}`;
@@ -306,9 +308,13 @@ export class Minecraft {
       if (!account) throw new Error(t('Add and select an account first.', '请先添加并选择账户。'));
       const root = path.join(instance.directory, '.runtime');
       const version = await Version.parse(root, instance.versionId || instance.minecraft);
-      const java = await this.java.select(
-        version.javaVersion?.majorVersion || 8,
-        instance.java || config('javaPath', ''),
+      const java = await this.jobs.run(t('Prepare Java', '准备 Java'), (signal, report) =>
+        this.java.ensure(
+          version.javaVersion?.majorVersion || 8,
+          signal,
+          report,
+          instance.java || config('javaPath', '') || undefined,
+        ),
       );
       const token = await this.accounts.token(account);
       const gc = instance.gc || config<string>('gc', 'default');

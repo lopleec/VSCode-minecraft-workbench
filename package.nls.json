@@ -1,5 +1,5 @@
 {
-  "extension.description": "Minecraft launcher and mod development tools for VS Code.",
+  "extension.description": "Minecraft launcher, mod development and server management with Java, Modrinth and AI MCP tools.",
   "command.mode": "Switch Mode",
   "command.createInstance": "New Instance",
   "command.selectInstance": "Select Instance",
@@ -89,5 +89,13 @@
   "group.network": "Downloads and accounts",
   "group.backups": "World backups",
   "setting.showSnapshots.deprecated": "Use the version type filter in the instance installation page.",
-  "setting.memoryPercentage": "Percentage of system RAM used for the automatic maximum heap. Rounded down to 128 MB steps and capped at 8 GiB; explicit memory limits override this recommendation."
+  "setting.memoryPercentage": "Percentage of system RAM used for the automatic maximum heap. Rounded down to 128 MB steps and capped at 8 GiB; explicit memory limits override this recommendation.",
+  "view.servers": "Servers",
+  "config.serverDirectory": "Parent directory for isolated servers. Empty uses extension storage.",
+  "config.serverBindAddress": "Default server bind address. Use 0.0.0.0 for LAN connections.",
+  "config.mcp.enabled": "Register AI MCP tools. Disabling unregisters tools and closes the local endpoint.",
+  "group.server": "Servers & AI",
+  "config.sharedDownloadCache": "Reuse verified downloads across instances. Client, server, libraries, assets, JDK and content files with checksums share a content-addressed cache.",
+  "config.downloadConnectionsPerFile": "Parallel range connections per large file. Falls back to one connection when unsupported. All downloads share the global concurrency limit.",
+  "config.downloadChunkSize": "Segment size in MiB for files of at least 16 MiB. Completed segments survive retries."
 }

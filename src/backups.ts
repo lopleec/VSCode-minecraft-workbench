@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { Instance } from './models';
 import { exists, filename, rejectSymlinkParents, writeJson } from './files';
 
-async function noLinks(root: string): Promise<void> {
+export async function noLinks(root: string): Promise<void> {
   if ((await fs.lstat(root)).isSymbolicLink())
     throw new Error('World backups cannot contain symbolic links');
   for (const entry of await fs.readdir(root, { withFileTypes: true })) {
