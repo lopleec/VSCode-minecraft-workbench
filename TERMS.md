@@ -40,7 +40,7 @@ The software is provided as-is, with the warranty and liability terms stated in 
 
 Minecraft use is governed by the official EULA linked below. The links provide the current official text; this notice does not replace it. The recorded version identifies this extension notice, not a Mojang EULA revision.
 
-[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms)
+[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)
 
 ## 简体中文
 
@@ -82,4 +82,4 @@ Minecraft、相关商标和游戏资源归各自权利人所有。插件不授�
 
 Minecraft 的使用以链接中的官方 EULA 全文为准，本文不替代官方条款。记录的版本号代表本插件提示版本，并非 Mojang EULA 的修订版本。
 
-[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms)
+[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)

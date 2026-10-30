@@ -24,6 +24,7 @@ interface JsonOptions {
   signal?: AbortSignal;
   kind?: Resource;
   redirects?: boolean;
+  bypassSources?: boolean;
 }
 export class HttpError extends Error {
   constructor(
@@ -114,7 +115,7 @@ export class Network {
   async response(url: string, options: JsonOptions = {}) {
     if (this.blockedReason) throw new Error(`Invalid network configuration: ${this.blockedReason}`);
     const target =
-      options.method === 'POST' || options.headers?.Authorization
+      options.bypassSources || options.method === 'POST' || options.headers?.Authorization
         ? url
         : sourceUrl(url, this.options.sources, options.kind);
     const execute = async (uri: string) => {

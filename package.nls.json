@@ -47,7 +47,7 @@
   "setting.jvmArgs": "Additional JVM arguments; each array item is one argument.",
   "setting.gameArgs": "Additional Minecraft arguments; each array item is one argument.",
   "setting.proxy": "HTTP, HTTPS, SOCKS5 or SOCKS5h proxy URL. Empty falls back to VS Code http.proxy. Use Set Proxy Credentials to store credentials securely. Reload required.",
-  "setting.sources": "Download sources by resource type: official, bmclapi or an HTTPS base URL. Custom bases preserve the original URL path. Authentication always uses the official endpoints. Reload required.",
+  "setting.sources": "Download sources by resource type: official, bmclapi or an HTTPS base URL. Custom bases preserve the original URL path. Login and authentication discovery bypass download mirrors. BMCLAPI is provided by bangbang93 (https://bmclapidoc.bangbang93.com/). Use sources you trust. Reload required.",
   "setting.downloadConcurrency": "Maximum concurrent files per installation. Reload required.",
   "setting.showSnapshots": "Include snapshots and historical development versions in the version picker.",
   "setting.autoUpdateManifest": "Refresh the version manifest cache hourly while instances exist.",

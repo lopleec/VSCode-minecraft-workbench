@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { createHash } from 'node:crypto';
 import { Network } from '../src/network';
+import { MockAgent } from 'undici';
 import { writeJson } from '../src/files';
 import { resourceOf, sourceUrl } from '../src/sources';
 
@@ -321,5 +322,41 @@ test('concurrent requests for one shared path serialize unchecksummed writes and
     await network.close();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('authentication discovery explicitly bypasses configured download mirrors', async () => {
+  const mock = new MockAgent();
+  mock.disableNetConnect();
+  let mirrorHits = 0;
+  mock
+    .get('https://auth.example.net')
+    .intercept({ path: '/api/yggdrasil/' })
+    .reply(200, '{"provider":true}');
+  mock
+    .get('https://mirror.example')
+    .intercept({ path: '/api/yggdrasil/' })
+    .reply(() => {
+      mirrorHits++;
+      return { statusCode: 200, data: '{"mirror":true}' };
+    });
+  const network = new Network({
+    proxy: '',
+    sources: { project: 'https://mirror.example' },
+    concurrency: 1,
+  });
+  Object.assign(network, { directDispatcher: mock });
+  try {
+    assert.deepEqual(
+      await network.json('https://auth.example.net/api/yggdrasil/', {
+        redirects: false,
+        bypassSources: true,
+      }),
+      { provider: true },
+    );
+    assert.equal(mirrorHits, 0);
+  } finally {
+    await network.close();
+    await mock.close();
   }
 });

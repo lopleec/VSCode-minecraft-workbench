@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.3 — 2026-10-30
+
+## External sign-in
+
+- Show a native, localized risk confirmation before asking for a third-party username or password. Display the complete authentication API address after discovery, including any change of host.
+- Explain that credentials are sent to that provider, recommend a separate password, and warn against entering a Microsoft password. Clarify that HTTPS does not establish provider trust, tokens are stored in SecretStorage, passwords are not saved, and removing a local account does not revoke access at the provider.
+- Require the same manual confirmation when sign-in is opened through MCP. Passing confirmation flags in tool arguments cannot bypass the dialog. Routine token validation/refresh does not prompt again.
+- Show the actual authentication host and API address in the account/password inputs instead of relying on the provider's self-reported name.
+- Leave the provider field empty so users choose their own service. Add a short account-page warning and update both README languages.
+
+## Fixes
+
+- Cancelling the provider warning, address entry or credential input stops sign-in cleanly. The shared launcher/MCP action now returns `false` on cancellation instead of reporting success.
+- Validate that the account field is nonempty before proceeding to password entry.
+- Retrying external sign-in opens a fresh confirmation and credential entry instead of reusing the previous password. Authentication discovery and metadata now bypass download mirrors, matching credential requests.
+- Expand the third-party notices with service terms/privacy links and separately downloaded software licenses. Add an About-page link and BMCLAPI attribution in source settings, without new routine-operation dialogs.
+
+## Validation
+
+- Add regression coverage for declined confirmation, MCP-style bypass arguments, resolved-host display, credential-entry order, Chinese localization and cancelled inputs.
+- **82 automated tests passed**, including the existing launcher, server, storage, download and MCP regression tests.
+
+---
+
+## 简体中文
+
+### 第三方登录
+
+- 输入第三方账户或密码前，先显示原生风险确认框。提示跟随插件语言，并展示识别、跳转后的完整认证 API 地址。
+- 明确用户名和密码将发送给该服务商，建议使用独立密码，勿填写 Microsoft 密码；说明 HTTPS 不代表服务商可信、令牌保存在 SecretStorage、不保存密码，以及移除本地账户不等于撤销服务商访问权限。
+- 通过 MCP 打开登录也必须由用户确认，传入确认标记不能跳过弹窗。正常令牌校验、刷新不会反复弹窗。
+- 账户、密码输入框显示实际认证域名和完整地址，避免被服务商自报名称误导。
+- 服务商地址默认留空，由用户选择；账户页增加简短提示，中英文 README 同步说明。
+
+### 修复
+
+- 取消风险确认、地址输入或账户/密码输入时，直接终止登录。启动器与 MCP 共用入口正确返回 `false`，不再误报成功。
+- 账户不能为空，通过校验后才进入密码输入。
+- 重试外置登录时重新确认并输入凭据，不复用上次密码；认证地址识别、元数据请求与凭据请求一样绕过下载镜像。
+- 补齐第三方服务条款、隐私链接及单独下载程序的许可；协议与关于增加统一入口，下载源设置补充 BMCLAPI 署名，不为日常操作增加弹窗。
+
+### 验证
+
+- 增加拒绝确认、MCP 式绕过参数、最终域名展示、凭据输入顺序、中文提示和输入取消的回归测试。
+- **82 项自动测试通过**，包括既有启动器、服务端、存储、下载与 MCP 回归测试。
+
 ## 0.4.2 — 2026-10-30
 
 Minecraft Workbench 0.4.2 adds portable instance storage, existing-launcher imports, external authentication and optional Terracotta multiplayer. It also fixes Java overrides and reduces the packaged extension's size.

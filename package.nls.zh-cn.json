@@ -47,7 +47,7 @@
   "setting.jvmArgs": "额外 JVM 参数，每个数组元素为一个参数。",
   "setting.gameArgs": "额外 Minecraft 参数，每个数组元素为一个参数。",
   "setting.proxy": "HTTP、HTTPS、SOCKS5 或 SOCKS5h 代理地址。留空使用 VS Code http.proxy。使用“设置代理凭据”安全保存用户名和密码。需要重新加载。",
-  "setting.sources": "按资源类型选择 official、bmclapi 或 HTTPS 基础地址。自定义地址保留原 URL 路径。认证始终使用官方端点。需要重新加载。",
+  "setting.sources": "按资源类型选择 official、bmclapi 或 HTTPS 基础地址，自定义地址保留原 URL 路径。登录及认证地址识别不经过下载镜像。BMCLAPI 由 bangbang93 提供（https://bmclapidoc.bangbang93.com/），请使用可信来源。需要重新加载。",
   "setting.downloadConcurrency": "每次安装的最大并发下载文件数。需要重新加载。",
   "setting.showSnapshots": "在版本选择器中显示快照和历史开发版本。",
   "setting.autoUpdateManifest": "存在实例时每小时更新版本清单缓存。",

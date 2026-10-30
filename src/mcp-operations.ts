@@ -104,7 +104,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'account_external_sign_in',
     method: 'launcher.authlibSignIn',
     description:
-      'Open native authlib-injector sign-in and profile selection. Password entry stays in VS Code; credentials are never returned over MCP.',
+      'Open native authlib-injector sign-in and profile selection. The user must confirm the resolved provider address and risk notice in VS Code before entering credentials. Cancellation returns false. Credentials are never returned over MCP.',
     properties: { server: str('Optional HTTPS authentication API root or ALI discovery URL') },
   },
   {

@@ -7,7 +7,8 @@
     "repository": "https://github.com/lopleec/VSCode-minecraft-workbench",
     "license": "https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE",
     "modPermissions": "https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions",
-    "modrinthTerms": "https://modrinth.com/legal/terms"
+    "modrinthTerms": "https://modrinth.com/legal/terms",
+    "thirdParty": "https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md"
   },
   "disclaimer": {
     "en": "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.",

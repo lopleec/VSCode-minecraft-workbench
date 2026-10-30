@@ -178,43 +178,74 @@ export class UI {
   async importInstance() {
     await this.browser?.('import');
   }
-  async authlibLogin(server?: string) {
+  async authlibLogin(server?: string): Promise<boolean> {
     const address =
       server ||
-      (await input(
-        t('Authentication server API URL', '认证服务器 API 地址'),
-        'https://littleskin.cn/api/yggdrasil',
-      ));
+      (await vscode.window.showInputBox({
+        title: t('Authentication server API URL', '认证服务器 API 地址'),
+        ignoreFocusOut: true,
+      }));
+    if (!address?.trim()) return false;
     const resolved = await this.jobs.run(
       t('Find authentication server', '识别认证服务器'),
       (signal) => this.accounts.authlib.discover(address, signal),
     );
-    const username = await input(t(`Account · ${resolved.name}`, `账户 · ${resolved.name}`));
+    const proceed = t('Continue sign-in', '继续登录');
+    if (
+      (await vscode.window.showWarningMessage(
+        t('Sign in to this third-party service?', '登录此第三方认证服务？'),
+        {
+          modal: true,
+          detail:
+            resolved.url +
+            '\n\n' +
+            t(
+              'Your username and password will be sent to this provider. Verify the address and use a separate password, never your Microsoft password. HTTPS does not establish provider trust.\n\nPasswords are not saved; tokens use VS Code SecretStorage.',
+              '你的用户名和密码会发送至此服务商。请核对地址并使用独立密码，勿填写 Microsoft 密码。HTTPS 不代表服务商可信。\n\n插件不保存密码，令牌使用 VS Code SecretStorage 保存。',
+            ),
+        },
+        proceed,
+      )) !== proceed
+    )
+      return false;
+    const host = new URL(resolved.url).host;
+    const username = await vscode.window.showInputBox({
+      title: t(`Account · ${host}`, `账户 · ${host}`),
+      prompt: resolved.url,
+      ignoreFocusOut: true,
+      validateInput: (value) => (value.trim() ? undefined : t('Enter an account.', '请输入账户。')),
+    });
+    if (username === undefined) return false;
     const password = await vscode.window.showInputBox({
-      title: t(`Password · ${new URL(resolved.url).host}`, `密码 · ${new URL(resolved.url).host}`),
+      title: t(`Password · ${host}`, `密码 · ${host}`),
+      prompt: resolved.url,
       password: true,
       ignoreFocusOut: true,
     });
-    if (password === undefined) return;
-    await this.jobs.run(t('External sign-in', '外置登录'), (signal) =>
-      this.accounts.authlib.login(
-        resolved.url,
-        username,
-        password,
-        async (profiles) =>
-          (
-            await choose(
-              profiles.map((profile) => ({
-                label: profile.name,
-                description: profile.id,
-                profile,
-              })),
-              t('Select player profile', '选择游戏角色'),
-            )
-          ).profile,
-        signal,
-      ),
+    if (password === undefined) return false;
+    await this.jobs.run(
+      t('External sign-in', '外置登录'),
+      (signal) =>
+        this.accounts.authlib.login(
+          resolved.url,
+          username,
+          password,
+          async (profiles) =>
+            (
+              await choose(
+                profiles.map((profile) => ({
+                  label: profile.name,
+                  description: profile.id,
+                  profile,
+                })),
+                t('Select player profile', '选择游戏角色'),
+              )
+            ).profile,
+          signal,
+        ),
+      () => this.authlibLogin(resolved.url),
     );
+    return true;
   }
   async selectInstance(item?: Item) {
     this.store.state.selectedInstance = (await this.instance(item)).id;

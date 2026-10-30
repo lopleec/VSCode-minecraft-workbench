@@ -81,7 +81,7 @@ export class Authlib {
     private readonly net: Network,
   ) {}
   private async metadata(api: string, signal?: AbortSignal) {
-    const raw = await this.net.text(api, { signal, redirects: false });
+    const raw = await this.net.text(api, { signal, redirects: false, bypassSources: true });
     if (Buffer.byteLength(raw) > 2 * 1024 ** 2)
       throw new Error('Authentication server metadata exceeds 2 MB.');
     const data = JSON.parse(raw);
@@ -109,7 +109,11 @@ export class Authlib {
   async discover(input: string, signal?: AbortSignal) {
     let url = authServerUrl(input);
     for (let n = 0; n < 8; n++) {
-      const response = await this.net.response(url, { signal, redirects: false });
+      const response = await this.net.response(url, {
+        signal,
+        redirects: false,
+        bypassSources: true,
+      });
       const location =
         response.status >= 300 && response.status < 400
           ? response.headers.location

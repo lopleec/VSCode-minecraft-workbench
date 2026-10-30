@@ -172,8 +172,7 @@ export class LauncherActions {
         );
         return true;
       case 'launcher.authlibSignIn':
-        await this.ui.authlibLogin(typeof params.server === 'string' ? text('server') : undefined);
-        return true;
+        return this.ui.authlibLogin(typeof params.server === 'string' ? text('server') : undefined);
       case 'launcher.accountAction': {
         const account = this.store.state.accounts.find((a) => a.id === text('id', 150));
         if (!account) throw new Error('Account not found');

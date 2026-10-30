@@ -131,7 +131,8 @@ function accounts(body: HTMLElement, ctx: PageContext) {
       ctx.notify(L('Client ID saved.', 'Client ID 已保存。'));
     }).catch(ctx.error);
   };
-  const authServer = input('authServer', 'https://littleskin.cn/api/yggdrasil');
+  const authServer = input('authServer');
+  authServer.placeholder = 'https://example.org/api/yggdrasil/';
   const external = h(
     'form',
     { class: 'management-form' },
@@ -139,7 +140,14 @@ function accounts(body: HTMLElement, ctx: PageContext) {
       'fieldset',
       {},
       h('legend', {}, L('External authentication', '外置登录')),
-      field(L('Authentication server API URL', '认证服务器 API 地址'), authServer),
+      field(
+        L('Authentication server API URL', '认证服务器 API 地址'),
+        authServer,
+        L(
+          'Use this provider’s credentials. Do not enter your Microsoft password.',
+          '使用此服务商的账户与独立密码，请勿填写 Microsoft 密码。',
+        ),
+      ),
       ctx.button(
         L('Sign in with authlib-injector', '使用 authlib-injector 登录'),
         async () => {

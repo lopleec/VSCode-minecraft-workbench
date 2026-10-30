@@ -105,6 +105,8 @@ Minecraft language initially follows the extension language, which follows VS Co
 
 External authentication is available under **Accounts → External authentication**. Enter an HTTPS Yggdrasil API address, such as LittleSkin's `https://littleskin.cn/api/yggdrasil`, then enter credentials in VS Code and select a player profile. ALI discovery is supported. Tokens stay in SecretStorage; passwords are not saved. Before launch, tokens are validated/refreshed and the SHA-256-verified authlib-injector agent is downloaded when needed. External identities authenticate only to servers configured for that provider.
 
+Before entering credentials, confirm the full resolved authentication API address in the native risk dialog. The provider receives your username and password and issues the tokens; use a separate password and never enter your Microsoft password. HTTPS does not establish provider trust. Removing an account deletes local credentials; revoke access with the provider when needed. No provider is preselected. [Third-party services and licenses](THIRD_PARTY_NOTICES.md) lists service terms, privacy links and separately downloaded components.
+
 
 **No Microsoft Client ID is bundled.** Leave it empty to use offline accounts. Offline identities do not authenticate to servers that require Microsoft/Minecraft authentication.
 
@@ -325,7 +327,7 @@ Java 按**实例单独设置 → 全局默认 → 自动检测 / 下载**选择�
 
 **账户 → 外置登录**支持 authlib-injector。填写 HTTPS Yggdrasil API 地址，例如 LittleSkin 的 `https://littleskin.cn/api/yggdrasil`，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
 
-
+输入凭据前，需在原生风险提示中核对识别后的完整认证 API 地址并确认。用户名、密码会发送给服务商，由其签发令牌；请使用独立密码，切勿填写 Microsoft 密码。HTTPS 不代表服务商可信。移除账户只删除本地凭据，如需撤销访问，请前往服务商处理。界面不预选服务商。[第三方服务与许可](THIRD_PARTY_NOTICES.md)列明服务条款、隐私链接及单独下载组件的许可。
 
 **插件不内置 Microsoft Client ID**；留空时使用离线账户。离线身份无法通过要求 Microsoft / Minecraft 验证的服务器认证。
 

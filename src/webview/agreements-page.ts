@@ -109,6 +109,7 @@ export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
         { class: 'agreement-links' },
         link('repository', L('GitHub source and builds ↗', 'GitHub 源码与构建 ↗')),
         link('license', 'MIT License ↗'),
+        link('thirdParty', L('Third-party services & licenses ↗', '第三方服务与许可 ↗')),
         link('modPermissions', L('Modpack permissions ↗', '整合包内容授权 ↗')),
         link('modrinthTerms', L('Modrinth terms ↗', 'Modrinth 条款 ↗')),
       ),

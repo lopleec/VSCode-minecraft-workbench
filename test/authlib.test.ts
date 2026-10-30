@@ -115,6 +115,11 @@ test('external auth discovers ALI, selects a profile and keeps passwords/tokens 
       signal(),
     );
     assert.equal(chosen, 1);
+    assert.ok(
+      f.calls
+        .filter((call) => call.url.endsWith('/yggdrasil/'))
+        .every((call) => call.options.bypassSources === true),
+    );
     const account = f.store.state.accounts[0];
     assert.equal(account.kind, 'authlib');
     assert.equal(account.profileId, player.id);

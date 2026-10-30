@@ -2,6 +2,7 @@ const Module = require('node:module');
 const path = require('node:path');
 const original = Module._load;
 const stub = {
+  window: {},
   workspace: { getConfiguration: () => ({ get: (_key, fallback) => fallback }), isTrusted: true },
   env: { language: 'en' },
   ConfigurationTarget: { Global: 1, Workspace: 2 },
