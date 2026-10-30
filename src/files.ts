@@ -29,6 +29,21 @@ export function filename(name: string): string {
     throw new Error('Invalid filename');
   return name;
 }
+export function suggestedFilename(value: string, fallback = 'instance'): string {
+  const cleaned =
+    value
+      .normalize('NFC')
+      .replace(/[\x00-\x1f<>:"/\\|?*]+/g, '_')
+      .replace(/\s+/g, ' ')
+      .replace(/^[.\s]+|[.\s]+$/g, '') || fallback;
+  let name = '';
+  for (const char of cleaned) {
+    if (Buffer.byteLength(name + char) > 200) break;
+    name += char;
+  }
+  name = name.replace(/[.\s]+$/, '') || 'instance';
+  return /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(name) ? `_${name}` : name;
+}
 export async function exists(target: string): Promise<boolean> {
   try {
     await fs.access(target);

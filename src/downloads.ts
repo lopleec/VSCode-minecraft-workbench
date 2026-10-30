@@ -54,6 +54,7 @@ class Slots {
 export class Downloads {
   private readonly slots: Slots;
   private readonly pending = new Map<string, Promise<void>>();
+  private readonly destinations = new Map<string, Promise<void>>();
   constructor(
     private readonly dispatcher: Dispatcher,
     private readonly options: NetworkOptions,
@@ -68,6 +69,22 @@ export class Downloads {
     );
   }
   async download(url: string, destination: string, input: DownloadOptions = {}): Promise<void> {
+    input.signal?.throwIfAborted();
+    const key = path.resolve(destination);
+    const previous = this.destinations.get(key) || Promise.resolve();
+    const work = previous.catch(() => {}).then(() => this.downloadFile(url, destination, input));
+    this.destinations.set(key, work);
+    const release = () => {
+      if (this.destinations.get(key) === work) this.destinations.delete(key);
+    };
+    void work.then(release, release);
+    await waitFor(work, input.signal);
+  }
+  private async downloadFile(
+    url: string,
+    destination: string,
+    input: DownloadOptions,
+  ): Promise<void> {
     const options = {
       ...input,
       hash: input.hash?.toLowerCase(),
@@ -89,7 +106,7 @@ export class Downloads {
       return;
     }
     if (!cache) {
-      await this.transfer(url, destination, options);
+      await this.cacheTransfer(url, destination, options, true);
       return;
     }
     const key = algorithm + ':' + options.hash;
@@ -100,22 +117,51 @@ export class Downloads {
       } catch (error) {
         if (options.signal?.aborted) throw options.signal.reason;
         if (await this.valid(cache, options)) {
-        } else return this.download(url, destination, options);
+        } else return this.downloadFile(url, destination, options);
       }
       options.signal?.throwIfAborted();
     }
     if (!(await this.valid(cache, options))) {
       const marker = path.sep + '.runtime' + path.sep;
       const at = destination.lastIndexOf(marker);
-      if (at >= 0)
-        for (const root of this.options.runtimeRoots?.() || []) {
-          const candidate = path.join(root, destination.slice(at + marker.length));
-          if (
-            candidate !== destination &&
-            (await this.valid(candidate, options)) &&
-            (await this.seed(candidate, cache, options))
-          )
-            break;
+      const roots = [...new Set(this.options.runtimeRoots?.() || [])];
+      const containing = roots
+        .filter((root) => destination.startsWith(root + path.sep))
+        .sort((a, b) => b.length - a.length)[0];
+      const relative =
+        at >= 0
+          ? destination.slice(at + marker.length)
+          : containing
+            ? path.relative(containing, destination)
+            : undefined;
+      if (relative)
+        for (const root of roots) {
+          const candidates = [path.join(root, relative)];
+          const client = /^versions\/([^/]+)\/\1\.jar$/.exec(relative.replaceAll(path.sep, '/'));
+          if (client)
+            candidates.push(
+              path.join(
+                root,
+                'libraries',
+                'com',
+                'mojang',
+                'minecraft',
+                client[1],
+                `minecraft-${client[1]}-client.jar`,
+              ),
+            );
+          let reused = false;
+          for (const candidate of candidates) {
+            if (
+              candidate !== destination &&
+              (await this.valid(candidate, options)) &&
+              (await this.seed(candidate, cache, options))
+            ) {
+              reused = true;
+              break;
+            }
+          }
+          if (reused) break;
         }
     }
     if (!(await this.valid(cache, options))) {
@@ -130,7 +176,20 @@ export class Downloads {
     options.signal?.throwIfAborted();
     await fs.mkdir(path.dirname(destination), { recursive: true });
     // Copy-on-write when available; instance edits must never modify the shared cache.
-    await fs.copyFile(cache, destination, fs.constants.COPYFILE_FICLONE);
+    const temporary = `${destination}.${randomUUID()}.copying`;
+    try {
+      await fs.copyFile(cache, temporary, fs.constants.COPYFILE_FICLONE);
+      options.signal?.throwIfAborted();
+      if (!(await this.valid(destination, options))) {
+        try {
+          await fs.rename(temporary, destination);
+        } catch (error) {
+          if (!(await this.valid(destination, options))) throw error;
+        }
+      }
+    } finally {
+      await fs.rm(temporary, { force: true });
+    }
     options.progress?.((await fs.stat(cache)).size, (await fs.stat(cache)).size);
   }
   private async seed(source: string, cache: string, options: DownloadOptions) {
@@ -145,7 +204,7 @@ export class Downloads {
       await fs.rm(stage, { force: true });
     }
   }
-  private async cacheTransfer(url: string, file: string, options: DownloadOptions) {
+  private async cacheTransfer(url: string, file: string, options: DownloadOptions, force = false) {
     await fs.mkdir(path.dirname(file), { recursive: true });
     const lockFile = file + '.lock';
     let handle: fs.FileHandle | undefined;
@@ -157,7 +216,7 @@ export class Downloads {
         break;
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        if (await this.valid(file, options)) return;
+        if (!force && (await this.valid(file, options))) return;
         const owner = await readJson<{ pid: number }>(lockFile).catch(() => undefined);
         if (owner?.pid && Number.isInteger(owner.pid) && owner.pid > 0) {
           try {
@@ -174,7 +233,7 @@ export class Downloads {
     }
     if (!handle) throw new Error('Download cache is busy; retry the task');
     try {
-      if (!(await this.valid(file, options))) await this.transfer(url, file, options);
+      if (force || !(await this.valid(file, options))) await this.transfer(url, file, options);
     } finally {
       await handle.close();
       await fs.rm(lockFile, { force: true });

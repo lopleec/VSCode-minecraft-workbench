@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
 import * as http from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { mcpOperations } from './mcp-operations';
 import { config, t, trusted } from './config';
 import { Consent } from './consent';
@@ -45,7 +43,7 @@ export class WorkbenchMcp implements vscode.Disposable {
   private http?: http.Server;
   private endpoint?: vscode.Uri;
   private readonly token = randomBytes(32).toString('hex');
-  private readonly requests = new Set<Server>();
+  private readonly requests = new Map<http.ServerResponse, Server | undefined>();
   private starting?: Promise<void>;
   private disposed = false;
   private registered?: boolean;
@@ -148,7 +146,11 @@ export class WorkbenchMcp implements vscode.Disposable {
       ),
     );
   }
-  private createServer() {
+  private async createServer() {
+    const [{ Server }, { CallToolRequestSchema, ListToolsRequestSchema }] = await Promise.all([
+      import('@modelcontextprotocol/sdk/server/index.js'),
+      import('@modelcontextprotocol/sdk/types.js'),
+    ]);
     const server = new Server(
       { name: 'com.lopleec.minecraft-workbench', version: extensionVersion },
       {
@@ -266,6 +268,12 @@ export class WorkbenchMcp implements vscode.Disposable {
       res.writeHead(429).end();
       return;
     }
+    this.requests.set(res, undefined);
+    res.once('close', () => {
+      const server = this.requests.get(res);
+      this.requests.delete(res);
+      void server?.close();
+    });
     const chunks: Buffer[] = [];
     let size = 0;
     for await (const chunk of req) {
@@ -283,15 +291,19 @@ export class WorkbenchMcp implements vscode.Disposable {
       res.writeHead(400).end();
       return;
     }
-    const server = this.createServer();
-    this.requests.add(server);
+    const [server, { StreamableHTTPServerTransport }] = await Promise.all([
+      this.createServer(),
+      import('@modelcontextprotocol/sdk/server/streamableHttp.js'),
+    ]);
+    if (!this.enabled || res.destroyed) {
+      await server.close();
+      if (!res.destroyed) res.writeHead(503).end();
+      return;
+    }
+    this.requests.set(res, server);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
-    });
-    res.once('close', () => {
-      this.requests.delete(server);
-      void server.close();
     });
     await server.connect(transport);
     await transport.handleRequest(req, res, body);
@@ -301,7 +313,7 @@ export class WorkbenchMcp implements vscode.Disposable {
     this.http?.closeAllConnections();
     this.http?.close();
     this.http = undefined;
-    for (const server of this.requests) void server.close();
+    for (const server of this.requests.values()) void server?.close();
     this.requests.clear();
   }
   dispose() {

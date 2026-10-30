@@ -262,3 +262,64 @@ test('verified files from an older isolated runtime seed the shared cache withou
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('concurrent requests for one shared path serialize unchecksummed writes and redact invalid JSON responses', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-shared-path-'));
+  let active = 0,
+    peak = 0;
+  let releaseHeld: (() => void) | undefined;
+  let started: (() => void) | undefined;
+  const holding = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const server = createServer((req, res) => {
+    if (req.url === '/json') {
+      res.end('private-response-token-not-json');
+      return;
+    }
+    active++;
+    peak = Math.max(peak, active);
+    res.write('start');
+    const finish = () => {
+      res.end('end');
+      active--;
+    };
+    if (req.url === '/held') {
+      releaseHeld = finish;
+      started?.();
+    } else setTimeout(finish, 20);
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const network = new Network({ proxy: '', sources: {}, concurrency: 4, retries: 0 });
+  const url = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    const destination = path.join(root, 'shared-installer.jar');
+    await Promise.all([
+      network.download(url + '/file', destination),
+      network.download(url + '/file', destination),
+    ]);
+    assert.equal(peak, 1);
+    assert.equal(await fs.readFile(destination, 'utf8'), 'startend');
+    assert.deepEqual(await fs.readdir(root), ['shared-installer.jar']);
+    const first = network.download(url + '/held', destination);
+    await holding;
+    const cancelled = new AbortController();
+    const second = network.download(url + '/file', destination, { signal: cancelled.signal });
+    cancelled.abort();
+    await assert.rejects(second, { name: 'AbortError' });
+    const third = network.download(url + '/file', destination);
+    releaseHeld?.();
+    await Promise.all([first, third]);
+    assert.equal(peak, 1);
+    assert.equal(await fs.readFile(destination, 'utf8'), 'startend');
+    await assert.rejects(network.json(url + '/json'), (error: Error) => {
+      assert.match(error.message, /Invalid JSON response/);
+      assert.doesNotMatch(error.message, /private-response-token/);
+      return true;
+    });
+  } finally {
+    await network.close();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

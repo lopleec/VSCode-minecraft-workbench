@@ -2,6 +2,7 @@ import { h } from './dom';
 import { renderServers, renderServerCreate, renderServer, serverContent } from './server-page';
 import { renderAgreements } from './agreements-page';
 import { renderInstances, renderSetup } from './setup-page';
+import { renderImport } from './import-page';
 import { renderManagement, managementPages } from './manage-pages';
 import type { PageContext } from './page-ui';
 import type {
@@ -323,7 +324,7 @@ function shell() {
                 render();
               },
               value === page ||
-                (value === 'instances' && ['create', 'version'].includes(page)) ||
+                (value === 'instances' && ['create', 'version', 'import'].includes(page)) ||
                 (value === 'servers' && page === 'serverCreate') ||
                 (['accounts', 'java'].includes(value) &&
                   managementPages.includes(page) &&
@@ -450,6 +451,7 @@ function render() {
       'server',
       'instances',
       'create',
+      'import',
       'version',
       ...managementPages,
     ].includes(page)
@@ -483,6 +485,7 @@ function render() {
     else if (page === 'serverCreate') updateManaged = renderServerCreate(main, ctx);
     else if (page === 'server') updateManaged = renderServer(main, ctx);
     else if (page === 'instances') updateManaged = renderInstances(main, ctx);
+    else if (page === 'import') renderImport(main, ctx);
     else if (page === 'create' || page === 'version')
       updateManaged = renderSetup(main, page === 'version', ctx);
     else updateManaged = renderManagement(main, page, ctx);
@@ -1473,6 +1476,21 @@ function renderInstance() {
         { class: 'form-grid' },
         field(L('Instance name', '实例名称'), formInput('name', instance.name)),
         field(
+          L('Minecraft language', 'Minecraft 语言'),
+          formSelect('gameLanguage', instance.gameLanguage || '', [
+            ['', L('Use global setting', '使用全局设置')],
+            ['auto', L('Follow extension language', '跟随扩展语言')],
+            ['preserve', L('Keep game language', '保留游戏内语言')],
+            ['en_us', 'English (US)'],
+            ['zh_cn', '简体中文'],
+            ['zh_tw', '繁體中文'],
+            ...(instance.gameLanguage &&
+            !['auto', 'preserve', 'en_us', 'zh_cn', 'zh_tw'].includes(instance.gameLanguage)
+              ? [[instance.gameLanguage, instance.gameLanguage] as [string, string]]
+              : []),
+          ]),
+        ),
+        field(
           L('Account', '账户'),
           formSelect('accountId', instance.accountId || '', [
             ['', L('Use active account', '使用当前账户')],
@@ -1493,7 +1511,10 @@ function renderInstance() {
       field(
         L('Java executable', 'Java 可执行文件'),
         formInput('java', instance.java || '', 'text', L('Automatic', '自动选择')),
-        L('Leave empty to use the global Java preference.', '留空使用全局 Java 设置。'),
+        L(
+          'Instance Java takes priority. Leave empty for the global default or automatic selection.',
+          '实例 Java 优先；留空使用全局默认或自动选择。',
+        ),
       ),
       h(
         'div',
@@ -1617,6 +1638,7 @@ function renderInstance() {
             ['log', L('Latest log', '最新日志')],
             ['clone', L('Duplicate instance', '复制实例')],
             ['exportPack', L('Export .mrpack', '导出整合包')],
+            ['exportNative', L('Export instance ZIP', '导出实例 ZIP')],
             ['conflicts', L('Check mod conflicts', '检查模组冲突')],
           ] as [string, string][]
         ).map(([key, label]) =>
@@ -1632,17 +1654,28 @@ function renderInstance() {
     h(
       'section',
       { class: 'danger-zone' },
-      h('h2', {}, L('Delete instance', '删除实例')),
+      h(
+        'h2',
+        {},
+        instance.linked ? L('Remove instance', '移除实例') : L('Delete instance', '删除实例'),
+      ),
       h(
         'p',
         { class: 'muted' },
-        L(
-          'Moves the instance and its game files to Trash when supported.',
-          '系统支持时，将实例及其游戏文件移到废纸篓。',
-        ),
+        instance.linked
+          ? L(
+              'Removes this registration and keeps the original game files.',
+              '只移除此登记，保留原有游戏文件。',
+            )
+          : L(
+              'Moves the instance folder to Trash when supported.',
+              '系统支持时，将实例目录移到废纸篓。',
+            ),
       ),
       button(
-        L('Delete instance…', '删除实例…'),
+        instance.linked
+          ? L('Remove from Workbench…', '从工作台移除…')
+          : L('Delete instance…', '删除实例…'),
         () => action('delete'),
         'secondary danger',
         running,
@@ -1657,6 +1690,7 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
     instanceId: instance.id,
     value: {
       name: value('name'),
+      gameLanguage: value('gameLanguage'),
       accountId: value('accountId'),
       java: value('java'),
       minMemory: values.has('globalMemory') ? undefined : Number(value('minMemory')),
@@ -1718,6 +1752,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       next.consent.accepted !== boot.consent.accepted ||
       next.consent.version !== boot.consent.version ||
       next.locale !== boot.locale ||
+      next.terracotta?.enabled !== boot.terracotta?.enabled ||
       next.mode !== boot.mode ||
       (['server', 'discover', 'installed'].includes(page) &&
         next.selectedServer !== boot.selectedServer) ||

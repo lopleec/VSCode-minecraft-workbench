@@ -37,7 +37,7 @@
   "command.help": "使用文档",
   "setting.language": "插件语言，默认跟随 VS Code。也可单独选择英文或简体中文。",
   "setting.storageDirectory": "元数据、缓存和下载 JDK 的绝对路径。留空使用 VS Code 扩展存储。需要重新加载。",
-  "setting.gameDirectory": "新游戏实例的父目录。留空使用扩展存储目录。",
+  "setting.gameDirectory": "存放共享版本、运行库和资源的 Minecraft 目录。留空使用系统标准 Minecraft 目录，需要时创建。",
   "setting.projectDirectory": "新模组项目的父目录。留空时选择目录。",
   "setting.javaPath": "默认 Java 可执行文件。留空自动选择所需 Java 版本。",
   "setting.microsoftClientId": "已获 Minecraft Services 访问许可且启用设备代码登录的 Microsoft 公共客户端应用 Client ID。不使用客户端密钥。",
@@ -97,5 +97,12 @@
   "group.server": "开服与 AI",
   "config.sharedDownloadCache": "在实例间复用已校验下载。带校验和的客户端、服务端、库、资源、JDK 和内容文件使用共享缓存。",
   "config.downloadConnectionsPerFile": "大文件分段下载连接数；不支持时自动回退单连接。所有下载共用全局并发上限。",
-  "config.downloadChunkSize": "至少 16 MiB 文件的下载分段大小（MiB），重试可复用已完成分段。"
+  "config.downloadChunkSize": "至少 16 MiB 文件的下载分段大小（MiB），重试可复用已完成分段。",
+  "setting.instanceDirectory": "Prism / MultiMC 实例父目录。留空使用 Minecraft 目录下的 instances；可指向 PrismLauncher/instances。已有实例需单独导入。",
+  "setting.gameLanguage": "Minecraft 语言：auto 跟随扩展语言，preserve 保留游戏设置，也可填写 en_us / zh_cn 等语言代码。自动模式保留玩家在游戏内更改的语言。",
+  "setting.metadataConcurrency": "检查冲突时并行获取 Modrinth 元数据的最大请求数。网络失败后停止后续请求。",
+  "group.terracotta": "陶瓦联机（Beta）",
+  "setting.terracotta.enabled": "开启可选的陶瓦联机 Beta 页面，默认关闭。下载与房间操作还需单独确认陶瓦联机须知。关闭后断开本扩展创建的连接。",
+  "setting.terracotta.executable": "可选：未修改的陶瓦官方可执行文件或 macOS 应用路径。留空使用已下载组件；macOS 需通过官方安装包配置后台组件。",
+  "setting.terracotta.publicNodes": "额外的陶瓦公共中继节点 URL。留空使用官方组件默认节点，修改在下次连接房间时生效。"
 }

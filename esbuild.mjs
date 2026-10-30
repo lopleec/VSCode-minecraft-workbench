@@ -1,5 +1,7 @@
 import { context } from 'esbuild';
 import path from 'node:path';
+const production = process.argv.includes('--production');
+const output = { minify: production, sourcemap: !production, sourcesContent: false };
 // XMCL 6.3.6 references an unpublished utils entry; unzip 2.2.0 points main at an omitted source file.
 const alias = {
   '@xmcl/unzip': path.resolve('node_modules/@xmcl/unzip/dist/index.js'),
@@ -14,7 +16,8 @@ const ctx = await context({
   outfile: 'dist/extension.js',
   external: ['vscode'],
   alias,
-  sourcemap: true,
+  mainFields: ['module', 'main'],
+  ...output,
   logLevel: 'info',
 });
 const browser = await context({
@@ -24,7 +27,7 @@ const browser = await context({
   target: 'es2022',
   format: 'iife',
   outfile: 'dist/workbench.js',
-  sourcemap: true,
+  ...output,
   logLevel: 'info',
 });
 if (process.argv.includes('--watch')) {

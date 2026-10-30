@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -43,7 +43,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --require ./test/preload.cjs --import tsx --test test/*.test.ts",
     "package": "npm run legal && npm run licenses && vsce package --no-dependencies --githubBranch main",
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile -- --production",
+    "check:package": "node scripts/check-package.mjs",
     "test:host": "node scripts/test-host.mjs",
     "licenses": "node scripts/licenses.mjs",
     "format": "prettier --write src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json",
@@ -210,13 +211,13 @@
       },
       {
         "command": "minecraftWorkbench.exportInstance",
-        "title": "Export Instance Settings",
+        "title": "Export Instance ZIP",
         "category": "Minecraft Workbench",
         "icon": "$(export)"
       },
       {
         "command": "minecraftWorkbench.exportInstance.zh",
-        "title": "导出实例设置",
+        "title": "导出实例 ZIP",
         "category": "Minecraft Workbench",
         "icon": "$(export)"
       },
@@ -315,6 +316,18 @@
         "title": "搜索 Modrinth",
         "category": "Minecraft Workbench",
         "icon": "$(search)"
+      },
+      {
+        "command": "minecraftWorkbench.importInstance",
+        "title": "Import Instance",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-open)"
+      },
+      {
+        "command": "minecraftWorkbench.importInstance.zh",
+        "title": "导入实例",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-open)"
       },
       {
         "command": "minecraftWorkbench.importPack",
@@ -783,6 +796,18 @@
         "title": "显示侧栏分类…",
         "category": "Minecraft Workbench",
         "icon": "$(layout-sidebar-left)"
+      },
+      {
+        "command": "minecraftWorkbench.terracotta",
+        "title": "Terracotta Multiplayer (Beta)",
+        "category": "Minecraft Workbench",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "minecraftWorkbench.terracotta.zh",
+        "title": "陶瓦联机（Beta）",
+        "category": "Minecraft Workbench",
+        "icon": "$(radio-tower)"
       }
     ],
     "viewsContainers": {
@@ -851,12 +876,12 @@
     "viewsWelcome": [
       {
         "view": "minecraftWorkbench.instances",
-        "contents": "Create an isolated Minecraft instance.\n[New Instance](command:minecraftWorkbench.createInstance)\n[Import Modpack](command:minecraftWorkbench.importPack)",
+        "contents": "Create an isolated Minecraft instance.\n[New Instance](command:minecraftWorkbench.createInstance)\n[Import Modpack](command:minecraftWorkbench.importPack)\n[Import Instance](command:minecraftWorkbench.importInstance)",
         "when": "minecraftWorkbench.language != zh-cn"
       },
       {
         "view": "minecraftWorkbench.instances",
-        "contents": "创建独立的 Minecraft 实例。\n[新建实例](command:minecraftWorkbench.createInstance)\n[导入整合包](command:minecraftWorkbench.importPack)",
+        "contents": "创建独立的 Minecraft 实例。\n[新建实例](command:minecraftWorkbench.createInstance)\n[导入整合包](command:minecraftWorkbench.importPack)\n[Import Instance](command:minecraftWorkbench.importInstance)",
         "when": "minecraftWorkbench.language == zh-cn"
       },
       {
@@ -1141,6 +1166,16 @@
           "command": "minecraftWorkbench.showView.zh",
           "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
           "group": "views"
+        },
+        {
+          "command": "minecraftWorkbench.importInstance",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
+          "command": "minecraftWorkbench.importInstance.zh",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
         }
       ],
       "view/item/context": [
@@ -1789,6 +1824,22 @@
         {
           "command": "minecraftWorkbench.showView.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.importInstance",
+          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.importInstance.zh",
+          "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.terracotta",
+          "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language != zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.terracotta.zh",
+          "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language == zh-cn"
         }
       ]
     },
@@ -1834,6 +1885,25 @@
             "type": "boolean",
             "default": true,
             "markdownDescription": "%setting.openProjectsInNewWindow%"
+          },
+          "minecraftWorkbench.instanceDirectory": {
+            "type": "string",
+            "default": "",
+            "scope": "machine",
+            "markdownDescription": "%setting.instanceDirectory%"
+          },
+          "minecraftWorkbench.gameLanguage": {
+            "type": "string",
+            "default": "auto",
+            "pattern": "^(auto|preserve|[a-z0-9]{2,8}_[a-z0-9]{2,8})$",
+            "markdownDescription": "%setting.gameLanguage%"
+          },
+          "minecraftWorkbench.metadataConcurrency": {
+            "type": "integer",
+            "default": 4,
+            "minimum": 1,
+            "maximum": 16,
+            "markdownDescription": "%setting.metadataConcurrency%"
           }
         }
       },
@@ -2049,6 +2119,14 @@
               "server": {
                 "type": "string",
                 "default": "official"
+              },
+              "authlib": {
+                "type": "string",
+                "default": "official"
+              },
+              "terracotta": {
+                "type": "string",
+                "default": "official"
               }
             }
           },
@@ -2147,6 +2225,31 @@
             "default": false,
             "description": "%config.mcp.enabled%",
             "scope": "machine"
+          }
+        }
+      },
+      {
+        "title": "%group.terracotta%",
+        "order": 8,
+        "properties": {
+          "minecraftWorkbench.terracotta.enabled": {
+            "type": "boolean",
+            "default": false,
+            "markdownDescription": "%setting.terracotta.enabled%"
+          },
+          "minecraftWorkbench.terracotta.executable": {
+            "type": "string",
+            "default": "",
+            "scope": "machine",
+            "markdownDescription": "%setting.terracotta.executable%"
+          },
+          "minecraftWorkbench.terracotta.publicNodes": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "markdownDescription": "%setting.terracotta.publicNodes%"
           }
         }
       }

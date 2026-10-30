@@ -23,6 +23,7 @@ interface JsonOptions {
   headers?: Record<string, string>;
   signal?: AbortSignal;
   kind?: Resource;
+  redirects?: boolean;
 }
 export class HttpError extends Error {
   constructor(
@@ -34,6 +35,7 @@ export class HttpError extends Error {
 }
 export class Network {
   readonly dispatcher: Dispatcher;
+  private readonly directDispatcher: Dispatcher;
   private readonly downloads: Downloads;
   blockedReason?: string;
   constructor(readonly options: NetworkOptions) {
@@ -88,6 +90,7 @@ export class Network {
       this.blockedReason = String(error);
       this.dispatcher = new Agent();
     }
+    this.directDispatcher = this.dispatcher;
     this.dispatcher = this.dispatcher.compose(interceptors.redirect({ maxRedirections: 8 }));
     this.downloads = new Downloads(this.dispatcher, options);
   }
@@ -95,9 +98,20 @@ export class Network {
     await this.dispatcher.close();
   }
   async json<T>(url: string, options: JsonOptions = {}): Promise<T> {
-    return JSON.parse(await this.text(url, options)) as T;
+    const text = await this.text(url, options);
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error(`Invalid JSON response from ${new URL(url).host}.`);
+    }
   }
   async text(url: string, options: JsonOptions = {}): Promise<string> {
+    const response = await this.response(url, options);
+    if (response.status >= 300 && response.status < 400)
+      throw new HttpError(response.status, response.text);
+    return response.text;
+  }
+  async response(url: string, options: JsonOptions = {}) {
     if (this.blockedReason) throw new Error(`Invalid network configuration: ${this.blockedReason}`);
     const target =
       options.method === 'POST' || options.headers?.Authorization
@@ -105,7 +119,7 @@ export class Network {
         : sourceUrl(url, this.options.sources, options.kind);
     const execute = async (uri: string) => {
       const response = await request(uri, {
-        dispatcher: this.dispatcher,
+        dispatcher: options.redirects === false ? this.directDispatcher : this.dispatcher,
         method: options.method || 'GET',
         headers: {
           'user-agent': userAgent,
@@ -120,7 +134,7 @@ export class Network {
       });
       const body = await response.body.text();
       if (response.statusCode >= 400) throw new HttpError(response.statusCode, body);
-      return body;
+      return { text: body, headers: response.headers, status: response.statusCode };
     };
     try {
       return await execute(target);

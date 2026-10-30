@@ -86,6 +86,17 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ),
           new Item(t('Tasks', '任务'), 'action', undefined, 'tasklist', 'manageTasks'),
           new Item(t('Logs', '日志'), 'action', undefined, 'output', 'output'),
+          ...(config('terracotta.enabled', false)
+            ? [
+                new Item(
+                  t('Terracotta (Beta)', '陶瓦联机（Beta）'),
+                  'action',
+                  undefined,
+                  'radio-tower',
+                  'terracotta',
+                ),
+              ]
+            : []),
           new Item(
             t('Agreements & About', '协议与关于'),
             'action',

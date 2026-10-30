@@ -1,5 +1,132 @@
 # Changelog
 
+## 0.4.2 — 2026-10-30
+
+Minecraft Workbench 0.4.2 adds portable instance storage, existing-launcher imports, external authentication and optional Terracotta multiplayer. It also fixes Java overrides and reduces the packaged extension's size.
+
+## Instances, imports and worlds
+
+- New instances use the **Prism / MultiMC format**, with a readable folder name instead of a UUID:
+
+  ```text
+  instances/<instance name>/
+  ├── instance.cfg
+  ├── mmc-pack.json
+  └── .minecraft/
+      ├── mods/
+      ├── config/
+      └── saves/
+  ```
+
+- Minecraft versions, libraries and assets are shared through the system Minecraft directory. `minecraftWorkbench.gameDirectory` selects that shared directory; `minecraftWorkbench.instanceDirectory` selects the instances parent, including an existing PrismLauncher `instances` folder. Duplicate names receive a numbered suffix.
+- **Instances → Import instance** scans official Minecraft, HMCL/PCL, Prism/MultiMC and supported Modrinth profile directories, plus ZIP instance exports. The preview shows detected game and loader versions, editable names and compatibility warnings.
+- **Manage in place** registers existing files. Changes are shared with the original launcher; removing the registration keeps the files. **Copy** creates an independent Prism/MultiMC instance with mods, configuration and worlds. Launcher hooks and account databases are excluded. Existing Workbench instances continue to load from their current paths and can be copied into the new format.
+- **Export instance ZIP** writes a Prism/MultiMC archive with optional worlds. **World backups → Import worlds / Export world** accepts ordinary Java Edition world folders and ZIPs. Name collisions create numbered copies.
+
+## Game language and Java
+
+- Minecraft's initial language follows the extension, which follows VS Code by default. Automatic mode preserves a language subsequently selected in-game or found in an imported instance.
+- Set `minecraftWorkbench.gameLanguage` globally or choose an instance override. Supported preferences include automatic, preserve existing, and a Minecraft locale code such as `en_us` or `zh_cn`.
+- Java selection uses **instance override → global default → automatic detection/download**. The instance setting is optional; clearing it restores inheritance.
+- Fix Java paths being lost when saving other instance options or applying version settings. Custom executables remain selectable even when local detection does not list them.
+
+## External authentication
+
+- Add **Accounts → External authentication** for HTTPS Yggdrasil services compatible with **authlib-injector**, including LittleSkin. API-address discovery and player-profile selection are supported.
+- Tokens are stored in VS Code SecretStorage and validated/refreshed before launch. Passwords are not persisted. Account identities include their provider and player profile, avoiding collisions between authentication services.
+- The official authlib-injector Java agent is downloaded when needed and verified against its published SHA-256 checksum. External accounts authenticate to servers configured for their provider.
+
+## Terracotta multiplayer — optional Beta
+
+- **Off by default.** Enable `minecraftWorkbench.terracotta.enabled`, then open **More → Terracotta (Beta)** or **Manage → Terracotta (Beta)**.
+- A separate upstream-license and multiplayer notice requires two explicit confirmations before component downloads or room operations. Its English/Chinese selector changes only the notice language.
+- Download a verified, pinned official component or select an existing executable. On macOS, open the official installer to configure the required background component.
+- Hosts open a Minecraft world to LAN and create a room. Guests enter its room code, then copy the game address or launch the selected instance into the joined room. This temporary address does not replace the instance's saved server setting.
+- Provide room status, leave-room controls and custom public-node settings. Disabling the feature or revoking confirmation disconnects rooms opened through the extension.
+- [Terracotta](https://github.com/burningtnt/Terracotta) runs as an unmodified, separate program under its upstream license; its binaries are not bundled. Extension proxy settings apply to downloads, while Terracotta manages peer and relay traffic separately.
+
+## Downloads, diagnostics and package size
+
+- Serialize downloads targeting the same shared file and write cache copies atomically, preventing concurrent instances from racing over installers or partially copied resources.
+- Conflict checks reuse cached Modrinth metadata, use bounded parallel requests and stop scheduling queued metadata lookups after a connection failure. `minecraftWorkbench.metadataConcurrency` controls parallelism.
+- Preserve Unicode export names, handle Windows reserved filenames and keep long names within filesystem limits.
+- Fix copying an official launcher's shared game directory into the same Minecraft root. Other instance/profile containers are excluded from the copy.
+- Exclude an existing destination ZIP from repeated world/instance exports, preventing archives from nesting and growing on each export. Reject invalid world-directory names.
+- Invalid JSON errors identify the service without echoing response bodies that may contain credentials.
+- Production builds now minify code and remove unused modules. Both English and Chinese README files and all bundled license notices remain in the VSIX; screenshots stay in the repository and are referenced by their GitHub URLs.
+- CI builds the production package, checks its contents and enforces a **1 MiB package limit**. The release VSIX is approximately **0.6 MB**.
+
+## MCP and validation
+
+- Add instance scan/import, world import/export, external-login and Terracotta operations, bringing the tool count to **55**. Legal confirmations still require the user in VS Code.
+- Load the MCP SDK on demand. Count requests before reading their bodies so incomplete uploads cannot bypass the concurrent-request limit; close pending connections when MCP is disabled.
+- **78 automated tests passed**, with compatibility checks on **VS Code 1.96 / Node 20.18.1** and **VS Code 1.101**. Native UI checks cover creation/import, Java-path retention, English/Chinese, light/dark themes, a narrow window and Beta consent/room controls.
+
+## Compatibility notes
+
+- Current Modrinth App installations without `profile.json` should be exported as `.mrpack` before import. Legacy MultiMC jar mods and unrecognized components are reported as unsupported; launcher-specific profile patches require copying and rebuilding a supported loader.
+- Native instance and world ZIP imports/exports have a 512 MB limit. Extract larger archives or copy their instance/world folders. Bedrock `.mcworld` files require conversion to Java Edition.
+- Terracotta currently targets its 0.4 local API and Java Edition LAN worlds. Cross-device public-network connectivity and real external-account sign-in have not been manually verified; integration tests use local fixtures and simulated services. NAT traversal and relay availability depend on the participants' networks and the upstream service.
+
+---
+
+## 简体中文
+
+0.4.2 新增通用实例格式、其他启动器实例导入、第三方认证和可选的陶瓦联机 Beta，同时修复 Java 覆盖设置并精简安装包。
+
+### 实例、导入与世界存档
+
+- 新实例采用 **Prism / MultiMC 格式**：以实例名称创建目录，包含 `instance.cfg`、`mmc-pack.json` 和 `.minecraft`；模组、配置、世界分别位于游戏目录的 `mods`、`config`、`saves` 中，不再以随机 UUID 命名实例文件夹。重名时自动添加数字后缀。
+- Minecraft 版本文件、运行库和资源共用系统 Minecraft 目录。`minecraftWorkbench.gameDirectory` 设置共享目录，`minecraftWorkbench.instanceDirectory` 设置实例父目录，也可指向现有 PrismLauncher 的 `instances` 目录。
+- **实例 → 导入实例** 可扫描官方 Minecraft、HMCL/PCL、Prism/MultiMC、支持的 Modrinth 档案目录及 ZIP 实例导出文件，预览游戏和 Loader 版本、修改名称并查看兼容提示。
+- **原地管理**保留原有文件，与原启动器共享修改；移除登记时保留文件。**复制**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界，不导入启动钩子或账户数据库。已有 Workbench 实例继续从原路径读取，可通过复制迁移到新格式。
+- **导出实例 ZIP** 生成 Prism/MultiMC 档案，可选择包含世界。**世界备份 → 导入世界 / 导出世界**支持原生 Java 版世界文件夹与 ZIP，重名时创建编号副本。
+
+### 游戏语言与 Java
+
+- Minecraft 初始语言默认跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家后来在游戏中选择的语言，以及导入实例已有的语言。
+- 可通过全局 `minecraftWorkbench.gameLanguage` 或实例设置选择自动、保留原设置，或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
+- Java 优先级为**实例覆盖 → 全局默认 → 自动检测或下载**。实例 Java 不是必填项，留空即可继承。
+- 修复保存其他实例设置、应用版本设置时丢失 Java 路径的问题；即使自动检测没有列出自定义运行环境，也会保留原有选择。
+
+### 第三方认证
+
+- 新增**账户 → 第三方认证**，支持 LittleSkin 等与 **authlib-injector** 兼容的 HTTPS Yggdrasil 服务、API 地址发现与角色选择。
+- 令牌存入 VS Code SecretStorage，启动前校验并在需要时刷新；不保存密码。账户标识区分认证服务与角色，避免不同服务之间发生冲突。
+- 按需下载官方 authlib-injector Java Agent 并校验发布的 SHA-256。第三方账户用于配置了对应认证服务的服务器。
+
+### 陶瓦联机：可选 Beta
+
+- **默认关闭**。在设置中开启 `minecraftWorkbench.terracotta.enabled`，再进入**更多 → 陶瓦联机（Beta）**或**管理 → 陶瓦联机（Beta）**。
+- 下载组件或操作房间前，需分别勾选上游许可与联机须知确认。须知提供独立中英文切换，不改变插件语言。
+- 支持下载并校验固定的官方组件版本，或选择已有可执行文件；macOS 需打开官方安装包配置后台组件。
+- 房主将 Minecraft 世界开放到局域网后创建房间；访客填写房间码加入，可复制游戏地址或直接启动所选实例进入房间。临时地址不会覆盖实例保存的服务器地址。
+- 提供房间状态、退出房间、自定义公共节点等选项；关闭功能或撤回确认时，断开本扩展建立的连接。
+- [陶瓦](https://github.com/burningtnt/Terracotta)作为独立程序运行，遵循上游许可，扩展不内置其二进制文件。扩展代理设置用于下载，玩家和中继流量由陶瓦单独管理。
+
+### 下载、诊断与安装包
+
+- 同一路径的下载串行写入，共享缓存采用临时文件替换，修复多个实例同时操作安装器或资源文件的竞争问题。
+- 冲突检查复用 Modrinth 元数据缓存、限制并行请求，并在连接失败后停止派发排队查询；可通过 `minecraftWorkbench.metadataConcurrency` 调整并发数。
+- 导出名称保留中文等 Unicode 字符，处理 Windows 保留文件名与文件名长度限制。
+- 修复官方启动器共享目录无法复制到同一 Minecraft 根目录的问题，复制时排除其他实例、档案容器。
+- 重复导出世界或实例时排除已有的目标 ZIP，避免把旧压缩包再次打入；拒绝无效的世界目录名称。
+- JSON 响应解析失败时只报告服务信息，避免把可能含凭据的响应正文带入错误信息。
+- 发布构建自动压缩代码并移除未使用的模块。VSIX 保留完整中英文 README 和许可文件；截图保留在仓库，由 README 引用 GitHub 原图。
+- CI 构建生产包、检查包内容，并限制 VSIX 不超过 **1 MiB**；本次安装包约 **0.6 MB**。
+
+### MCP 与验证
+
+- 新增实例扫描/导入、世界导入/导出、第三方登录和陶瓦操作，工具数量增至 **55**；协议确认仍须用户在 VS Code 中操作。
+- MCP SDK 按需加载；接收请求体前就计入并发限制，防止未完成请求绕过限制。取消 MCP 时关闭待处理连接。
+- **78 项自动测试通过**，并通过 **VS Code 1.96 / Node 20.18.1** 与 **VS Code 1.101** 兼容检查。真实界面检查覆盖创建/导入、Java 路径保留、中英文、明暗主题、窄窗口及 Beta 确认和房间操作。
+
+### 兼容范围
+
+- 没有 `profile.json` 的新版 Modrinth App 档案需先导出为 `.mrpack`。旧式 MultiMC Jar Mod、未知组件会明确提示不支持；启动器专用补丁需通过复制导入重建受支持的 Loader。
+- 实例、世界 ZIP 导入和导出上限为 512 MB；更大的档案请解压或直接复制实例、世界文件夹。基岩版 `.mcworld` 需要先转换为 Java 版格式。
+- 陶瓦当前适配其 0.4 本地 API 与 Java 版局域网世界。跨设备公网联机及真实第三方账户登录尚未完成人工验证，集成测试使用本地样本与模拟服务。实际穿透和中继可用性取决于参与者网络与上游服务。
+
 ## 0.4.1
 
 ### Changes

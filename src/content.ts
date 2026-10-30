@@ -704,6 +704,24 @@ export class ContentService {
   }
   async conflicts(instance: ContentTarget): Promise<string[]> {
     const items = (await this.list(instance)).filter((i) => i.enabled && i.kind === 'mod');
+    const versions = [...new Set(items.flatMap((i) => (i.versionId ? [i.versionId] : [])))];
+    const metadata = new Map<string, { version: ModVersion } | { error: unknown }>();
+    let cursor = 0;
+    let offline = false;
+    const limit = Math.max(1, Math.min(16, config('metadataConcurrency', 4)));
+    await Promise.all(
+      Array.from({ length: Math.min(limit, versions.length) }, async () => {
+        while (!offline && cursor < versions.length) {
+          const id = versions[cursor++];
+          try {
+            metadata.set(id, { version: await this.version(id) });
+          } catch (error) {
+            metadata.set(id, { error });
+            if (!(error instanceof HttpError)) offline = true;
+          }
+        }
+      }),
+    );
     const warnings: string[] = [];
     const localModules: FabricModule[] = [];
     let remoteUnavailable = false;
@@ -729,7 +747,10 @@ export class ContentService {
       }
       if (item.versionId && !remoteUnavailable) {
         try {
-          const version = await this.net.json<ModVersion>(`${api}/version/${item.versionId}`);
+          const result = metadata.get(item.versionId);
+          if (!result) continue;
+          if ('error' in result) throw result.error;
+          const version = result.version;
           if (
             !version.game_versions.includes(instance.minecraft) ||
             !version.loaders.includes(instance.loader)

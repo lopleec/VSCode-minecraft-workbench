@@ -140,3 +140,64 @@ test('modpack paths cannot escape an instance and server-only files are skipped'
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('conflict metadata is cached, parallelism is bounded, and offline failures stop the queue', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-conflict-cache-'));
+  const instance: Instance = {
+    id: 'x',
+    name: 'Game',
+    minecraft: '1.21.1',
+    loader: 'fabric',
+    directory: root,
+    createdAt: '',
+  };
+  try {
+    const items = Array.from({ length: 12 }, (_, i) => ({
+      file: `${i}.jar`,
+      name: `Mod ${i}`,
+      kind: 'mod',
+      enabled: true,
+      versionId: `v${i}`,
+      projectId: `p${i}`,
+    }));
+    for (const item of items) {
+      const zip = new AdmZip();
+      zip.addFile('pack.mcmeta', Buffer.from('{}'));
+      await fs.mkdir(path.join(root, 'mods'), { recursive: true });
+      zip.writeZip(path.join(root, 'mods', item.file));
+    }
+    await writeJson(path.join(root, '.workbench', 'content.json'), items);
+    let calls = 0,
+      active = 0,
+      peak = 0;
+    const service = new ContentService({
+      json: async (url: string) => {
+        calls++;
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((r) => setTimeout(r, 2));
+        active--;
+        return version(url.split('/').pop()!);
+      },
+    } as unknown as Network);
+    assert.deepEqual(await service.conflicts(instance), []);
+    assert.equal(calls, 12);
+    assert.ok(peak > 1 && peak <= 4);
+    await service.conflicts(instance);
+    assert.equal(calls, 12);
+    let failed = 0;
+    const offline = new ContentService({
+      json: async () => {
+        failed++;
+        await new Promise((r) => setTimeout(r, 2));
+        throw new Error('offline');
+      },
+    } as unknown as Network);
+    assert.deepEqual(await offline.conflicts(instance), [
+      'Online metadata unavailable; local checks only.',
+    ]);
+    assert.ok(failed <= 4);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});

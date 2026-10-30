@@ -13,12 +13,15 @@ import { Backups } from './backups';
 import { Item } from './views';
 import { Instance, Content, ContentKind, Account } from './models';
 import { config, t, trusted, setLanguage } from './config';
-import { exists, writeJson } from './files';
+import { exists, suggestedFilename } from './files';
+import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } from './game-paths';
+import { ImportSession } from './import-session';
 import { describeError } from './errors';
 import { InstanceFiles } from './instance-files';
 import { ContentInstallOptions, contentFile } from './modrinth';
 import { validateInstanceSettings } from './instance-settings';
 import { extensionId } from './build-info';
+import { importWorlds, exportWorld } from './worlds';
 
 class Cancelled extends Error {}
 async function input(
@@ -60,6 +63,7 @@ async function directory(title: string, defaultPath?: string) {
   return result[0].fsPath;
 }
 export class UI {
+  readonly imports: ImportSession;
   browser?: (tab?: string, kind?: ContentKind | 'modpack') => Promise<void>;
   constructor(
     readonly store: Store,
@@ -71,7 +75,9 @@ export class UI {
     readonly developer: Developer,
     readonly backups: Backups,
     private readonly refresh: () => void,
-  ) {}
+  ) {
+    this.imports = new ImportSession(store);
+  }
   async guard(work: () => Promise<unknown>) {
     try {
       await work();
@@ -169,11 +175,52 @@ export class UI {
   async createInstance() {
     await this.browser?.('create');
   }
+  async importInstance() {
+    await this.browser?.('import');
+  }
+  async authlibLogin(server?: string) {
+    const address =
+      server ||
+      (await input(
+        t('Authentication server API URL', '认证服务器 API 地址'),
+        'https://littleskin.cn/api/yggdrasil',
+      ));
+    const resolved = await this.jobs.run(
+      t('Find authentication server', '识别认证服务器'),
+      (signal) => this.accounts.authlib.discover(address, signal),
+    );
+    const username = await input(t(`Account · ${resolved.name}`, `账户 · ${resolved.name}`));
+    const password = await vscode.window.showInputBox({
+      title: t(`Password · ${new URL(resolved.url).host}`, `密码 · ${new URL(resolved.url).host}`),
+      password: true,
+      ignoreFocusOut: true,
+    });
+    if (password === undefined) return;
+    await this.jobs.run(t('External sign-in', '外置登录'), (signal) =>
+      this.accounts.authlib.login(
+        resolved.url,
+        username,
+        password,
+        async (profiles) =>
+          (
+            await choose(
+              profiles.map((profile) => ({
+                label: profile.name,
+                description: profile.id,
+                profile,
+              })),
+              t('Select player profile', '选择游戏角色'),
+            )
+          ).profile,
+        signal,
+      ),
+    );
+  }
   async selectInstance(item?: Item) {
     this.store.state.selectedInstance = (await this.instance(item)).id;
     await this.store.save();
   }
-  async launch(item?: Item) {
+  async launch(item?: Item, serverOverride?: string) {
     const instance = await this.instance(item);
     this.idle(instance);
     if (instance.backupBeforeLaunch ?? config('backupBeforeLaunch', false)) {
@@ -197,7 +244,7 @@ export class UI {
           return;
       }
     }
-    await this.minecraft.start(instance);
+    await this.minecraft.start(instance, false, serverOverride);
   }
   async language() {
     const result = await choose(
@@ -213,8 +260,23 @@ export class UI {
 
   async saveInstance(instance: Instance, value: unknown) {
     this.idle(instance);
-    Object.assign(instance, validateInstanceSettings(value, this.store.state.accounts));
-    await this.store.save();
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      throw new Error('Invalid instance settings');
+    const previous = structuredClone(instance);
+    Object.assign(
+      instance,
+      validateInstanceSettings({ ...instance, ...value }, this.store.state.accounts),
+    );
+    try {
+      await writeInstanceMetadata(instance);
+      await this.store.save();
+    } catch (error) {
+      for (const key of Object.keys(instance))
+        delete (instance as unknown as Record<string, unknown>)[key];
+      Object.assign(instance, previous);
+      await writeInstanceMetadata(instance).catch(() => {});
+      throw error;
+    }
   }
   async cloneInstance(item?: Item) {
     const instance = await this.instance(item);
@@ -233,7 +295,7 @@ export class UI {
         t('Duplicate instance', '复制实例'),
       )
     ).value;
-    const parent = config('gameDirectory', '') || path.join(this.store.root, 'instances');
+    const parent = minecraftDirectory();
     await this.operation(instance, t('Duplicate instance', '复制实例'), (signal) =>
       new InstanceFiles(this.store, this.content).clone(instance, parent, name, worlds, signal),
     );
@@ -258,7 +320,7 @@ export class UI {
     const instance = await this.instance(item);
     this.idle(instance);
     const destination = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(`${instance.name.replace(/[^\w.-]/g, '_')}.mrpack`),
+      defaultUri: vscode.Uri.file(`${suggestedFilename(instance.name)}.mrpack`),
       filters: { 'Modrinth modpack': ['mrpack'] },
     });
     if (!destination) return;
@@ -307,10 +369,20 @@ export class UI {
   async deleteInstance(item?: Item) {
     const instance = await this.instance(item);
     this.idle(instance);
-    const yes = t('Move to Trash', '移到废纸篓');
+    const yes = instance.linked
+      ? t('Remove from list', '从列表移除')
+      : t('Move to Trash', '移到废纸篓');
     if (
       (await vscode.window.showWarningMessage(
-        t(`Delete “${instance.name}” and its game files?`, `删除“${instance.name}”及其游戏文件？`),
+        instance.linked
+          ? t(
+              `Remove “${instance.name}” from Workbench? Its files will be kept.`,
+              `从工作台移除“${instance.name}”？游戏文件会保留。`,
+            )
+          : t(
+              `Delete “${instance.name}” and its game files?`,
+              `删除“${instance.name}”及其游戏文件？`,
+            ),
         { modal: true },
         yes,
       )) === yes
@@ -379,10 +451,7 @@ export class UI {
       name,
       minecraft: '',
       loader: 'vanilla',
-      directory: path.join(
-        config('gameDirectory', '') || path.join(this.store.root, 'instances'),
-        id,
-      ),
+      ...(await reserveInstanceLocation(minecraftDirectory(), name)),
       createdAt: new Date().toISOString(),
     };
     if (!path.isAbsolute(instance.directory)) throw new Error('Absolute directory path required');
@@ -394,6 +463,7 @@ export class UI {
         (signal, report) => this.content.importPack(archive!, instance, signal, report),
         () => this.importPack(archive, name),
       );
+      await writeInstanceMetadata(instance);
       this.store.state.instances.push(instance);
       this.store.state.selectedInstance = id;
       await this.store.save();
@@ -401,7 +471,10 @@ export class UI {
       this.store.state.instances = this.store.state.instances.filter((item) => item.id !== id);
       if (this.store.state.selectedInstance === id)
         this.store.state.selectedInstance = previousSelection;
-      await fs.rm(instance.directory, { recursive: true, force: true });
+      await fs.rm(instance.containerDirectory || instance.directory, {
+        recursive: true,
+        force: true,
+      });
       throw error;
     }
     await this.minecraft.install(instance);
@@ -519,22 +592,64 @@ export class UI {
   }
   async exportInstance(item?: Item) {
     const instance = await this.instance(item);
+    this.idle(instance);
+    const worlds = (
+      await choose(
+        [
+          { label: t('Mods and settings', '模组和设置'), value: false },
+          { label: t('Also include worlds', '同时包含世界存档'), value: true },
+        ],
+        t('Export Prism / MultiMC instance', '导出 Prism / MultiMC 实例'),
+      )
+    ).value;
     const destination = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(`${instance.name.replace(/[^\w.-]/g, '_')}.json`),
-      filters: { JSON: ['json'] },
+      defaultUri: vscode.Uri.file(`${suggestedFilename(instance.name)}.zip`),
+      filters: { 'Prism / MultiMC instance': ['zip'] },
     });
     if (destination)
-      await writeJson(destination.fsPath, {
-        name: instance.name,
-        minecraft: instance.minecraft,
-        loader: instance.loader,
-        loaderVersion: instance.loaderVersion,
-        minMemory: instance.minMemory,
-        maxMemory: instance.maxMemory,
-        jvmArgs: instance.jvmArgs,
-        gameArgs: instance.gameArgs,
-      });
+      await this.operation(instance, t('Export instance', '导出实例'), (signal) =>
+        new InstanceFiles(this.store, this.content).exportNative(
+          instance,
+          destination.fsPath,
+          signal,
+          worlds,
+        ),
+      );
   }
+  async importWorld(item?: Item) {
+    const instance = await this.instance(item);
+    const source = await vscode.window.showOpenDialog({
+      title: t('Import Java Edition worlds', '导入 Java 版世界存档'),
+      canSelectFiles: true,
+      canSelectFolders: true,
+      canSelectMany: false,
+      filters: { 'World ZIP': ['zip'] },
+    });
+    if (!source?.[0]) return;
+    await this.operation(instance, t('Import worlds', '导入世界存档'), (signal) =>
+      importWorlds(instance, source[0].fsPath, signal),
+    );
+  }
+  async exportWorld(item?: Item) {
+    const instance = await this.instance(item);
+    const directory = path.join(instance.directory, 'saves');
+    const names = [];
+    for (const entry of await fs.readdir(directory, { withFileTypes: true }).catch(() => []))
+      if (entry.isDirectory() && (await exists(path.join(directory, entry.name, 'level.dat'))))
+        names.push({ label: entry.name });
+    if (!names.length)
+      throw new Error(t('No Java Edition worlds found.', '未找到 Java 版世界存档。'));
+    const world = await choose(names, t('Export world', '导出世界存档'));
+    const destination = await vscode.window.showSaveDialog({
+      defaultUri: vscode.Uri.file(`${suggestedFilename(world.label)}.zip`),
+      filters: { 'Java Edition world': ['zip'] },
+    });
+    if (destination)
+      await this.operation(instance, t('Export world', '导出世界存档'), (signal) =>
+        exportWorld(instance, world.label, destination.fsPath, signal),
+      );
+  }
+
   async refreshManifest() {
     await this.jobs.run(t('Update Minecraft manifest', '更新 Minecraft 版本清单'), () =>
       this.minecraft.manifest(true),

@@ -6,6 +6,7 @@ import { ContentService } from './content';
 import { Minecraft } from './minecraft';
 import { UI } from './ui';
 import { config, t } from './config';
+import { minecraftDirectory, instancesDirectory } from './game-paths';
 import { Item } from './views';
 import { Instance } from './models';
 import { ProjectKind, SearchOrder, compatible } from './modrinth';
@@ -27,6 +28,8 @@ import { serverTarget } from './server-settings';
 import { serverEngines } from './server-catalog';
 import { settingsAction } from './settings-actions';
 import { mcpOperations } from './mcp-operations';
+import { Terracotta } from './terracotta';
+import { extensionId } from './build-info';
 
 const kinds: ProjectKind[] = ['mod', 'plugin', 'modpack', 'resourcepack', 'shader'];
 export class Workbench implements vscode.Disposable {
@@ -42,6 +45,7 @@ export class Workbench implements vscode.Disposable {
     private readonly ui: UI,
     private readonly consent: Consent,
     private readonly servers: Servers,
+    private readonly terracotta?: Terracotta,
   ) {}
   async open(page: string = 'discover', kind: ProjectKind = 'mod') {
     if (!this.consent.accepted) page = 'agreements';
@@ -49,7 +53,7 @@ export class Workbench implements vscode.Disposable {
       ? 'server'
       : page === 'projects'
         ? 'developer'
-        : ['instances', 'instance', 'create', 'version'].includes(page)
+        : ['instances', 'instance', 'create', 'version', 'import'].includes(page)
           ? 'launcher'
           : undefined;
     if (mode && this.store.state.mode !== mode) {
@@ -103,7 +107,13 @@ export class Workbench implements vscode.Disposable {
       kind: this.kind,
       instances: this.store.state.instances,
       selectedInstance: this.store.state.selectedInstance,
-      accounts: this.store.state.accounts.map(({ id, name, kind }) => ({ id, name, kind })),
+      accounts: this.store.state.accounts.map(({ id, name, kind, authServer, authServerName }) => ({
+        id,
+        name,
+        kind,
+        authServer,
+        authServerName,
+      })),
       selectedAccount: this.store.state.selectedAccount,
       projects: this.store.state.projects,
       mode: this.store.state.mode,
@@ -113,6 +123,7 @@ export class Workbench implements vscode.Disposable {
         this.store.state.servers.map((s) => [s.id, this.servers.status(s)]),
       ),
       mcpEnabled: config('mcp.enabled', false),
+      terracotta: this.terracotta?.snapshot(),
       java: this.store.state.java,
       running: [...this.minecraft.running.keys()],
       preferences: {
@@ -137,7 +148,9 @@ export class Workbench implements vscode.Disposable {
         height: config('windowHeight', 720),
         fullscreen: config('fullscreen', false),
         backup: config('backupBeforeLaunch', false),
-        gameDirectory: config('gameDirectory', '') || path.join(this.store.root, 'instances'),
+        gameDirectory: minecraftDirectory(),
+        instanceDirectory: instancesDirectory(),
+        gameLanguage: config('gameLanguage', 'auto'),
         projectDirectory: config('projectDirectory', ''),
         javaPath: config('javaPath', ''),
         clientId: config('microsoftClientId', ''),
@@ -182,6 +195,79 @@ export class Workbench implements vscode.Disposable {
         ),
       );
     if (method === 'ready') return this.snapshot();
+    if (method.startsWith('terracotta.')) {
+      const feature = this.terracotta;
+      if (!feature) throw new Error('Terracotta Beta is unavailable.');
+      if (method === 'terracotta.status') return feature.snapshot();
+      if (method === 'terracotta.accept') {
+        await feature.accept(params);
+        return feature.snapshot();
+      }
+      if (method === 'terracotta.revoke') {
+        await feature.revoke();
+        return true;
+      }
+      if (method === 'terracotta.settings') {
+        await vscode.commands.executeCommand(
+          'workbench.action.openSettings',
+          `@ext:${extensionId} terracotta`,
+        );
+        return true;
+      }
+      feature.requireAvailable();
+      try {
+        if (method === 'terracotta.download')
+          return await this.ui.jobs.run(
+            t('Download Terracotta', '下载陶瓦联机'),
+            (signal, report) => feature.download(signal, report),
+          );
+        if (method === 'terracotta.installer')
+          return await vscode.env.openExternal(vscode.Uri.file(await feature.installer()));
+        if (method === 'terracotta.choose') {
+          const result = await vscode.window.showOpenDialog({
+            canSelectMany: false,
+            canSelectFiles: true,
+            canSelectFolders: process.platform === 'darwin',
+            title: t('Choose Terracotta executable', '选择陶瓦可执行文件'),
+          });
+          if (result?.[0])
+            await vscode.workspace
+              .getConfiguration('minecraftWorkbench')
+              .update('terracotta.executable', result[0].fsPath, vscode.ConfigurationTarget.Global);
+          return true;
+        }
+        if (method === 'terracotta.connect')
+          await this.ui.jobs.run(t('Connect Terracotta', '连接陶瓦'), (signal) =>
+            feature.connect(signal),
+          );
+        else if (method === 'terracotta.host')
+          await feature.host(
+            this.store.state.accounts.find((a) => a.id === this.store.state.selectedAccount)?.name,
+          );
+        else if (method === 'terracotta.join')
+          await feature.join(
+            params.code,
+            this.store.state.accounts.find((a) => a.id === this.store.state.selectedAccount)?.name,
+          );
+        else if (method === 'terracotta.leave') await feature.leave();
+        else if (method === 'terracotta.refresh') await feature.refresh();
+        else if (method === 'terracotta.copy') {
+          const state = feature.snapshot();
+          const text = params.address === true ? state.address : state.room;
+          if (!text) throw new Error('Terracotta room is not ready.');
+          await vscode.env.clipboard.writeText(text);
+        } else if (method === 'terracotta.launch') {
+          const address = feature.address();
+          if (!address) throw new Error('Join a Terracotta room first.');
+          const selected = this.instance(params);
+          if (!selected) throw new Error('Select an instance first.');
+          await this.ui.launch(new Item(selected.name, 'instance', selected), address);
+        } else throw new Error('Unknown Terracotta action.');
+        return feature.snapshot();
+      } finally {
+        this.refresh();
+      }
+    }
     if (method === 'native.command') {
       const allowed = mcpOperations.find((op) => op.method === 'native.command')!.properties!
         .command as { enum: string[] };
@@ -438,7 +524,9 @@ export class Workbench implements vscode.Disposable {
           backups: () => this.ui.backupsMenu(item),
           importContent: () => this.ui.importContent(kind === 'modpack' ? 'mod' : kind),
           exportPack: () => this.ui.exportPack(item),
+          exportNative: () => this.ui.exportInstance(item),
           importPack: () => this.ui.importPack(),
+          importInstance: () => this.ui.importInstance(),
           updates: () => this.ui.checkUpdates(),
           conflicts: () => this.ui.conflicts(),
           settings: () => this.ui.settings(),

@@ -18,8 +18,11 @@ import { Consent } from './consent';
 import { Servers } from './servers';
 import { WorkbenchMcp } from './mcp';
 import { ServerActions } from './server-actions';
+import { runtimeDirectory } from './game-paths';
+import { Terracotta } from './terracotta';
 
 let activeServers: Servers | undefined;
+let activeTerracotta: Terracotta | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
@@ -118,7 +121,10 @@ export async function activate(context: vscode.ExtensionContext) {
     connectionsPerFile: config('downloadConnectionsPerFile', 4),
     chunkSize: config('downloadChunkSize', 8) * 1024 ** 2,
     runtimeRoots: () =>
-      store.state.instances.map((instance) => path.join(instance.directory, '.runtime')),
+      store.state.instances.flatMap((instance) => [
+        runtimeDirectory(instance),
+        ...(instance.resourceDirectories || []),
+      ]),
   });
   network.blockedReason ??= proxyError;
   if (network.blockedReason)
@@ -153,8 +159,17 @@ export async function activate(context: vscode.ExtensionContext) {
     new Backups(),
     refresh,
   );
-  context.subscriptions.push(jobs, accounts);
-  workbench = new Workbench(context, store, content, minecraft, ui, consent, servers);
+  context.subscriptions.push(jobs, accounts, ui.imports);
+  const terracotta = new Terracotta(
+    context.globalState,
+    store.root,
+    network,
+    refresh,
+    () => consent.accepted && vscode.workspace.isTrusted,
+  );
+  activeTerracotta = terracotta;
+  context.subscriptions.push(terracotta);
+  workbench = new Workbench(context, store, content, minecraft, ui, consent, servers, terracotta);
   ui.browser = (page, kind) => workbench!.open(page, kind);
   context.subscriptions.push(workbench);
   mcp = new WorkbenchMcp(consent, (method, params) => workbench!.handle(method, params), output);
@@ -235,6 +250,8 @@ export async function activate(context: vscode.ExtensionContext) {
         action: 'stop',
       }),
     createInstance: () => ui.createInstance(),
+    importInstance: () => ui.importInstance(),
+    terracotta: () => workbench!.open('multiplayer'),
     selectInstance: (item) => ui.selectInstance(item),
     launch: (item) => ui.launch(item),
     stop: (item) => ui.stop(item),
@@ -348,6 +365,8 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('minecraftWorkbench.terracotta'))
+        void terracotta.configurationChanged().catch((error) => output.error(String(error)));
       if (!event.affectsConfiguration('minecraftWorkbench')) return;
       refresh();
       for (const { section, tree } of treeViews) tree.title = t(...titles[section]);
@@ -399,9 +418,12 @@ export async function activate(context: vscode.ExtensionContext) {
     consent,
     servers,
     mcp,
+    terracotta,
   };
 }
 export async function deactivate() {
+  await activeTerracotta?.close();
+  activeTerracotta = undefined;
   await activeServers?.close();
   activeServers = undefined;
 }

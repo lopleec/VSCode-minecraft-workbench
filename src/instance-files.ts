@@ -1,6 +1,5 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { constants } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import AdmZip from 'adm-zip';
 import { Instance, ContentKind, Content } from './models';
@@ -8,6 +7,9 @@ import { Store } from './store';
 import { ContentService, contentFolders } from './content';
 import { exists, filename, hashFile, rejectSymlinkParents, writeJson } from './files';
 import { contentFile } from './modrinth';
+import { runtimeDirectory, writeInstanceMetadata } from './game-paths';
+import { InstanceImporter, copyGameFiles } from './instance-import';
+import { validateInstanceSettings } from './instance-settings';
 
 export class InstanceFiles {
   constructor(
@@ -21,48 +23,79 @@ export class InstanceFiles {
     worlds: boolean,
     signal: AbortSignal,
   ): Promise<Instance> {
-    if (!path.isAbsolute(parent) || !name.trim()) throw new Error('Invalid instance settings');
-    const id = randomUUID();
-    const directory = path.join(parent, id);
-    const stage = directory + '.copying';
+    const copy = await new InstanceImporter(this.store).import(
+      {
+        key: instance.id,
+        name: instance.name,
+        minecraft: instance.minecraft,
+        loader: instance.loader,
+        loaderVersion: instance.loaderVersion,
+        directory: instance.directory,
+        runtimeDirectory: runtimeDirectory(instance),
+        versionId: instance.versionId,
+        format: instance.layout === 'multimc' ? 'multimc' : 'standard',
+        warnings: [],
+      },
+      'copy',
+      signal,
+      name,
+      parent,
+      worlds,
+      validateInstanceSettings({ ...instance, name }, this.store.state.accounts),
+    );
+    return copy;
+  }
+  async exportNative(
+    instance: Instance,
+    destination: string,
+    signal: AbortSignal,
+    worlds: boolean,
+  ) {
+    const staging = path.join(this.store.root, 'cache', 'exports', randomUUID());
+    const container = path.join(staging, 'instance');
+    const game = path.join(container, '.minecraft');
+    const temporary = `${destination}.${randomUUID()}.tmp`;
     try {
-      await fs.cp(instance.directory, stage, {
-        recursive: true,
-        mode: constants.COPYFILE_FICLONE,
-        filter: async (source) => {
-          signal.throwIfAborted();
-          const relative = path.relative(instance.directory, source).replaceAll(path.sep, '/');
-          if (
-            relative === 'logs' ||
-            relative === 'crash-reports' ||
-            relative.startsWith('.workbench/backups') ||
-            relative.startsWith('.workbench/staging') ||
-            relative.startsWith('.workbench/history') ||
-            (!worlds && relative === 'saves')
-          )
-            return false;
-          if ((await fs.lstat(source)).isSymbolicLink())
-            throw new Error('Symbolic links are not allowed in managed paths');
-          return true;
-        },
+      await fs.mkdir(game, { recursive: true });
+      await copyGameFiles(instance.directory, game, signal, {
+        worlds,
+        keepMetadata: false,
+        skipFile: destination,
       });
-      signal.throwIfAborted();
-      await fs.rename(stage, directory);
-      const copy: Instance = {
-        ...structuredClone(instance),
-        id,
-        directory,
-        name: name.trim(),
-        createdAt: new Date().toISOString(),
-        lastPlayed: undefined,
-        playtimeSeconds: 0,
+      await writeInstanceMetadata({
+        ...instance,
+        linked: false,
+        layout: 'multimc',
+        containerDirectory: container,
+      });
+      const zip = new AdmZip();
+      let size = 0;
+      const walk = async (folder: string) => {
+        for (const entry of await fs.readdir(folder, { withFileTypes: true })) {
+          signal.throwIfAborted();
+          const full = path.join(folder, entry.name);
+          if (entry.isDirectory()) await walk(full);
+          else if (entry.isFile()) {
+            size += (await fs.stat(full)).size;
+            if (size > 512 * 1024 ** 2)
+              throw new Error(
+                'Instance exceeds 512 MB. Copy its folder instead of exporting a ZIP.',
+              );
+            zip.addFile(
+              `instance/${path.relative(container, full).replaceAll(path.sep, '/')}`,
+              await fs.readFile(full),
+            );
+          }
+        }
       };
-      this.store.state.instances.push(copy);
-      this.store.state.selectedInstance = id;
-      await this.store.save();
-      return copy;
+      await walk(container);
+      signal.throwIfAborted();
+      await fs.mkdir(path.dirname(destination), { recursive: true });
+      zip.writeZip(temporary);
+      await fs.rename(temporary, destination);
     } finally {
-      await fs.rm(stage, { recursive: true, force: true });
+      await fs.rm(temporary, { force: true });
+      await fs.rm(staging, { recursive: true, force: true });
     }
   }
   async importLocal(instance: Instance, kind: ContentKind, paths: string[]) {

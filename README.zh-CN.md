@@ -150,7 +150,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 - **下载源：** 可按 `manifest`、`client`、`server`、`assets`、`libraries`、`loader`、`modrinth`、`java`、`project` 设置 `official`、`bmclapi` 或 HTTPS 基地址。自定义地址保留原路径和查询参数；BMCLAPI 仅用于支持的端点。镜像失败回退原始地址，认证始终走官方端点。
 - **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **工作台 → 设置 → 代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
 - **断点与校验：** 保留 `.part`，在服务器支持时使用 HTTP Range 和校验器续传；服务器忽略范围则重新下载。校验 Minecraft / Modrinth 公布的哈希及 JDK SHA-256。
-- **目录：** 存储、游戏、服务端和项目目录可配置。游戏目录中的 `.runtime` 保存运行依赖，`.workbench` 保存元数据、历史和备份，移动实例时应一起保留。
+- **目录：** 存储、游戏、服务端和项目目录可配置。新实例采用 Prism/MultiMC 格式；`.workbench` 只保存辅助索引、历史和备份。旧实例保留原有 `.runtime`。
 - **日志：** 使用 **显示输出** 或 **打开游戏日志**。插件输出会隐藏认证令牌和代理凭据；分享外部游戏或模组日志前仍需检查内容。
 
 ### 下载复用与并发
@@ -205,3 +205,32 @@ npm run package
 ![版本选择与依赖安装预览](docs/images/dependencies-dark.png)
 
 ![官方 Fabric 模板项目创建](docs/images/projects-dark.png)
+## 现有实例与存储
+
+新建实例统一使用 **Prism / MultiMC 格式**：以实例名称建立目录，其中包含 `instance.cfg`、`mmc-pack.json` 和 `.minecraft` 游戏目录。世界存档仍是 `saves/世界名称/` 下的原生 Java 版存档。版本文件、运行库和资源使用系统 Minecraft 目录，也可通过 `minecraftWorkbench.gameDirectory` 更改。`minecraftWorkbench.instanceDirectory` 可单独指定实例父目录，包括现有的 PrismLauncher `instances` 目录。旧版工作台实例继续兼容。
+
+在 **实例 → 导入实例** 中扫描 Minecraft/HMCL/PCL 目录、Prism/MultiMC 实例目录、Modrinth 档案目录或 ZIP 导出文件，预览会显示识别出的 Minecraft 和 Loader 版本。**原地管理**保留原目录，与原启动器共用文件，移除登记时保留游戏文件；**复制导入**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界存档。不会导入原启动器的执行钩子或账户数据库。缺失的运行资源在首次启动时补齐。
+
+**导出实例**生成 Prism/MultiMC ZIP，可选包含世界存档；**导入整合包 / 导出 .mrpack** 使用 [Modrinth 格式](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack)。新版 Modrinth App 若未保留 `profile.json`，请先导出 `.mrpack`。旧式 Jar 模组、无法识别的 MultiMC 组件会明确提示，不会静默忽略。启动器专有补丁需要复制导入并重建受支持的 Loader。ZIP 超过 512 MB 时，请先解压或直接复制实例目录。
+
+**存档备份 → 导入 / 导出世界存档**支持原生 Java 版世界目录和 ZIP，可使用其他启动器中的存档。同名世界另建编号副本。基岩版 `.mcworld` 需先转换格式。
+
+游戏语言首次跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家在游戏中选择的语言；可在实例设置或 `minecraftWorkbench.gameLanguage` 中覆盖，取值为 `auto`、`preserve` 或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
+
+**账户 → 外置登录**支持 authlib-injector。填写 HTTPS Yggdrasil API 地址，例如 LittleSkin 的 `https://littleskin.cn/api/yggdrasil`，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
+
+
+
+### 陶瓦联机（Beta）
+
+此可选功能**默认关闭**。在设置中开启 `minecraftWorkbench.terracotta.enabled` 后，从 **更多 → 陶瓦联机（Beta）** 进入。下载和运行组件前需阅读上游许可及联机须知，分别勾选确认；须知语言可以单独切换，不更改扩展语言。
+
+1. 下载官方组件，或选择已有的官方可执行文件。下载固定支持版本并校验官方 SHA-256；macOS 需先打开官方安装包，配置其后台组件，再连接。
+2. 连接组件。房主将 Minecraft 世界开放到局域网后点击**创建房间**；访客填写陶瓦房间码并**加入房间**。
+3. 访客可复制游戏地址，或直接启动所选实例进入房间；临时地址不会覆盖实例原有的服务器设置。
+4. 结束后退出房间。关闭设置或撤回确认会断开本扩展创建的连接。可通过 `minecraftWorkbench.terracotta.publicNodes` 指定额外公共节点。
+
+[Terracotta / 陶瓦联机](https://github.com/burningtnt/Terracotta) 是 Burning_TNT 及贡献者的独立项目，采用附带上游例外的 AGPL-3.0-or-later。插件通过本地 HTTP 接口调用未修改的官方程序，不将它打包进扩展。当前 Beta 面向陶瓦 0.4 接口及 Java 版局域网世界；穿透和中继可用性取决于各方网络与外部服务。请仅向希望加入的玩家分享房间码。
+
+
+Java 优先级为：实例单独设置 → 全局默认 → 自动检测 / 下载。实例设置可留空；更改其他字段不会清除已有的 Java 配置。

@@ -48,6 +48,14 @@ export interface Instance {
   loader: Loader;
   loaderVersion?: string;
   directory: string;
+  runtimeDirectory?: string;
+  containerDirectory?: string;
+  layout?: 'multimc' | 'standard';
+  sourceFormat?: 'standard' | 'multimc' | 'modrinth' | 'workbench';
+  linked?: boolean;
+  preserveVersion?: boolean;
+  resourceDirectories?: string[];
+  gameLanguage?: string;
   java?: string;
   minMemory?: number;
   maxMemory?: number;
@@ -66,7 +74,10 @@ export interface Instance {
 export interface Account {
   id: string;
   name: string;
-  kind: 'offline' | 'microsoft';
+  kind: 'offline' | 'microsoft' | 'authlib';
+  profileId?: string;
+  authServer?: string;
+  authServerName?: string;
 }
 export interface Tokens {
   refreshToken: string;

@@ -7,9 +7,12 @@ export type Resource =
   | 'loader'
   | 'modrinth'
   | 'java'
-  | 'project';
+  | 'project'
+  | 'authlib'
+  | 'terracotta';
 export function resourceOf(url: string): Resource {
   const host = new URL(url).hostname;
+  if (host === 'authlib-injector.yushi.moe') return 'authlib';
   if (/modrinth/.test(host)) return 'modrinth';
   if (/papermc|purpurmc/.test(host)) return 'server';
   if (/adoptium|temurin/.test(host)) return 'java';
@@ -37,6 +40,8 @@ export function sourceUrl(
       )
     )
       return base + url.pathname + url.search;
+    if (url.hostname === 'authlib-injector.yushi.moe')
+      return `${base}/mirrors/authlib-injector${url.pathname}${url.search}`;
     if (url.hostname === 'meta.fabricmc.net')
       return `${base}/fabric-meta${url.pathname}${url.search}`;
     if (url.hostname === 'maven.minecraftforge.net')

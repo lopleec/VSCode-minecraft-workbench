@@ -8,7 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { StringDecoder } from 'node:string_decoder';
 import AdmZip from 'adm-zip';
 import { Store } from './store';
-import { Java } from './java';
+import { Java, preferredJava } from './java';
 import { Jobs } from './jobs';
 import { Network } from './network';
 import { ServerProfile, ServerEngine, JavaRuntime } from './models';
@@ -246,12 +246,7 @@ export class Servers implements vscode.Disposable {
       }
     }
     const major = server.javaMajor || Math.max(server.requiredJava, bytecodeJava);
-    return this.java.ensure(
-      major,
-      signal,
-      report,
-      server.java || config('javaPath', '') || undefined,
-    );
+    return this.java.ensure(major, signal, report, preferredJava(server.java));
   }
   private async installCore(
     server: ServerProfile,

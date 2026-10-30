@@ -1,0 +1,25 @@
+{
+  "version": "2026-10-30.2",
+  "source": "https://github.com/burningtnt/Terracotta",
+  "license": "https://github.com/burningtnt/Terracotta/blob/master/LICENSE",
+  "readme": "https://github.com/burningtnt/Terracotta#readme",
+  "copyright": "Terracotta © Burning_TNT and contributors · AGPL-3.0-or-later with exception",
+  "paragraphs": [
+    {
+      "en": "This optional Beta integration runs the unmodified Terracotta application through its local HTTP interface. Terracotta and EasyTier are separate third-party programs, with their own licenses and service availability.",
+      "zh": "此可选 Beta 功能通过本地 HTTP 接口调用未修改的陶瓦程序。陶瓦与 EasyTier 是独立的第三方程序，适用各自的许可及服务可用性。"
+    },
+    {
+      "en": "Creating or joining a room connects to peers and may use public discovery or relay nodes. Network addresses, device identifiers, player display names and connection information needed for multiplayer may be sent to those participants and nodes. Share room codes only with intended players. The extension proxy setting applies to downloads; Terracotta manages peer and relay traffic separately.",
+      "zh": "创建或加入房间会连接其他玩家，并可能使用公共发现或中继节点。联机所需的网络地址、设备标识、玩家显示名称和连接信息可能发送给相关成员与节点。请仅向希望加入的玩家分享房间码。 扩展的代理设置用于下载；玩家与中继节点之间的流量由陶瓦单独管理。"
+    },
+    {
+      "en": "Opening a world to LAN makes that world available to room participants. Keep a world backup and follow the rules of the game, network and services you use. Beta connectivity and compatibility are not guaranteed.",
+      "zh": "将世界开放到局域网后，房间成员可以访问该世界。请保留存档备份，并遵守所用游戏、网络和服务的规则。Beta 功能不保证连接成功或完全兼容。"
+    },
+    {
+      "en": "Enabling the setting alone does not download or start Terracotta. Download, installation and room operations require the confirmations below. On macOS, the official installer must set up the Terracotta background component. Revoking this confirmation or disabling the setting disconnects rooms opened by this extension. These notices do not restrict rights granted by the upstream licenses.",
+      "zh": "仅开启设置不会下载或启动陶瓦。下载、安装及房间操作需先完成下方确认。macOS 需要通过官方安装包配置陶瓦后台组件。撤回确认或关闭设置会断开本扩展创建的连接。本文不限制上游许可授予的权利。"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
       'div',
       { class: 'inline-actions page-actions' },
       ctx.button(L('New instance', '新建实例'), () => ctx.navigate('create'), 'primary'),
+      ctx.button(L('Import instance', '导入实例'), () => ctx.navigate('import'), 'secondary'),
       ctx.button(
         L('Import modpack', '导入整合包'),
         () => ctx.request('action', { action: 'importPack' }),
@@ -77,7 +78,10 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
       rows.append(
         blank(
           L('No instances', '暂无实例'),
-          L('Create an instance or import a Modrinth pack.', '创建实例，或导入 Modrinth 整合包。'),
+          L(
+            'Create an instance, import an existing game, or install a modpack.',
+            '创建实例、导入现有游戏，或安装整合包。',
+          ),
         ),
       );
   };
@@ -189,6 +193,9 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
       ...state.java.map(
         (j) => [j.path, `Java ${j.version} · ${j.architecture}`] as [string, string],
       ),
+      ...(existing?.java && !state.java.some((j) => j.path === existing.java)
+        ? [[existing.java, existing.java] as [string, string]]
+        : []),
     ]);
     const account = select('accountId', existing?.accountId || '', [
       ['', L('Use active account', '使用当前账户')],
@@ -332,11 +339,14 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           field(L('Account', '账户'), account),
         ),
         field(
-          edit ? L('Game directory', '游戏目录') : L('Instances parent directory', '实例父目录'),
+          edit ? L('Game directory', '游戏目录') : L('Minecraft directory', 'Minecraft 目录'),
           directoryRow,
           edit
             ? undefined
-            : L('A separate directory is created for this instance.', '此实例会使用独立子目录。'),
+            : L(
+                'Prism / MultiMC instances use named folders. Libraries and assets are shared.',
+                '采用 Prism / MultiMC 实例格式，以名称建立文件夹，运行库和资源文件共用。',
+              ),
         ),
       ),
       h(
@@ -401,6 +411,9 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
                       `Java ${j.version} · ${j.architecture}`,
                     ),
                   ),
+                ...(value && !ctx.state().java.some((j) => j.path === value)
+                  ? [h('option', { value, selected: true }, value)]
+                  : []),
               );
             },
             'text-button',

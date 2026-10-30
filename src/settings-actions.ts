@@ -4,6 +4,7 @@ import { redact } from './files';
 import english from '../package.nls.json';
 import chinese from '../package.nls.zh-cn.json';
 import { setLanguage, t } from './config';
+import { validGameLanguage } from './game-language';
 
 interface SettingSchema {
   type: string;
@@ -88,6 +89,8 @@ export async function settingsAction(method: string, params: Record<string, unkn
   if (!schema) throw new Error('Unknown setting');
   const value = params.value;
   validate(value, schema);
+  if (key === 'gameLanguage' && !validGameLanguage(value))
+    throw new Error('Invalid Minecraft language.');
   if (key === 'sources') {
     if (!value || Array.isArray(value)) throw new Error('Invalid sources');
     for (const source of Object.values(value as Record<string, unknown>)) {

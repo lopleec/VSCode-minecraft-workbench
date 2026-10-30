@@ -37,7 +37,7 @@
   "command.help": "Documentation",
   "setting.language": "Extension language. By default, follows VS Code. English and Simplified Chinese can be selected independently.",
   "setting.storageDirectory": "Absolute path for metadata, caches and downloaded JDKs. Empty uses VS Code extension storage. Reload required.",
-  "setting.gameDirectory": "Parent directory for new isolated game instances. Empty uses the extension storage directory.",
+  "setting.gameDirectory": "Minecraft directory for shared versions, libraries and assets. Leave empty for the standard system Minecraft directory. Created when needed.",
   "setting.projectDirectory": "Parent directory for new mod projects. Empty prompts for a folder.",
   "setting.javaPath": "Default Java executable. Empty selects the required Java version automatically.",
   "setting.microsoftClientId": "Client ID of your Microsoft public-client app approved for Minecraft Services, with device code flow enabled. No client secret is used.",
@@ -97,5 +97,12 @@
   "group.server": "Servers & AI",
   "config.sharedDownloadCache": "Reuse verified downloads across instances. Client, server, libraries, assets, JDK and content files with checksums share a content-addressed cache.",
   "config.downloadConnectionsPerFile": "Parallel range connections per large file. Falls back to one connection when unsupported. All downloads share the global concurrency limit.",
-  "config.downloadChunkSize": "Segment size in MiB for files of at least 16 MiB. Completed segments survive retries."
+  "config.downloadChunkSize": "Segment size in MiB for files of at least 16 MiB. Completed segments survive retries.",
+  "setting.instanceDirectory": "Prism / MultiMC instances parent directory. Leave empty for the instances folder in the Minecraft directory. Can point to PrismLauncher/instances. Existing instances are imported separately.",
+  "setting.gameLanguage": "Minecraft language: auto follows the extension language, preserve keeps the game setting, or use a code such as en_us / zh_cn. Auto preserves languages changed in-game.",
+  "setting.metadataConcurrency": "Maximum parallel Modrinth metadata requests during conflict checks. Further requests stop after a network failure.",
+  "group.terracotta": "Terracotta Multiplayer (Beta)",
+  "setting.terracotta.enabled": "Enable the optional Terracotta Beta page. Off by default. Downloads and room operations also require separate acceptance of the Terracotta notices. Disabling disconnects rooms opened by this extension.",
+  "setting.terracotta.executable": "Optional path to the unmodified official Terracotta executable or macOS app. Leave empty to use the downloaded component. macOS requires the official background-component installation.",
+  "setting.terracotta.publicNodes": "Additional Terracotta public relay URLs. Empty uses the official component defaults. Changes apply to the next room connection."
 }

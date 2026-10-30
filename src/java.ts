@@ -9,6 +9,14 @@ import { Store } from './store';
 import { JavaRuntime } from './models';
 import { exists, extractZip } from './files';
 import { waitFor } from './abort';
+import { config } from './config';
+
+export function preferredJava(
+  instancePath?: string,
+  globalPath = config('javaPath', ''),
+): string | undefined {
+  return instancePath?.trim() || globalPath.trim() || undefined;
+}
 
 const exec = promisify(execFile);
 export async function inspectJava(java: string): Promise<JavaRuntime> {

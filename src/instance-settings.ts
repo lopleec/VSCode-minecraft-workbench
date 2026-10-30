@@ -1,4 +1,5 @@
 import { Account, Instance } from './models';
+import { validGameLanguage } from './game-language';
 
 export type InstanceSettings = Pick<
   Instance,
@@ -13,6 +14,7 @@ export type InstanceSettings = Pick<
   | 'backupBeforeLaunch'
   | 'jvmArgs'
   | 'gameArgs'
+  | 'gameLanguage'
 >;
 export function validateInstanceSettings(value: unknown, accounts: Account[]): InstanceSettings {
   if (!value || typeof value !== 'object') throw new Error('Invalid instance settings');
@@ -39,6 +41,9 @@ export function validateInstanceSettings(value: unknown, accounts: Account[]): I
     return value.trim();
   };
   const accountId = text('accountId');
+  const gameLanguage = text('gameLanguage');
+  if (gameLanguage && !validGameLanguage(gameLanguage))
+    throw new Error('Invalid Minecraft language.');
   if (accountId && !accounts.some((a) => a.id === accountId)) throw new Error('Account not found');
   const gc = input.gc || undefined;
   if (gc && !['default', 'g1', 'zgc'].includes(String(gc)))
@@ -73,6 +78,7 @@ export function validateInstanceSettings(value: unknown, accounts: Account[]): I
     throw new Error('Invalid backup preference');
   return {
     name,
+    gameLanguage,
     accountId,
     java: text('java'),
     minMemory,

@@ -18,12 +18,15 @@ import {
 } from '@xmcl/installer';
 import { Store } from './store';
 import { Network, HttpError } from './network';
-import { Java } from './java';
+import { Java, preferredJava } from './java';
 import { Accounts } from './accounts';
 import { Jobs } from './jobs';
 import { Instance, Loader, VersionManifest } from './models';
 import { config, t, trusted } from './config';
-import { filename, readJson, redact, writeJson } from './files';
+import { filename, readJson, redact, writeJson, rejectSymlinkParents, exists } from './files';
+import { runtimeDirectory, writeInstanceMetadata } from './game-paths';
+import { prepareGameLanguage } from './game-language';
+import { versionChain } from './instance-import';
 import { neoForgePrefix } from './versions';
 import { memorySettings } from './memory';
 
@@ -100,6 +103,7 @@ export class Minecraft {
   }
   async install(instance: Instance) {
     await trusted();
+    this.assertIdle(instance);
     if (
       this.running.has(instance.id) ||
       this.installing.has(instance.id) ||
@@ -111,7 +115,7 @@ export class Minecraft {
       await this.jobs.run(
         t(`Install ${instance.name}`, `安装 ${instance.name}`),
         async (signal, report) => {
-          const root = path.join(instance.directory, '.runtime');
+          const root = runtimeDirectory(instance);
           const folder = new MinecraftFolder(root);
           const download = async (requested: InstallFile[]) => {
             const files = [...new Map(requested.map((file) => [file.path, file])).values()];
@@ -127,6 +131,14 @@ export class Minecraft {
                     while (index < files.length) {
                       downloadSignal.throwIfAborted();
                       const file = files[index++];
+                      const relative = path.relative(root, file.path);
+                      if (
+                        !relative ||
+                        relative.startsWith('..' + path.sep) ||
+                        path.isAbsolute(relative)
+                      )
+                        throw new Error('Runtime file escapes the Minecraft directory.');
+                      await rejectSymlinkParents(root, file.path);
                       let success = false;
                       let lastError: unknown;
                       for (const url of file.urls) {
@@ -179,6 +191,19 @@ export class Minecraft {
               runtime,
               { signal },
             );
+          if (instance.preserveVersion && instance.versionId) {
+            await versionChain(root, instance.versionId);
+            const resolved = await Version.parse(root, instance.versionId);
+            const jar = resolveMinecraftJarInstallFile(resolved);
+            if (jar) await installFiles([jar]);
+            await installFiles(resolveLibraryInstallFiles(resolved.libraries, folder));
+            await installFiles(resolveAssetMetadataInstallFiles(resolved, folder));
+            await installFiles(await resolveAssetObjectInstallFiles(resolved, folder));
+            signal.throwIfAborted();
+            instance.installed = true;
+            await this.store.save();
+            return;
+          }
           const manifest = await this.manifest();
           const entry = manifest.versions.find((v) => v.id === instance.minecraft);
           if (!entry) throw new Error('Minecraft version not found');
@@ -234,7 +259,7 @@ export class Minecraft {
                 resolved.javaVersion?.majorVersion || 8,
                 signal,
                 report,
-                instance.java || config('javaPath', '') || undefined,
+                preferredJava(instance.java),
               );
               const neo = instance.loader === 'neoforge';
               const artifact = neo ? loaderVersion : `${entry.id}-${loaderVersion}`;
@@ -284,6 +309,7 @@ export class Minecraft {
           signal.throwIfAborted();
           instance.versionId = versionId;
           instance.installed = true;
+          await this.portableProfile(instance);
           await this.store.save();
         },
         () => this.install(instance),
@@ -293,8 +319,9 @@ export class Minecraft {
       this.changed();
     }
   }
-  async start(instance: Instance, debug = false) {
+  async start(instance: Instance, debug = false, serverOverride?: string) {
     await trusted();
+    this.assertIdle(instance);
     if (this.running.has(instance.id) || this.installing.has(instance.id))
       throw new Error(t('This instance is busy.', '实例正在运行或安装。'));
     if (!instance.installed) await this.install(instance);
@@ -306,14 +333,15 @@ export class Minecraft {
         (a) => a.id === (instance.accountId || this.store.state.selectedAccount),
       );
       if (!account) throw new Error(t('Add and select an account first.', '请先添加并选择账户。'));
-      const root = path.join(instance.directory, '.runtime');
+      const root = runtimeDirectory(instance);
+      await prepareGameLanguage(instance);
       const version = await Version.parse(root, instance.versionId || instance.minecraft);
       const java = await this.jobs.run(t('Prepare Java', '准备 Java'), (signal, report) =>
         this.java.ensure(
           version.javaVersion?.majorVersion || 8,
           signal,
           report,
-          instance.java || config('javaPath', '') || undefined,
+          preferredJava(instance.java),
         ),
       );
       const token = await this.accounts.token(account);
@@ -322,6 +350,12 @@ export class Minecraft {
         ...(instance.jvmArgs || config<string[]>('jvmArgs', [])),
         ...(gc === 'g1' ? ['-XX:+UseG1GC'] : gc === 'zgc' ? ['-XX:+UseZGC'] : []),
       ];
+      if (account.kind === 'authlib')
+        args.push(
+          ...(await this.jobs.run(t('Prepare external authentication', '准备外置登录'), (signal) =>
+            this.accounts.launchArguments(account, signal),
+          )),
+        );
       if (debug)
         args.push('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:5005');
       const { minMemory, maxMemory } = memorySettings(instance);
@@ -335,14 +369,14 @@ export class Minecraft {
       const supportsQuickPlay = version.arguments.game.some((argument) =>
         JSON.stringify(argument).includes('quickPlayMultiplayer'),
       );
-      const address = instance.server?.trim();
+      const address = serverOverride?.trim() || instance.server?.trim();
       const portMatch = address?.match(/^(.*):(\d+)$/);
       const game = await launch({
         gamePath: instance.directory,
         resourcePath: root,
         version,
         javaPath: java.path,
-        gameProfile: account,
+        gameProfile: { id: account.profileId || account.id, name: account.name },
         accessToken: token,
         userType: account.kind === 'offline' ? 'legacy' : 'mojang',
         minMemory,
@@ -429,10 +463,16 @@ export class Minecraft {
     }
   }
   assertIdle(instance: Instance) {
+    const aliases = [
+      instance,
+      ...this.store.state.instances.filter(
+        (i) => i !== instance && path.resolve(i.directory) === path.resolve(instance.directory),
+      ),
+    ];
     if (
-      this.running.has(instance.id) ||
-      this.installing.has(instance.id) ||
-      this.starting.has(instance.id)
+      aliases.some(
+        (i) => this.running.has(i.id) || this.installing.has(i.id) || this.starting.has(i.id),
+      )
     )
       throw new Error(
         t('Stop this instance before changing its files.', '修改文件前请先停止该实例。'),
@@ -443,10 +483,14 @@ export class Minecraft {
   }
   async delete(instance: Instance) {
     this.assertIdle(instance);
-    await vscode.workspace.fs.delete(vscode.Uri.file(instance.directory), {
-      recursive: true,
-      useTrash: true,
-    });
+    if (!instance.linked)
+      await vscode.workspace.fs.delete(
+        vscode.Uri.file(instance.containerDirectory || instance.directory),
+        {
+          recursive: true,
+          useTrash: true,
+        },
+      );
     this.store.state.instances = this.store.state.instances.filter((i) => i.id !== instance.id);
     if (this.store.state.selectedInstance === instance.id)
       this.store.state.selectedInstance = this.store.state.instances[0]?.id;
@@ -458,5 +502,23 @@ export class Minecraft {
   }
   async ensureDirectory(instance: Instance) {
     await fs.mkdir(instance.directory, { recursive: true });
+  }
+  private async portableProfile(instance: Instance) {
+    if (instance.linked) return;
+    await writeInstanceMetadata(instance);
+    if (instance.layout === 'multimc') return;
+    const root = runtimeDirectory(instance);
+    const id = path.basename(instance.directory);
+    if (
+      path.dirname(instance.directory) === path.join(root, 'versions') &&
+      id !== instance.versionId
+    ) {
+      const chain = await versionChain(root, instance.versionId!);
+      const file = path.join(instance.directory, `${filename(id)}.json`);
+      if (!chain.some((p) => p.id === id) && !(await exists(file))) {
+        await writeJson(file, { id, inheritsFrom: instance.versionId, type: 'custom' });
+        instance.versionId = id;
+      }
+    }
   }
 }

@@ -10,7 +10,7 @@ import { config, t, trusted } from './config';
 import { inspectJava } from './java';
 import { Template } from './developer';
 import { describeError } from './errors';
-import { exists } from './files';
+import { reserveNamedDirectory } from './game-paths';
 
 export class LauncherActions {
   constructor(
@@ -54,33 +54,74 @@ export class LauncherActions {
         });
         return folders?.[0]?.fsPath;
       }
+      case 'launcher.pickInstanceSource': {
+        const source = await vscode.window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: true,
+          canSelectMany: false,
+          filters: { 'Instance ZIP': ['zip'] },
+          title: t('Import existing instance', '导入现有实例'),
+        });
+        return source?.[0]?.fsPath;
+      }
+      case 'launcher.scanInstances':
+        return this.ui.jobs.run(t('Find existing instances', '查找现有实例'), (signal) =>
+          this.ui.imports.inspect(text('source'), signal),
+        );
+      case 'launcher.importInstance': {
+        const mode = text('mode');
+        if (mode !== 'link' && mode !== 'copy') throw new Error('Invalid import mode.');
+        return this.ui.jobs.run(t('Import instance', '导入实例'), (signal) =>
+          this.ui.imports.commit(
+            text('key'),
+            mode,
+            signal,
+            text('name', 100),
+            params.root ? text('root') : undefined,
+          ),
+        );
+      }
       case 'launcher.moveInstance': {
         const value = selected();
         this.minecraft.assertIdle(value);
+        if (value.linked)
+          throw new Error(
+            t(
+              'Duplicate this linked instance before moving its files.',
+              '请先复制原地管理的实例，再移动文件。',
+            ),
+          );
         const folders = await vscode.window.showOpenDialog({
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          title: t('Move game directory', '移动游戏目录'),
+          title: t('Move instance', '移动实例'),
         });
         if (!folders?.[0]) return false;
-        const target = path.join(folders[0].fsPath, value.id),
-          previous = value.directory;
-        if (target === previous) return false;
-        if (target.startsWith(previous + path.sep))
-          throw new Error(t('Cannot move an instance inside itself.', '不能将实例移入自身目录。'));
-        if (await exists(target))
-          throw new Error(t('Destination already exists.', '目标目录已存在。'));
+        const source = value.containerDirectory || value.directory;
+        const parent = folders[0].fsPath;
+        if (path.resolve(parent) === path.dirname(source)) return false;
+        if (path.resolve(parent) === source || path.resolve(parent).startsWith(source + path.sep))
+          throw new Error('Cannot move an instance inside itself.');
         await trusted();
         return this.ui.content.exclusive(value, async () => {
           this.minecraft.assertIdle(value);
-          await fs.rename(previous, target);
-          value.directory = target;
+          const target = await reserveNamedDirectory(parent, value.name);
+          const previous = {
+            directory: value.directory,
+            containerDirectory: value.containerDirectory,
+          };
+          await fs.rmdir(target);
+          await fs.rename(source, target);
+          value.directory = value.containerDirectory
+            ? path.join(target, path.relative(source, value.directory))
+            : target;
+          if (value.containerDirectory) value.containerDirectory = target;
           try {
             await this.store.save();
           } catch (error) {
-            value.directory = previous;
-            await fs.rename(target, previous);
+            Object.assign(value, previous);
+            await fs.rename(target, source);
             throw error;
           }
           return true;
@@ -129,6 +170,9 @@ export class LauncherActions {
         await this.ui.jobs.run(t('Microsoft sign-in', 'Microsoft 登录'), (signal, report) =>
           this.ui.accounts.login(signal, report),
         );
+        return true;
+      case 'launcher.authlibSignIn':
+        await this.ui.authlibLogin(typeof params.server === 'string' ? text('server') : undefined);
         return true;
       case 'launcher.accountAction': {
         const account = this.store.state.accounts.find((a) => a.id === text('id', 150));
@@ -201,6 +245,16 @@ export class LauncherActions {
       }
       case 'launcher.backups':
         return this.ui.backups.list(selected());
+      case 'launcher.importWorld':
+        await this.ui.importWorld(
+          instance ? ({ value: instance } as Parameters<UI['importWorld']>[0]) : undefined,
+        );
+        return true;
+      case 'launcher.exportWorld':
+        await this.ui.exportWorld(
+          instance ? ({ value: instance } as Parameters<UI['exportWorld']>[0]) : undefined,
+        );
+        return true;
       case 'launcher.backupAction': {
         const value = selected();
         const action = text('action');

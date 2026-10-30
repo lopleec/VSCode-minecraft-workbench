@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { request as httpRequest, ClientRequest } from 'node:http';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type * as VSCode from 'vscode';
@@ -77,6 +78,7 @@ test('MCP uses authenticated loopback, interoperates with the official client an
     { warn: () => {} } as never,
   );
   const client = new Client({ name: 'test', version: '1.0.0' });
+  const pending: ClientRequest[] = [];
   try {
     const definitions = await provider!.provideMcpServerDefinitions({} as VSCode.CancellationToken);
     const definition = definitions![0] as NativeMcpDefinition;
@@ -108,6 +110,25 @@ test('MCP uses authenticated loopback, interoperates with the official client an
     });
     assert.equal(invalid.isError, true);
     assert.deepEqual(calls, ['ready']);
+    for (let i = 0; i < 8; i++)
+      await new Promise<void>((resolve, reject) => {
+        const request = httpRequest(url, {
+          method: 'POST',
+          headers: {
+            ...definition.headers,
+            'content-length': '100',
+            expect: '100-continue',
+          },
+        });
+        pending.push(request);
+        request.once('continue', resolve);
+        request.once('error', reject);
+        request.flushHeaders();
+      });
+    assert.equal(
+      (await fetch(url, { method: 'POST', headers: definition.headers, body: '{}' })).status,
+      429,
+    );
     enabled = false;
     mcp.refresh();
     assert.deepEqual(
@@ -116,6 +137,7 @@ test('MCP uses authenticated loopback, interoperates with the official client an
     );
     await assert.rejects(fetch(url, { method: 'POST', headers: definition.headers, body: '{}' }));
   } finally {
+    for (const request of pending) request.destroy();
     await client.close();
     mcp.dispose();
   }

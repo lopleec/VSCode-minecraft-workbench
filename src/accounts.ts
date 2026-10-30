@@ -4,10 +4,12 @@ import { Store } from './store';
 import { Network, HttpError } from './network';
 import { config, t } from './config';
 import { offlineUuid } from './files';
+import { Authlib, accountSecretKey } from './authlib';
 
 const oauth = 'https://login.microsoftonline.com/consumers/oauth2/v2.0';
 const scope = 'XboxLive.signin offline_access';
 export class Accounts implements vscode.Disposable {
+  readonly authlib: Authlib;
   private readonly refreshing = new Map<string, Promise<string>>();
   private readonly timer: NodeJS.Timeout;
   constructor(
@@ -16,6 +18,7 @@ export class Accounts implements vscode.Disposable {
     private readonly net: Network,
     private readonly canRefresh: () => boolean = () => true,
   ) {
+    this.authlib = new Authlib(store, secrets, net);
     this.timer = setInterval(() => {
       if (!this.canRefresh()) return;
       for (const account of store.state.accounts.filter((a) => a.kind === 'microsoft')) {
@@ -24,7 +27,7 @@ export class Accounts implements vscode.Disposable {
     }, 60000);
   }
   private key(id: string) {
-    return `minecraftWorkbench.account.${id}`;
+    return accountSecretKey(id);
   }
   private clientId() {
     const clientId = config('microsoftClientId', '').trim();
@@ -185,9 +188,20 @@ export class Accounts implements vscode.Disposable {
   }
   async token(account: Account): Promise<string> {
     if (account.kind === 'offline') return '0';
+    if (account.kind === 'authlib') return this.authlib.token(account);
     const stored = await this.secrets.get(this.key(account.id));
     if (!stored) throw new Error(t('Sign in to this account again.', '请重新登录该账户。'));
-    const tokens = JSON.parse(stored) as Tokens;
+    let tokens: Tokens;
+    try {
+      tokens = JSON.parse(stored) as Tokens;
+    } catch {
+      throw new Error(
+        t(
+          'Stored login credentials are invalid. Sign in again.',
+          '保存的登录凭据无效，请重新登录。',
+        ),
+      );
+    }
     if (tokens.expiresAt > Date.now() + 5 * 60000) return tokens.accessToken;
     const existing = this.refreshing.get(account.id);
     if (existing) return existing;
@@ -230,6 +244,9 @@ export class Accounts implements vscode.Disposable {
     } finally {
       this.refreshing.delete(account.id);
     }
+  }
+  launchArguments(account: Account, signal: AbortSignal) {
+    return this.authlib.launchArguments(account, signal);
   }
   async remove(account: Account) {
     await this.secrets.delete(this.key(account.id));

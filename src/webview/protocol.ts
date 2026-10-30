@@ -1,4 +1,5 @@
 import type { ConsentStatus } from '../consent';
+import type { TerracottaStatus } from '../terracotta';
 import type {
   Account,
   Content,
@@ -19,12 +20,14 @@ export const workbenchPages = [
   'instance',
   'instances',
   'create',
+  'import',
   'version',
   'accounts',
   'java',
   'downloads',
   'backups',
   'projects',
+  'multiplayer',
   'servers',
   'serverCreate',
   'server',
@@ -54,6 +57,7 @@ export interface Bootstrap {
   selectedServer?: string;
   serverStatus: Record<string, string>;
   mcpEnabled: boolean;
+  terracotta?: TerracottaStatus;
   java: JavaRuntime[];
   running: string[];
   preferences: Preferences;
@@ -74,6 +78,8 @@ export interface Bootstrap {
     fullscreen: boolean;
     backup: boolean;
     gameDirectory: string;
+    instanceDirectory: string;
+    gameLanguage: string;
     projectDirectory: string;
     javaPath: string;
     clientId: string;

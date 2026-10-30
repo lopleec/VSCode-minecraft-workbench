@@ -21,6 +21,93 @@ const kind = choice(['mod', 'plugin', 'modpack', 'resourcepack', 'shader']);
 const target = { ...instanceId, ...serverId, kind };
 export const mcpOperations: McpOperation[] = [
   {
+    name: 'terracotta_status',
+    method: 'terracotta.status',
+    description: 'Read cached Terracotta Beta status. Does not enable, download or start it.',
+    readOnly: true,
+  },
+  {
+    name: 'terracotta_connect',
+    method: 'terracotta.connect',
+    description:
+      'Connect the installed official Terracotta component. Requires its setting enabled and notices accepted manually in VS Code.',
+  },
+  {
+    name: 'terracotta_download',
+    method: 'terracotta.download',
+    description:
+      'Download a checksum-verified official Terracotta component. Requires separate user consent in VS Code first.',
+  },
+  {
+    name: 'terracotta_create_room',
+    method: 'terracotta.host',
+    description:
+      'Share an existing Minecraft LAN world through Terracotta. The player must open their world to LAN first.',
+  },
+  {
+    name: 'terracotta_join_room',
+    method: 'terracotta.join',
+    description: 'Join an invited Terracotta room. Requires the Beta setting and manual consent.',
+    properties: { code: str('U/XXXX-XXXX-XXXX-XXXX room code') },
+    required: ['code'],
+  },
+  {
+    name: 'terracotta_leave_room',
+    method: 'terracotta.leave',
+    description: 'Leave the current Terracotta room.',
+  },
+  {
+    name: 'terracotta_launch',
+    method: 'terracotta.launch',
+    description:
+      'Launch a selected client instance into the joined room using a temporary loopback address. Does not change its saved server setting.',
+    properties: instanceId,
+    required: ['instanceId'],
+  },
+  {
+    name: 'world_import',
+    method: 'launcher.importWorld',
+    description:
+      'Open a native picker to import Java Edition world folders or ZIPs. Existing worlds are kept; name collisions create separate worlds.',
+    properties: instanceId,
+    required: ['instanceId'],
+  },
+  {
+    name: 'world_export',
+    method: 'launcher.exportWorld',
+    description: 'Open native world selection and save a standard Java Edition world ZIP.',
+    properties: instanceId,
+    required: ['instanceId'],
+  },
+  {
+    name: 'instance_scan',
+    method: 'launcher.scanInstances',
+    description:
+      'Scan a Minecraft/HMCL/PCL root, Prism/MultiMC instances folder, Modrinth profile folder, or ZIP export. Returns import candidate keys without reading accounts or tokens.',
+    properties: { source: str('Absolute source path') },
+    required: ['source'],
+  },
+  {
+    name: 'instance_import',
+    method: 'launcher.importInstance',
+    description:
+      'Import a candidate from the latest instance_scan. link manages the existing files; copy creates a Prism/MultiMC instance. Archives must be copied. Existing player worlds, mods and configuration are preserved.',
+    properties: {
+      key: str('Candidate key from instance_scan'),
+      name: str('Instance name'),
+      mode: choice(['link', 'copy']),
+      root: str('Optional shared Minecraft directory'),
+    },
+    required: ['key', 'name', 'mode'],
+  },
+  {
+    name: 'account_external_sign_in',
+    method: 'launcher.authlibSignIn',
+    description:
+      'Open native authlib-injector sign-in and profile selection. Password entry stays in VS Code; credentials are never returned over MCP.',
+    properties: { server: str('Optional HTTPS authentication API root or ALI discovery URL') },
+  },
+  {
     name: 'workbench_state',
     method: 'ready',
     description:
@@ -90,7 +177,9 @@ export const mcpOperations: McpOperation[] = [
           minecraft: str('Minecraft version'),
           loader: choice(['vanilla', 'fabric', 'quilt', 'forge', 'neoforge']),
           loaderVersion: str('Loader version'),
-          parentDirectory: str('Absolute parent directory; omit for default'),
+          parentDirectory: str(
+            'Absolute shared Minecraft directory; omit for the standard system path',
+          ),
         },
         required: ['name', 'minecraft', 'loader'],
       },
@@ -133,7 +222,9 @@ export const mcpOperations: McpOperation[] = [
         'backups',
         'importContent',
         'exportPack',
+        'exportNative',
         'importPack',
+        'importInstance',
         'updates',
         'conflicts',
         'settings',
@@ -505,7 +596,9 @@ export const mcpOperations: McpOperation[] = [
     properties: {
       command: choice([
         'mode',
+        'terracotta',
         'createInstance',
+        'importInstance',
         'selectInstance',
         'launch',
         'stop',

@@ -45,7 +45,8 @@ test('setup accepts every official game version type and validates loader compat
         assert.equal(created.maxMemory, undefined);
       }
       assert.equal(store.state.selectedInstance, created.id);
-      assert.equal(path.dirname(created.directory), root);
+      assert.equal(created.directory, path.join(root, 'instances', minecraft, '.minecraft'));
+      assert.equal(created.layout, 'multimc');
       await fs.access(created.directory);
     }
     const original = store.state.instances[0];

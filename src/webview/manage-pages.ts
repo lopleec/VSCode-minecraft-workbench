@@ -2,6 +2,7 @@ import { h } from './dom';
 import { PageContext, field, input, select, heading, blank, busy } from './page-ui';
 import type { WorkbenchPage } from './protocol';
 import { renderProjects } from './projects-page';
+import { renderTerracotta } from './terracotta-page';
 
 export const managementPages: WorkbenchPage[] = [
   'accounts',
@@ -9,6 +10,7 @@ export const managementPages: WorkbenchPage[] = [
   'downloads',
   'backups',
   'projects',
+  'multiplayer',
 ];
 export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: PageContext) {
   const L = ctx.text;
@@ -18,12 +20,14 @@ export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: Pa
     downloads: L('Tasks', '任务'),
     backups: L('World backups', '存档备份'),
     projects: L('Projects', '项目'),
+    multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）'),
   };
   main.append(
     h(
       'nav',
       { class: 'segments management-tabs', 'aria-label': L('Management pages', '管理页面') },
       ...managementPages
+        .filter((value) => value !== 'multiplayer' || ctx.state().terracotta?.enabled)
         .filter((value) =>
           ctx.state().mode === 'server'
             ? ['java', 'downloads'].includes(value)
@@ -47,6 +51,7 @@ export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: Pa
   if (page === 'downloads') return downloads(body, ctx);
   if (page === 'backups') return backups(body, ctx);
   if (page === 'projects') return renderProjects(body, ctx);
+  if (page === 'multiplayer') return renderTerracotta(body, ctx);
 }
 
 function accounts(body: HTMLElement, ctx: PageContext) {
@@ -126,7 +131,28 @@ function accounts(body: HTMLElement, ctx: PageContext) {
       ctx.notify(L('Client ID saved.', 'Client ID 已保存。'));
     }).catch(ctx.error);
   };
-  body.append(rows, offline, microsoft);
+  const authServer = input('authServer', 'https://littleskin.cn/api/yggdrasil');
+  const external = h(
+    'form',
+    { class: 'management-form' },
+    h(
+      'fieldset',
+      {},
+      h('legend', {}, L('External authentication', '外置登录')),
+      field(L('Authentication server API URL', '认证服务器 API 地址'), authServer),
+      ctx.button(
+        L('Sign in with authlib-injector', '使用 authlib-injector 登录'),
+        async () => {
+          await ctx.request('launcher.authlibSignIn', { server: authServer.value });
+          await ctx.refresh();
+          update();
+        },
+        'secondary',
+      ),
+    ),
+  );
+  external.onsubmit = (event) => event.preventDefault();
+  body.append(rows, microsoft, external, offline);
   function update() {
     const state = ctx.state();
     signIn.disabled = !state.defaults.clientId;
@@ -142,7 +168,11 @@ function accounts(body: HTMLElement, ctx: PageContext) {
             h(
               'p',
               { class: 'muted' },
-              account.kind === 'microsoft' ? 'Microsoft' : L('Offline', '离线'),
+              account.kind === 'microsoft'
+                ? 'Microsoft'
+                : account.kind === 'authlib'
+                  ? `${account.authServerName || 'authlib-injector'} · ${account.authServer || ''}`
+                  : L('Offline', '离线'),
             ),
           ),
           h(
@@ -405,6 +435,21 @@ function backups(body: HTMLElement, ctx: PageContext): (() => void) | undefined 
     h(
       'div',
       { class: 'inline-actions page-actions' },
+      ctx.button(
+        L('Import worlds…', '导入世界存档…'),
+        async () => {
+          await ctx.request('launcher.importWorld', { instanceId: instance.id });
+          await load();
+        },
+        'secondary',
+        running,
+      ),
+      ctx.button(
+        L('Export world…', '导出世界存档…'),
+        () => ctx.request('launcher.exportWorld', { instanceId: instance.id }),
+        'secondary',
+        running,
+      ),
       ctx.button(
         L('Create backup', '创建备份'),
         async () => {
