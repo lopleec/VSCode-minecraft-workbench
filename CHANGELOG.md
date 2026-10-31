@@ -11,7 +11,7 @@
 
 ## Cleanup and fixes
 
-- Exclude commands, menus and build-only metadata from the JavaScript bundle while retaining the complete extension manifest, both README languages and licenses in the VSIX. The package is about **598 KiB**, down from about **602 KiB** in 0.4.3, with no new runtime dependencies.
+- Exclude commands, menus and build-only metadata from the JavaScript bundle while retaining the complete extension manifest, both README languages and licenses in the VSIX. The main JavaScript bundle is about **40 KiB smaller** than in 0.4.3; the final CI-built VSIX remains about **602 KiB** including the new update feature and documentation, with no new runtime dependencies.
 - Build the settings schema once instead of rebuilding it for every request; resolve the language dictionary once per settings read. Remove an unused content type and an empty download-recovery branch.
 - Keep running tasks when trimming task history. They remain visible and cancellable even when the list exceeds 100 entries; completed history is still bounded.
 - Record externally aborted work as cancelled rather than failed. Observe background promise rejections even when a wait was already cancelled, and allow cancellation during download-lock/retry delays.
@@ -34,7 +34,7 @@
 
 ### 精简与修复
 
-- JS 构建仅保留运行所需的清单字段，移除其中重复的命令、菜单及构建元数据；VSIX 仍保留完整扩展清单、中英文 README 和许可。安装包约 **598 KiB**，0.4.3 约 **602 KiB**，未增加运行依赖。
+- JS 构建仅保留运行所需的清单字段，移除其中重复的命令、菜单及构建元数据；VSIX 仍保留完整扩展清单、中英文 README 和许可。主体 JS 比 0.4.3 减少约 **40 KiB**；计入新增更新功能和文档后，CI 发布包仍约 **602 KiB**，未增加运行依赖。
 - 设置定义改为初始化一次，读取设置时只选择一次语言字典；删除未使用的内容类型和下载恢复中的空分支。
 - 清理任务历史时保留运行中的任务。超过 100 条时，仍可查看、取消这些任务；已完成历史仍有数量上限。
 - 外部中止的任务正确标记为已取消；已取消的等待也会接住后台 Promise 拒绝，避免未处理错误；等待下载锁、重试间隔时可立即响应取消。
