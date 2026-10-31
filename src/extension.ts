@@ -20,6 +20,7 @@ import { WorkbenchMcp } from './mcp';
 import { ServerActions } from './server-actions';
 import { runtimeDirectory } from './game-paths';
 import { Terracotta } from './terracotta';
+import { ExtensionUpdates } from './extension-updates';
 
 let activeServers: Servers | undefined;
 let activeTerracotta: Terracotta | undefined;
@@ -174,6 +175,19 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(workbench);
   mcp = new WorkbenchMcp(consent, (method, params) => workbench!.handle(method, params), output);
   context.subscriptions.push(mcp);
+  const updates = new ExtensionUpdates(
+    context,
+    network,
+    jobs,
+    () => minecraft.running.size > 0 || servers.running.size > 0,
+  );
+  await updates.initialize();
+  await vscode.commands.executeCommand(
+    'setContext',
+    'minecraftWorkbench.githubUpdates',
+    updates.visible,
+  );
+  context.subscriptions.push(updates);
   const titles: Record<Section, [string, string]> = {
     home: ['Workbench', '工作台'],
     instances: ['Instances', '实例'],
@@ -194,6 +208,7 @@ export async function activate(context: vscode.ExtensionContext) {
       jobs,
       () => consent.accepted,
       servers,
+      updates,
     );
     const tree = vscode.window.createTreeView(`minecraftWorkbench.${section}`, {
       treeDataProvider: provider,
@@ -206,6 +221,7 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
     agreements: () => workbench!.open('agreements'),
+    checkExtensionUpdates: () => updates.check(),
     showView: async () => {
       const sections: Section[] = [
         'home',
@@ -365,6 +381,14 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('minecraftWorkbench.updates.enabled')) {
+        updates.configurationChanged();
+        void vscode.commands.executeCommand(
+          'setContext',
+          'minecraftWorkbench.githubUpdates',
+          updates.visible,
+        );
+      }
       if (event.affectsConfiguration('minecraftWorkbench.terracotta'))
         void terracotta.configurationChanged().catch((error) => output.error(String(error)));
       if (!event.affectsConfiguration('minecraftWorkbench')) return;
@@ -419,6 +443,7 @@ export async function activate(context: vscode.ExtensionContext) {
     servers,
     mcp,
     terracotta,
+    updates,
   };
 }
 export async function deactivate() {

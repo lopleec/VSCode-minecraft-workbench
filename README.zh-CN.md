@@ -31,6 +31,12 @@ npm run package
 Publisher 为 `Lopleec`，扩展 ID 为 `Lopleec.minecraft-workbench`。从旧的 `minecraft-workbench.minecraft-workbench` 开发包升级时，请先卸载旧包。扩展会检测并复用原有默认存储；Microsoft 账户需要重新登录，因为 SecretStorage 按扩展 ID 隔离。
 SSH、WSL、容器中的文件和进程位于扩展宿主机器；在远程机器运行游戏需要图形环境。
 
+### 插件更新
+
+GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击后才联网检查；有新的稳定版本时，可打开下载链接、更新说明，或在本地桌面窗口选择**下载并安装**。安装前校验发布的 SHA-256、扩展标识、版本与 VS Code 要求。重新加载仍需另行点击，游戏或服务端运行时不会执行。
+
+关闭 `minecraftWorkbench.updates.enabled` 可隐藏入口并禁用、取消检查。没有启动检查、定时检查或静默安装。Marketplace 安装继续由 VS Code 管理更新。VS Code 没有公开的安装来源 API，因此通过本地安装记录识别；来源不明或远程窗口提供手动下载链接。VSIX 记录只能识别手动安装，不能证明下载网站。
+
 ### 首次使用与协议
 
 首次打开会显示 **协议与关于**。阅读链接中的 [Minecraft EULA](https://www.minecraft.net/en-us/eula) 与插件的 [用户协议和声明](TERMS.md)，勾选两项后选择 **同意并继续**。两项默认均未勾选；选择 **暂不使用** 会关闭页面，插件操作保持不可用。

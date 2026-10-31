@@ -3,7 +3,6 @@ import type { TerracottaStatus } from '../terracotta';
 import type {
   Account,
   Content,
-  ContentKind,
   Instance,
   JavaRuntime,
   ModVersion,
@@ -126,4 +125,3 @@ export interface ViewRequest {
   method: string;
   params?: Record<string, unknown>;
 }
-export type ContentTab = ContentKind | 'modpack';

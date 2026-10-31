@@ -7,6 +7,7 @@ import { Instance, Account, Project, Content, JavaRuntime } from './models';
 import { Job } from './jobs';
 import { t, config } from './config';
 import { memorySettings } from './memory';
+import type { ExtensionUpdates } from './extension-updates';
 import { Servers } from './servers';
 import type { ServerProfile } from './models';
 
@@ -52,6 +53,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
     private readonly jobs: Jobs,
     private readonly hasConsent: () => boolean = () => true,
     private readonly servers?: Servers,
+    private readonly updates?: ExtensionUpdates,
   ) {}
   refresh() {
     this.emitter.fire(undefined);
@@ -77,6 +79,17 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
     if (this.section === 'home') {
       if (_parent?.kind === 'moreHome')
         return [
+          ...(this.updates?.visible
+            ? [
+                new Item(
+                  t('Check for extension updates', '检查插件更新'),
+                  'action',
+                  undefined,
+                  'cloud-download',
+                  'checkExtensionUpdates',
+                ),
+              ]
+            : []),
           new Item(
             t('Java settings', 'Java 设置'),
             'action',

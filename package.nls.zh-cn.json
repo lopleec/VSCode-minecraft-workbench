@@ -104,5 +104,6 @@
   "group.terracotta": "陶瓦联机（Beta）",
   "setting.terracotta.enabled": "开启可选的陶瓦联机 Beta 页面，默认关闭。下载与房间操作还需单独确认陶瓦联机须知。关闭后断开本扩展创建的连接。",
   "setting.terracotta.executable": "可选：未修改的陶瓦官方可执行文件或 macOS 应用路径。留空使用已下载组件；macOS 需通过官方安装包配置后台组件。",
-  "setting.terracotta.publicNodes": "额外的陶瓦公共中继节点 URL。留空使用官方组件默认节点，修改在下次连接房间时生效。"
+  "setting.terracotta.publicNodes": "额外的陶瓦公共中继节点 URL。留空使用官方组件默认节点，修改在下次连接房间时生效。",
+  "setting.updates.enabled": "为 VSIX 安装启用手动 GitHub 更新入口。检查、下载、安装和重新加载均需手动点击，不在启动时或定时自动执行。Marketplace 更新由 VS Code 管理。"
 }

@@ -3,6 +3,19 @@ const path = require('node:path');
 const original = Module._load;
 const stub = {
   window: {},
+  commands: {},
+  version: '1.96.0',
+  ProgressLocation: { Notification: 15 },
+  ExtensionMode: { Production: 1, Development: 2, Test: 3 },
+  Uri: {
+    file: (file) => ({
+      scheme: 'file',
+      fsPath: file,
+      toString: () => require('node:url').pathToFileURL(file).href,
+    }),
+    parse: (value) => ({ scheme: new URL(value).protocol.slice(0, -1), toString: () => value }),
+    from: (value) => ({ ...value, fsPath: value.fsPath || value.path }),
+  },
   workspace: { getConfiguration: () => ({ get: (_key, fallback) => fallback }), isTrusted: true },
   env: { language: 'en' },
   ConfigurationTarget: { Global: 1, Workspace: 2 },

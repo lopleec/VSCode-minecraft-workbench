@@ -157,9 +157,12 @@ export class Workbench implements vscode.Disposable {
         autoOpenProject: config('autoOpenProject', true),
         serverDirectory: config('serverDirectory', '') || path.join(this.store.root, 'servers'),
       },
-      jobs: this.ui.jobs.items
-        .slice(0, 100)
-        .map(({ id, label, status, detail }) => ({ id, label, status, detail })),
+      jobs: this.ui.jobs.items.map(({ id, label, status, detail }) => ({
+        id,
+        label,
+        status,
+        detail,
+      })),
     };
   }
   refresh() {

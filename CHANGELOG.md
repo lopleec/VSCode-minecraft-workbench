@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.4.4 — 2026-10-31
+
+## Manual extension updates
+
+- Add **More → Check for extension updates** for GitHub / manually installed VSIX builds. A newer stable release offers the VSIX download, release notes, or **Download and install** in a local desktop window.
+- Checking, downloading/installing and reloading require separate user actions. There are no startup checks, scheduled checks or silent updates. `minecraftWorkbench.updates.enabled` disables the entry and cancels active checks/downloads; an old notification cannot start an installation after the setting is turned off.
+- Before installation, verify the published SHA-256, extension identity, release version and VS Code requirement. Keep running games and servers from being interrupted by an install or reload. Clean up the temporary installer after use.
+- Keep Marketplace installations under VS Code’s own update settings. Unknown installation sources, remote windows or releases without a published checksum use manual download links.
+
+## Cleanup and fixes
+
+- Exclude commands, menus and build-only metadata from the JavaScript bundle while retaining the complete extension manifest, both README languages and licenses in the VSIX. The package is about **598 KiB**, down from about **602 KiB** in 0.4.3, with no new runtime dependencies.
+- Build the settings schema once instead of rebuilding it for every request; resolve the language dictionary once per settings read. Remove an unused content type and an empty download-recovery branch.
+- Keep running tasks when trimming task history. They remain visible and cancellable even when the list exceeds 100 entries; completed history is still bounded.
+- Record externally aborted work as cancelled rather than failed. Observe background promise rejections even when a wait was already cancelled, and allow cancellation during download-lock/retry delays.
+
+## Validation
+
+- **95 automated tests passed**, including manual-update actions, disabled/stale prompts, package validation, task-history limits, shared-wait cancellation and the existing launcher/server/import/download regressions.
+- Check activation, commands, settings and MCP integration on VS Code **1.96.0** and **1.101.0**. The minimum supported VS Code version stays **1.96**.
+
+---
+
+## 简体中文
+
+### 手动插件更新
+
+- 为 GitHub / 手动 VSIX 安装增加**更多 → 检查插件更新**。发现新的稳定版本后，可下载 VSIX、查看更新说明，或在本地桌面窗口点击**下载并安装**。
+- 检查、下载安装、重新加载分别由用户操作；没有启动检查、定时检查或静默更新。关闭 `minecraftWorkbench.updates.enabled` 会隐藏入口并取消正在进行的检查、下载；旧通知也无法在关闭后触发安装。
+- 安装前校验发布的 SHA-256、扩展标识、版本和 VS Code 要求。游戏或服务端运行时不执行安装、重新加载；安装临时文件在使用后清理。
+- Marketplace 安装继续由 VS Code 自身更新设置管理。来源不明、远程窗口或发布未提供校验值时，使用手动下载链接。
+
+### 精简与修复
+
+- JS 构建仅保留运行所需的清单字段，移除其中重复的命令、菜单及构建元数据；VSIX 仍保留完整扩展清单、中英文 README 和许可。安装包约 **598 KiB**，0.4.3 约 **602 KiB**，未增加运行依赖。
+- 设置定义改为初始化一次，读取设置时只选择一次语言字典；删除未使用的内容类型和下载恢复中的空分支。
+- 清理任务历史时保留运行中的任务。超过 100 条时，仍可查看、取消这些任务；已完成历史仍有数量上限。
+- 外部中止的任务正确标记为已取消；已取消的等待也会接住后台 Promise 拒绝，避免未处理错误；等待下载锁、重试间隔时可立即响应取消。
+
+### 验证
+
+- **95 项自动测试通过**，覆盖手动更新、关闭开关及过期通知、安装包校验、任务历史上限、共享等待取消，以及既有启动器、服务端、导入和下载回归测试。
+- 在 VS Code **1.96.0**、**1.101.0** 验证激活、命令、设置与 MCP 集成；最低支持版本仍为 **1.96**。
+
 ## 0.4.3 — 2026-10-30
 
 ## External sign-in

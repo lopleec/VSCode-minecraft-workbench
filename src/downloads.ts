@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { exists, hashFile, readJson, writeJson } from './files';
 import { Resource, sourceUrl } from './sources';
 import type { NetworkOptions } from './network';
@@ -116,8 +117,8 @@ export class Downloads {
         await waitFor(active, options.signal);
       } catch (error) {
         if (options.signal?.aborted) throw options.signal.reason;
-        if (await this.valid(cache, options)) {
-        } else return this.downloadFile(url, destination, options);
+        if (!(await this.valid(cache, options)))
+          return this.downloadFile(url, destination, options);
       }
       options.signal?.throwIfAborted();
     }
@@ -228,7 +229,7 @@ export class Downloads {
             }
           }
         }
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await delay(100, undefined, { signal: options.signal });
       }
     }
     if (!handle) throw new Error('Download cache is busy; retry the task');
@@ -270,7 +271,7 @@ export class Downloads {
         return;
       } catch (error) {
         if (options.signal?.aborted || attempt === attempts - 1) throw error;
-        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+        await delay(300 * (attempt + 1), undefined, { signal: options.signal });
       }
     }
   }

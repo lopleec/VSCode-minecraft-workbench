@@ -55,19 +55,19 @@ function redactValue(value: unknown): unknown {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactValue(item)]));
   return value;
 }
+const definitions = Object.assign(
+  {},
+  ...manifest.contributes.configuration.map((group) => group.properties),
+) as Record<string, SettingSchema>;
 
 export async function settingsAction(method: string, params: Record<string, unknown>) {
-  const definitions = Object.assign(
-    {},
-    ...manifest.contributes.configuration.map((group) => group.properties),
-  ) as Record<string, SettingSchema>;
   const settings = vscode.workspace.getConfiguration('minecraftWorkbench');
-  if (method === 'settings.read')
+  if (method === 'settings.read') {
+    const dictionary = t('en', 'zh-cn') === 'en' ? english : chinese;
     return Object.fromEntries(
       Object.entries(definitions).map(([full, schema]) => {
         const key = full.replace(/^minecraftWorkbench\./, '');
         const value = settings.get(key, schema.default);
-        const dictionary = t('en', 'zh-cn') === 'en' ? english : chinese;
         const description = schema.markdownDescription || schema.description || '';
         const resolved = description.replace(
           /^%(.+)%$/,
@@ -83,6 +83,7 @@ export async function settingsAction(method: string, params: Record<string, unkn
         ];
       }),
     );
+  }
   if (method !== 'settings.update') throw new Error('Unknown settings request');
   const key = String(params.key || '');
   const schema = definitions['minecraftWorkbench.' + key];

@@ -31,7 +31,7 @@ export class Jobs implements vscode.Disposable {
       retry: retry || (() => this.run(label, work)),
     };
     this.items.unshift(job);
-    this.items.splice(100);
+    this.trim();
     this.changed();
     return vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: label, cancellable: true },
@@ -54,16 +54,24 @@ export class Jobs implements vscode.Disposable {
           this.output.info(label);
           return result;
         } catch (error) {
-          job.status = job.controller.signal.aborted ? 'cancelled' : 'failed';
+          job.status =
+            job.controller.signal.aborted || (error as Error)?.name === 'AbortError'
+              ? 'cancelled'
+              : 'failed';
           job.detail = redact(describeError(error));
           this.output.error(`${label}: ${job.detail}`);
           throw error;
         } finally {
           cancel.dispose();
+          this.trim();
           this.changed();
         }
       },
     );
+  }
+  private trim() {
+    for (let i = this.items.length - 1; i >= 0 && this.items.length > 100; i--)
+      if (this.items[i].status !== 'running') this.items.splice(i, 1);
   }
   retry(job: Job): Promise<unknown> {
     const pending = this.retries.get(job.id);

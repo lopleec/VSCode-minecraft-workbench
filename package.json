@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -808,6 +808,18 @@
         "title": "陶瓦联机（Beta）",
         "category": "Minecraft Workbench",
         "icon": "$(radio-tower)"
+      },
+      {
+        "command": "minecraftWorkbench.checkExtensionUpdates",
+        "title": "Check for Extension Updates",
+        "category": "Minecraft Workbench",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "minecraftWorkbench.checkExtensionUpdates.zh",
+        "title": "检查插件更新",
+        "category": "Minecraft Workbench",
+        "icon": "$(cloud-download)"
       }
     ],
     "viewsContainers": {
@@ -1840,6 +1852,14 @@
         {
           "command": "minecraftWorkbench.terracotta.zh",
           "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.checkExtensionUpdates",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language != zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.checkExtensionUpdates.zh",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language == zh-cn"
         }
       ]
     },
@@ -1904,6 +1924,12 @@
             "minimum": 1,
             "maximum": 16,
             "markdownDescription": "%setting.metadataConcurrency%"
+          },
+          "minecraftWorkbench.updates.enabled": {
+            "type": "boolean",
+            "default": true,
+            "scope": "application",
+            "markdownDescription": "%setting.updates.enabled%"
           }
         }
       },

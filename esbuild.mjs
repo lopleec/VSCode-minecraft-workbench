@@ -1,5 +1,6 @@
 import { context } from 'esbuild';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 const production = process.argv.includes('--production');
 const output = { minify: production, sourcemap: !production, sourcesContent: false };
 // XMCL 6.3.6 references an unpublished utils entry; unzip 2.2.0 points main at an omitted source file.
@@ -17,6 +18,30 @@ const ctx = await context({
   external: ['vscode'],
   alias,
   mainFields: ['module', 'main'],
+  plugins: [
+    {
+      name: 'runtime-manifest',
+      setup(build) {
+        build.onLoad({ filter: /[\\/]package\.json$/ }, async ({ path: file }) => {
+          if (file !== path.resolve('package.json')) return;
+          // Commands, menus and build metadata belong in the VSIX manifest, not the JS bundle.
+          const { name, version, publisher, repository, contributes } = JSON.parse(
+            await readFile(file, 'utf8'),
+          );
+          return {
+            contents: JSON.stringify({
+              name,
+              version,
+              publisher,
+              repository,
+              contributes: { configuration: contributes.configuration },
+            }),
+            loader: 'json',
+          };
+        });
+      },
+    },
+  ],
   ...output,
   logLevel: 'info',
 });

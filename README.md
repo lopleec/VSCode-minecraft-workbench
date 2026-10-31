@@ -35,6 +35,12 @@ Install the generated `.vsix` using the same steps above.
 
 The publisher is `Lopleec`; the extension ID is `Lopleec.minecraft-workbench`. If upgrading from the old `minecraft-workbench.minecraft-workbench` development build, uninstall that build before installing this one. Existing default storage is detected and reused. Microsoft accounts must sign in again because SecretStorage is scoped to the extension ID.
 
+### Extension updates
+
+For GitHub/manual VSIX installations, use **More → Check for extension updates**. Checks run only when clicked. If a newer stable release is available, open its download link or release notes, or choose **Download and install** in a local desktop window. Installation verifies the published SHA-256, extension identity, version and VS Code requirement. Reloading requires a separate click and is blocked while a game or server is running.
+
+Turn off `minecraftWorkbench.updates.enabled` to hide the entry and disable/cancel checks. There are no startup checks, timers or silent installations. Marketplace installations keep VS Code’s own update handling. VS Code does not provide a public installation-source API; this feature reads local installation metadata. Unknown sources and remote windows use manual download links instead of in-place installation. A VSIX record identifies a manual installation, not the website it was downloaded from.
+
 ### First use and agreements
 
 The first run opens **Agreements & About**. Read the linked [Minecraft EULA](https://www.minecraft.net/en-us/eula) and the extension's [terms and notices](TERMS.md), then check both boxes and select **Accept and continue**. Both start unchecked. Choosing **Not now** closes the page and leaves extension operations unavailable.
@@ -256,6 +262,12 @@ npm run package
 
 Publisher 为 `Lopleec`，扩展 ID 为 `Lopleec.minecraft-workbench`。从旧的 `minecraft-workbench.minecraft-workbench` 开发包升级时，请先卸载旧包。扩展会检测并复用原有默认存储；Microsoft 账户需要重新登录，因为 SecretStorage 按扩展 ID 隔离。
 SSH、WSL、容器中的文件和进程位于扩展宿主机器；在远程机器运行游戏需要图形环境。
+
+### 插件更新
+
+GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击后才联网检查；有新的稳定版本时，可打开下载链接、更新说明，或在本地桌面窗口选择**下载并安装**。安装前校验发布的 SHA-256、扩展标识、版本与 VS Code 要求。重新加载仍需另行点击，游戏或服务端运行时不会执行。
+
+关闭 `minecraftWorkbench.updates.enabled` 可隐藏入口并禁用、取消检查。没有启动检查、定时检查或静默安装。Marketplace 安装继续由 VS Code 管理更新。VS Code 没有公开的安装来源 API，因此通过本地安装记录识别；来源不明或远程窗口提供手动下载链接。VSIX 记录只能识别手动安装，不能证明下载网站。
 
 ### 首次使用与协议
 

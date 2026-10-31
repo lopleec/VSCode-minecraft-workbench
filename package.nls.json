@@ -104,5 +104,6 @@
   "group.terracotta": "Terracotta Multiplayer (Beta)",
   "setting.terracotta.enabled": "Enable the optional Terracotta Beta page. Off by default. Downloads and room operations also require separate acceptance of the Terracotta notices. Disabling disconnects rooms opened by this extension.",
   "setting.terracotta.executable": "Optional path to the unmodified official Terracotta executable or macOS app. Leave empty to use the downloaded component. macOS requires the official background-component installation.",
-  "setting.terracotta.publicNodes": "Additional Terracotta public relay URLs. Empty uses the official component defaults. Changes apply to the next room connection."
+  "setting.terracotta.publicNodes": "Additional Terracotta public relay URLs. Empty uses the official component defaults. Changes apply to the next room connection.",
+  "setting.updates.enabled": "Enable the manual GitHub update command for VSIX installations. Checks, downloads, installation and reloading require explicit clicks; nothing runs on startup or on a timer. Marketplace updates stay managed by VS Code."
 }

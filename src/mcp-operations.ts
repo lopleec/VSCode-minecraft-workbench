@@ -638,6 +638,7 @@ export const mcpOperations: McpOperation[] = [
         'proxyCredentials',
         'help',
         'agreements',
+        'checkExtensionUpdates',
         'manageInstances',
         'manageAccounts',
         'manageJava',

@@ -10,6 +10,8 @@ exports.run = async () => {
     typeof vscode.McpHttpServerDefinition === 'function';
   assert.equal(api.mcp.nativeIntegration, hasNativeMcp);
   assert.equal(api.mcp.enabled, false, 'MCP remains off by default');
+  assert.equal(api.updates.source, 'development');
+  assert.equal(api.updates.visible, false, 'Development hosts do not offer extension updates');
   assert.equal(api.consent.accepted, false);
   await assert.rejects(api.workbench.handle('launcher.gameVersions', {}), /Accept the agreements/);
   await api.workbench.handle('consent.accept', {
@@ -17,6 +19,10 @@ exports.run = async () => {
     minecraftEula: true,
     workbenchTerms: true,
   });
+  const definitions = await api.workbench.handle('settings.read', {});
+  assert.equal(definitions['updates.enabled'].value, true);
+  assert.ok(definitions['updates.enabled'].description.includes('manual'));
+  assert.ok(definitions['javaPath'] && definitions['sources'], 'Bundled settings stay complete');
   const commands = await vscode.commands.getCommands(true);
   for (const command of extension.packageJSON.contributes.commands)
     assert.ok(commands.includes(command.command), command.command);
