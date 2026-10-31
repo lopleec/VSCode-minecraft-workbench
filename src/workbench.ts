@@ -126,6 +126,9 @@ export class Workbench implements vscode.Disposable {
       terracotta: this.terracotta?.snapshot(),
       java: this.store.state.java,
       running: [...this.minecraft.running.keys()],
+      instanceStatus: Object.fromEntries(
+        this.store.state.instances.map((i) => [i.id, this.minecraft.status(i)]),
+      ),
       preferences: {
         order: config<SearchOrder>('modrinthSort', 'downloads'),
         pageSize: config('modrinthPageSize', 20),

@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -820,6 +820,18 @@
         "title": "检查插件更新",
         "category": "Minecraft Workbench",
         "icon": "$(cloud-download)"
+      },
+      {
+        "command": "minecraftWorkbench.curseforgeKey",
+        "title": "Configure CurseForge API Key",
+        "category": "Minecraft Workbench",
+        "icon": "$(key)"
+      },
+      {
+        "command": "minecraftWorkbench.curseforgeKey.zh",
+        "title": "配置 CurseForge API 密钥",
+        "category": "Minecraft Workbench",
+        "icon": "$(key)"
       }
     ],
     "viewsContainers": {
@@ -1860,6 +1872,14 @@
         {
           "command": "minecraftWorkbench.checkExtensionUpdates.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.curseforgeKey",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.curseforgeKey.zh",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
         }
       ]
     },
@@ -2276,6 +2296,17 @@
               "type": "string"
             },
             "markdownDescription": "%setting.terracotta.publicNodes%"
+          }
+        }
+      },
+      {
+        "title": "%group.curseforge%",
+        "properties": {
+          "minecraftWorkbench.curseforge.enabled": {
+            "type": "boolean",
+            "default": false,
+            "scope": "application",
+            "markdownDescription": "%setting.curseforge.enabled%"
           }
         }
       }

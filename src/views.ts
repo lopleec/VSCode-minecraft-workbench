@@ -127,6 +127,17 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             'key',
             'proxyCredentials',
           ),
+          ...(config('curseforge.enabled', false)
+            ? [
+                new Item(
+                  t('CurseForge API key', 'CurseForge API 密钥'),
+                  'action',
+                  undefined,
+                  'key',
+                  'curseforgeKey',
+                ),
+              ]
+            : []),
           new Item(
             config('mcp.enabled', false)
               ? t('Unregister MCP', '取消注册 MCP')
@@ -203,7 +214,8 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
     }
     if (this.section === 'instances') {
       return state.instances.map((instance) => {
-        const running = this.minecraft.running.has(instance.id);
+        const status = this.minecraft.status(instance);
+        const running = status !== 'stopped';
         const item = new Item(
           instance.name,
           running ? 'runningInstance' : 'instance',
@@ -214,7 +226,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ? 'pass-filled'
               : 'package',
           'inspectInstance',
-          `${instance.minecraft} · ${instance.loader}${instance.installed ? '' : t(' · Not installed', ' · 未安装')}`,
+          `${instance.minecraft} · ${instance.loader}${status === 'starting' ? t(' · Starting', ' · 启动中') : status === 'installing' ? t(' · Installing', ' · 安装中') : instance.installed ? '' : t(' · Not installed', ' · 未安装')}`,
           false,
         );
         item.id = instance.id;

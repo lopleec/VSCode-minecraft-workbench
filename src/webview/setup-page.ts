@@ -45,11 +45,15 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
             h(
               'span',
               { class: 'muted' },
-              state.running.includes(instance.id)
-                ? L('Running', '运行中')
-                : instance.installed
-                  ? L('Ready', '已安装')
-                  : L('Not installed', '未安装'),
+              state.instanceStatus[instance.id] === 'installing'
+                ? L('Installing', '安装中')
+                : state.instanceStatus[instance.id] === 'starting'
+                  ? L('Starting', '启动中')
+                  : state.running.includes(instance.id)
+                    ? L('Running', '运行中')
+                    : instance.installed
+                      ? L('Ready', '已安装')
+                      : L('Not installed', '未安装'),
             ),
             ctx.button(
               L('Configure', '配置'),
@@ -60,15 +64,20 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
               'secondary',
             ),
             ctx.button(
-              instance.installed ? L('Launch', '启动') : L('Install', '安装'),
+              state.instanceStatus[instance.id] !== 'stopped'
+                ? L('Stop', '停止')
+                : instance.installed
+                  ? L('Launch', '启动')
+                  : L('Install', '安装'),
               async () => {
                 await ctx.request('selectInstance', { instanceId: instance.id });
-                if (instance.installed)
+                if (state.instanceStatus[instance.id] !== 'stopped')
+                  await ctx.request('action', { action: 'stop', instanceId: instance.id });
+                else if (instance.installed)
                   await ctx.request('action', { action: 'launch', instanceId: instance.id });
                 else await ctx.navigate('version');
               },
               'secondary',
-              state.running.includes(instance.id),
             ),
           ),
         ),

@@ -1,5 +1,69 @@
 # Changelog
 
+## 0.4.5 — 2026-10-31
+
+## Shared instance repair
+
+- Use the same **Install / Repair Instance** workflow for Vanilla, Fabric, Quilt, Forge and NeoForge across supported Minecraft versions. It also applies to imported official/HMCL/PCL, Prism/MultiMC and supported Modrinth instances, including copies and in-place managed folders.
+- Verify and restore the client JAR, libraries, asset metadata, assets and logging configuration using available checksums. Reuse valid local/cache files, preserve the installed loader version and infer missing loader pins from readable installed profiles instead of upgrading silently.
+- Recover missing or corrupt official parent profiles. Rebuild known loader profiles and Forge/NeoForge generated libraries while preserving readable custom profile settings. Back up replaced profiles under `.workbench/profile-backups/<version>/`; identical backups are reused. Unknown custom metadata without a source still needs the original launcher or a backup.
+- Clear extracted native libraries for the repaired instance so the next launch rebuilds them. Worlds, configuration, game options and unrelated user content remain in place; managed pack files can be restored as described below.
+- Queue installations and repairs that share a runtime directory. Cancelling a queued task does not start it or let another writer bypass an active repair. Separate runtime installation from game-process management to keep the shared logic maintainable.
+
+## CurseForge modpacks and content repair
+
+- Import CurseForge exported ZIPs from **Import modpack**, alongside Modrinth `.mrpack` files. Local import is available by default: apply the manifest's Minecraft/loader version and overrides, then use bundled content or choose local JAR/ZIP files. Offline imports cannot verify CurseForge project/file IDs; a reference-only manifest still needs the actual files.
+- Keep **CurseForge Downloads (Beta)** off by default. Enable `minecraftWorkbench.curseforge.enabled` and supply a personal API key to resolve exact file IDs and download from official endpoints. Store the key in SecretStorage, restrict authentication headers to official origins, and cancel requests when Beta is disabled. No shared key or new runtime dependency is included.
+- Respect authors' distribution settings. Files unavailable to third-party downloads require a manual download from their official page, then checksum verification. Local importing and restoration do not require the Beta feature or an API key.
+- Retain repair sources for managed Modrinth/CurseForge content and local overrides. Restore missing/corrupt files without enabling disabled mods, reverting user-installed updates or restoring files explicitly deleted through content management. Local-only restoration requires the original ZIP or selected source file.
+
+## Launch, Java and cancellation
+
+- Make launch preparation a tracked task. Show **Starting** and **Installing** states and provide **Stop** before a game process exists. Cancellation and failures release the instance's busy state so it can be retried.
+- Log Java selection, account preparation, file validation, native extraction and process startup. Hash checks, Java inspection/detection, metadata requests, legacy asset linking and ZIP extraction respond to cancellation. Shared Java preparation can continue for another instance after its original requester cancels.
+- Extract natives into an instance/version-specific directory, close input archives and write files atomically. Restore stale legacy virtual assets and fall back to copying when hard links are unavailable.
+- Reuse a verified Java runtime before rescanning and detect common Windows Zulu, Java and Microsoft installation folders. Keep per-instance Java preferences ahead of global defaults.
+- Use Forge installer profiles for Minecraft 1.6–1.12.2, including backported processor installers such as 1.12.2-14.23.5.2860. Only pre-1.6 Forge uses the old universal-JAR merge path. Stream installer Java output and limit each installer Java process to 15 minutes.
+
+## Validation
+
+- **130 automated tests passed**, including checksum-based repair for all five loaders; real import/repair paths for official, HMCL, PCL, Prism/MultiMC and Modrinth layouts; protected user files; custom-profile preservation; loader pin recovery; queued cancellation; legacy assets; ZIP cancellation; local/Beta CurseForge import, distribution restrictions, key isolation and managed-content restoration.
+- Windows, macOS and Linux CI validate the extension, with extension-host compatibility checks on VS Code **1.96.0** and **1.101.0**. The minimum supported version stays **1.96**.
+- The reported Windows 11 25H2 vanilla-launch freeze has not been reproduced on that OS. The shared preparation/cancellation fixes are covered by tests; a complete game launch on that environment still requires real-machine verification.
+
+---
+
+## 简体中文
+
+### 通用实例修复
+
+- Vanilla、Fabric、Quilt、Forge、NeoForge 的受支持版本统一使用 **安装 / 修复实例**，同样适用于从官方/HMCL/PCL、Prism/MultiMC、受支持 Modrinth 格式导入的实例，支持复制导入和原地管理。
+- 按可用校验值检查并补齐客户端 JAR、依赖库、资源元数据、资源与日志配置。复用有效的本地文件、缓存，保持已安装 Loader 的版本；旧记录缺少版本号时，从可读的已安装配置识别，不静默升级。
+- 恢复缺失、损坏的官方父版本配置；重建已知 Loader 配置、Forge/NeoForge 生成依赖，同时保留可读的自定义版本设置。被替换的配置备份至 `.workbench/profile-backups/<版本>/`，相同备份不重复保存。未知且无来源的自定义元数据仍需原启动器或备份恢复。
+- 清理当前实例已解压的本地库，供下次启动重新生成。存档、配置、游戏选项及无关的用户内容保留；托管整合包文件可按下述规则恢复。
+- 共享运行目录的安装、修复排队执行；取消等待任务不会启动该任务，也不会让其他写入绕过当前修复。运行文件安装逻辑独立于游戏进程管理，统一维护。
+
+### CurseForge 整合包与内容修复
+
+- **导入整合包** 同时支持 CurseForge 导出的 ZIP 与 Modrinth `.mrpack`。默认可本地导入：应用清单中的 Minecraft / Loader 版本和覆盖文件，使用包内内容或选择本地 JAR/ZIP。离线导入无法校验 CurseForge 项目、文件 ID；仅含引用的清单仍需实际文件。
+- **CurseForge 下载（Beta）默认关闭**。开启 `minecraftWorkbench.curseforge.enabled` 并提供个人 API 密钥后，按清单中的精确文件 ID 解析、下载。密钥保存在 SecretStorage，认证头仅发送至官方来源；关闭 Beta 会取消请求。不内置公共密钥，不增加运行依赖。
+- 尊重作者的分发设置：无法供第三方下载的文件，需从官方页面手动下载，再校验哈希。本地导入与本地来源恢复无需开启 Beta，也无需 API 密钥。
+- 为托管的 Modrinth / CurseForge 内容及本地覆盖文件记录修复来源。补回缺失、损坏文件时保留禁用状态、用户更新后的版本；通过内容管理主动删除的文件不再恢复。仅有本地来源时，需保留原 ZIP 或所选源文件。
+
+### 启动、Java 与取消
+
+- 整个启动准备过程纳入任务管理，显示 **启动中**、**安装中** 状态；游戏进程尚未创建时也可 **停止**。取消或失败后释放实例忙碌状态，可再次尝试。
+- 输出 Java 选择、账户准备、文件校验、本地库解压和进程启动阶段。哈希校验、Java 检查与检测、元数据请求、旧版资源链接和 ZIP 解压均接入取消；共享 Java 准备的原请求被取消时，其他实例可以继续准备。
+- 本地库按实例和版本隔离，关闭输入归档，原子写入文件；恢复旧版过期的虚拟资源，不支持硬链接时使用文件复制。
+- 优先复用已校验的 Java，补充 Windows 常见 Zulu、Java、Microsoft 安装目录检测；实例 Java 配置继续优先于全局设置。
+- Minecraft 1.6–1.12.2 的 Forge 改为读取 installer 配置，支持 1.12.2-14.23.5.2860 等回移植处理器安装格式；仅 1.6 以前使用旧 universal JAR 合并流程。实时输出安装器 Java 日志，单次安装器 Java 进程最多运行 15 分钟。
+
+### 验证
+
+- **130 项自动测试通过**，涵盖五类 Loader 的哈希修复、官方/HMCL/PCL/Prism/MultiMC/Modrinth 实际导入与修复、用户文件保留、自定义配置保护、Loader 版本识别、排队取消、旧版资源、ZIP 取消，以及 CurseForge 本地/Beta 导入、分发限制、密钥隔离和内容恢复。
+- Windows、macOS、Linux CI 验证扩展，并在 VS Code **1.96.0**、**1.101.0** 运行宿主兼容检查；最低支持版本仍为 **1.96**。
+- 尚未在 Windows 11 25H2 实机复现原版启动卡死；通用准备与取消修复已有测试覆盖，该环境中的完整游戏启动仍需实机确认。
+
 ## 0.4.4 — 2026-10-31
 
 ## Manual extension updates

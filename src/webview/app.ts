@@ -1387,7 +1387,7 @@ function renderInstance() {
     );
     return;
   }
-  const running = boot.running.includes(instance.id);
+  const running = boot.instanceStatus[instance.id] !== 'stopped';
   const globalMemory = h('input', {
     type: 'checkbox',
     name: 'globalMemory',
@@ -1746,7 +1746,7 @@ window.addEventListener('message', (event: MessageEvent) => {
     const next = message.data as Bootstrap;
     const runningChanged =
       ['instance', 'backups', 'version'].includes(page) &&
-      JSON.stringify(next.running) !== JSON.stringify(boot.running);
+      JSON.stringify(next.instanceStatus) !== JSON.stringify(boot.instanceStatus);
     const changed =
       runningChanged ||
       next.consent.accepted !== boot.consent.accepted ||

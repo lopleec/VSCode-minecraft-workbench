@@ -73,6 +73,16 @@ The version list includes releases, snapshots and previews, April Fools versions
 | Downloads | Progress, cancellation, retry, resumable files, published hash verification, mirrors and proxies |
 | Accounts and Java | Multiple offline/Microsoft/authlib-injector accounts, account switching, local Java discovery and Eclipse Temurin downloads |
 
+### Repair an instance
+
+Select an instance and choose **Install / Repair** on its settings page, or run **Minecraft Workbench: Install / Repair Instance**. The same repair engine handles Vanilla, Fabric, Quilt, Forge and NeoForge across supported Minecraft versions and imported official/HMCL/PCL, Prism/MultiMC and Modrinth instances.
+
+Repair checks the client, libraries, asset index, assets and logging configuration against available metadata, restores missing or corrupt files and rebuilds loader outputs when required. Valid files are reused from disk/cache. The installed loader version stays pinned; repair does not update it. Extracted native libraries are rebuilt per instance. Worlds and configuration remain in place. Files with managed download/source records are verified and restored; unrelated local mods, resource packs and shaders are retained.
+
+Imported custom profiles keep readable settings. Missing official parent profiles can be downloaded again; known loader profiles can be regenerated. Original profiles are backed up under `<runtime>/.workbench/profile-backups/` before replacement. An unknown custom profile with no recoverable metadata requires the original launcher or backup. Repair cannot reconstruct files for which no source or metadata is available.
+
+**Stop** works while an instance is installing or preparing to launch. The task notification also provides cancellation. The output shows Java selection, account preparation, file checks, native extraction and process startup. Shared-runtime installation tasks are queued so cancelling a waiting task cannot interrupt another repair.
+
 ### Browse and manage content
 
 Open **Content → Browse content**. Discover starts with the most downloaded projects, with icons, descriptions and download counts. Search or sort by relevance, followers, recent updates or newest releases. Choose an instance to apply Minecraft and loader compatibility filters.
@@ -85,7 +95,15 @@ Required dependencies resolve recursively. Optional dependencies can be included
 
 The **Installed** tab supports filtering, local imports, toggling files, removal and updates. Updates preserve disabled state and archive replaced files in `.workbench/history`. Shader packs require a compatible shader mod such as Iris or Oculus.
 
-Use **Instances → Import modpack** or **Installed → Import modpack…** to import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge packs are not supported.**
+Use **Instances → Import modpack** or **Installed → Import modpack…** to import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge exported ZIPs** (`manifest.json` + overrides) are also supported. With online access off, use bundled files or select local JAR/ZIP files; reference-only manifests do not contain the mods, and offline import cannot verify their CurseForge file IDs.
+
+### CurseForge downloads (Beta)
+
+Local CurseForge ZIP import is available by default. **Automatic CurseForge metadata and downloads are off by default**; enable `minecraftWorkbench.curseforge.enabled` in Settings to use them. Then run **Minecraft Workbench: Configure CurseForge API Key**, or use **Workbench → Settings → CurseForge API key**. The key is stored in SecretStorage and sent only to the official API/CDN origins; it is not included in settings, URLs or exported pack records. See [API key access](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key) and [CDN authentication](https://blog.curseforge.com/introducing-api-key-authentication-for-curseforge-file-downloads/).
+
+Beta downloads use the pack's exact project/file IDs and verify published hashes. Files whose authors disallow third-party downloads must be selected manually from their official pages and are checked against the original hash. Turning Beta off cancels active requests. Local imports and repairs using local files remain available, without API requests or a key. CurseForge profile codes and in-app share codes are not import formats.
+
+Managed Modrinth/CurseForge pack files retain their download or local-source records for **Install / Repair**. Disabled files stay disabled, user-updated mods keep their new versions, and files removed through the content manager stay removed. Local-only files require the original archive or selected source file when a replacement is needed.
 
 ### Memory and instance settings
 
@@ -299,6 +317,17 @@ GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击�
 | 下载 | 进度、取消、重试、断点续传、哈希校验、镜像与代理 |
 | 账户与 Java | 多离线 / Microsoft 账户切换、本地 Java 检测、Temurin 下载 |
 
+### 修复实例
+
+选择实例，在设置页点击 **安装 / 修复**，或执行 **Minecraft Workbench：安装 / 修复实例**。Vanilla、Fabric、Quilt、Forge、NeoForge 的受支持版本，以及从官方/HMCL/PCL、Prism/MultiMC、Modrinth 导入的实例，都使用同一套修复流程。
+
+修复会按可用元数据校验客户端、依赖库、资源索引、资源和日志配置，补齐缺失、损坏文件，必要时重新生成 Loader 输出；有效文件直接复用本地文件或缓存。保持已安装的 Loader 版本，不执行升级。解压后的本地库按实例重建，存档与配置保留；具有下载或来源记录的文件会校验、恢复，其余本地模组、资源包和光影保留。
+
+导入实例保留可读的自定义版本配置。缺失的官方父版本配置可以重新下载，已知 Loader 配置可以重建；替换前的配置备份位于 `<运行目录>/.workbench/profile-backups/`。无法识别且没有可恢复元数据的自定义配置，需要从原启动器或备份恢复。没有来源和元数据的文件无法凭空重建。
+
+实例安装中、启动准备中均可点击 **停止**，任务通知也提供取消。输出显示 Java 选择、账户准备、文件校验、本地库解压和进程启动阶段。共享运行目录的安装任务排队执行，取消等待任务不会中断其他修复。
+
+
 ### 内容浏览与依赖
 
 从 **内容 → 浏览内容** 打开页面。发现页默认按下载量展示项目图标、简介和下载数，也可搜索或按相关度、关注数、更新与发布时间排序。选择实例后，可按游戏版本和 Loader 筛选兼容内容。
@@ -309,7 +338,15 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 **已安装** 页面支持筛选、导入本地文件、启用、禁用、删除和更新。更新保留禁用状态，旧文件存放在 `.workbench/history`。光影包需配合 Iris、Oculus 等兼容模组。
 
-可从 **实例 → 导入整合包** 或 **已安装 → 导入整合包…** 导入本地 `.mrpack`，也可从 Modrinth 安装，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。**暂不支持 CurseForge 整合包。**
+可从 **实例 → 导入整合包** 或 **已安装 → 导入整合包…** 导入本地 `.mrpack`，也可从 Modrinth 安装，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。同时支持 **CurseForge 导出的 ZIP**（`manifest.json` 与覆盖文件）。在线功能关闭时使用包内文件或选择本地 JAR/ZIP；只有引用的清单不包含实际模组，离线导入无法校验 CurseForge 文件 ID。
+
+### CurseForge 下载（Beta）
+
+默认可手动导入本地 CurseForge ZIP。**CurseForge 元数据与自动下载默认关闭**，需在设置中开启 `minecraftWorkbench.curseforge.enabled`；然后执行 **Minecraft Workbench：配置 CurseForge API 密钥**，或打开 **工作台 → 设置 → CurseForge API 密钥**。密钥保存在 SecretStorage，仅发送至官方 API/CDN，不写入设置、URL 或导出的整合包记录。参见 [API 密钥申请](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key) 与 [CDN 认证说明](https://blog.curseforge.com/introducing-api-key-authentication-for-curseforge-file-downloads/)。
+
+Beta 按清单锁定的项目、文件 ID 下载并校验哈希。作者禁止第三方下载的文件，需从官方页面手动下载，再校验原始哈希。关闭 Beta 会取消进行中的请求；本地导入、使用本地文件修复仍可使用，无需 API 请求或密钥。不支持 CurseForge 分享码导入。
+
+Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记录，供 **安装 / 修复** 使用；禁用状态保持不变，用户更新过的模组保留新版本，通过内容管理删除的文件不再恢复。仅有本地来源的文件需要保留原 ZIP 或所选源文件，才能在文件缺失时补回。
 
 ### 内存、语言与实例设置
 

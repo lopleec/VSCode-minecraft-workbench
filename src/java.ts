@@ -19,10 +19,11 @@ export function preferredJava(
 }
 
 const exec = promisify(execFile);
-export async function inspectJava(java: string): Promise<JavaRuntime> {
+export async function inspectJava(java: string, signal?: AbortSignal): Promise<JavaRuntime> {
   const { stdout, stderr } = await exec(java, ['-XshowSettings:properties', '-version'], {
     timeout: 10000,
     windowsHide: true,
+    signal,
   });
   const text = stdout + stderr;
   const version =
@@ -54,7 +55,8 @@ export class Java {
     private readonly store: Store,
     private readonly net: Network,
   ) {}
-  async detect() {
+  async detect(signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const candidates = new Set<string>(['java', ...this.store.state.java.map((j) => j.path)]);
     if (process.env.JAVA_HOME)
       candidates.add(
@@ -67,9 +69,12 @@ export class Java {
       '/usr/lib/jvm',
       ...[process.env.ProgramFiles, process.env['ProgramFiles(x86)']]
         .filter(Boolean)
-        .map((p) => path.join(p!, 'Eclipse Adoptium')),
+        .flatMap((p) =>
+          ['Eclipse Adoptium', 'Zulu', 'Java', 'Microsoft'].map((name) => path.join(p!, name)),
+        ),
     ];
     for (const root of roots) {
+      signal?.throwIfAborted();
       for (const entry of await fs.readdir(root, { withFileTypes: true }).catch(() => [])) {
         if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
         const folder = path.join(root, entry.name);
@@ -80,24 +85,26 @@ export class Java {
       }
     }
     const found = await Promise.all(
-      [...candidates].map((candidate) => inspectJava(candidate).catch(() => undefined)),
+      [...candidates].map((candidate) => inspectJava(candidate, signal).catch(() => undefined)),
     );
+    signal?.throwIfAborted();
     this.store.state.java = [
       ...new Map(found.filter((j): j is JavaRuntime => !!j).map((j) => [j.path, j])).values(),
     ].sort((a, b) => b.major - a.major);
     await this.store.save();
     return this.store.state.java;
   }
-  async select(major: number, preferred?: string): Promise<JavaRuntime> {
+  async select(major: number, preferred?: string, signal?: AbortSignal): Promise<JavaRuntime> {
+    signal?.throwIfAborted();
     if (preferred) {
-      const runtime = await inspectJava(preferred);
+      const runtime = await inspectJava(preferred, signal);
       if (runtime.major < major)
         throw new Error(`Java ${major}+ required; selected Java ${runtime.major}`);
       return runtime;
     }
     let runtime = this.store.state.java.find((j) => j.major === major);
     if (!runtime) {
-      await this.detect();
+      await this.detect(signal);
       runtime = this.store.state.java.find((j) => j.major === major);
     }
     if (!runtime)
@@ -111,21 +118,36 @@ export class Java {
     signal: AbortSignal,
     report: (text: string) => void,
     preferred?: string,
-  ) {
-    if (preferred) return this.select(major, preferred);
+  ): Promise<JavaRuntime> {
+    signal.throwIfAborted();
+    if (preferred) return this.select(major, preferred, signal);
     const pending = this.preparing.get(major);
     if (pending) {
-      await waitFor(pending, signal);
+      try {
+        await waitFor(pending, signal);
+      } catch {
+        signal.throwIfAborted();
+        return this.ensure(major, signal, report);
+      }
       signal.throwIfAborted();
-      return this.select(major);
+      return this.select(major, undefined, signal);
     }
     const prepare = (async () => {
-      await this.detect();
+      const cached = this.store.state.java.find((runtime) => runtime.major === major);
+      if (cached) {
+        try {
+          const runtime = await this.select(major, cached.path, signal);
+          if (runtime.major === major) return runtime;
+        } catch {
+          signal.throwIfAborted();
+        }
+      }
+      await this.detect(signal);
       if (!this.store.state.java.some((j) => j.major === major)) {
         report(`Eclipse Temurin ${major}`);
         await this.download(major, signal, report);
       }
-      return this.select(major);
+      return this.select(major, undefined, signal);
     })();
     this.preparing.set(major, prepare);
     try {
@@ -141,7 +163,12 @@ export class Java {
   ): Promise<void> {
     const pending = this.downloads.get(major);
     if (pending) {
-      await waitFor(pending, signal);
+      try {
+        await waitFor(pending, signal);
+      } catch {
+        signal.throwIfAborted();
+        return this.download(major, signal, report);
+      }
       signal.throwIfAborted();
       return;
     }
@@ -195,15 +222,16 @@ export class Java {
           'bin',
           platform === 'windows' ? 'java.exe' : 'java',
         ),
+        signal,
       );
-      await this.detect();
+      await this.detect(signal);
       return;
     }
     const stage = home + '.extracting';
     await fs.rm(stage, { recursive: true, force: true });
     await fs.mkdir(stage, { recursive: true });
     try {
-      if (platform === 'windows') await extractZip(archive, stage, 1);
+      if (platform === 'windows') await extractZip(archive, stage, 1, undefined, signal);
       else await untar({ file: archive, cwd: stage, strip: 1, strict: true });
       const java = path.join(
         stage,
@@ -211,12 +239,12 @@ export class Java {
         'bin',
         platform === 'windows' ? 'java.exe' : 'java',
       );
-      await inspectJava(java);
+      await inspectJava(java, signal);
       signal.throwIfAborted();
       await fs.rename(stage, home);
     } finally {
       await fs.rm(stage, { recursive: true, force: true });
     }
-    await this.detect();
+    await this.detect(signal);
   }
 }

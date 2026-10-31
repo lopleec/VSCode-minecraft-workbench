@@ -15,6 +15,7 @@ export interface NetworkOptions {
   connectionsPerFile?: number;
   chunkSize?: number;
   runtimeRoots?: () => string[];
+  originHeaders?: Record<string, Record<string, string>>;
 }
 interface JsonOptions {
   method?: 'GET' | 'POST';
@@ -90,6 +91,32 @@ export class Network {
     } catch (error) {
       this.blockedReason = String(error);
       this.dispatcher = new Agent();
+    }
+    if (options.originHeaders) {
+      const protectedNames = new Set(
+        Object.values(options.originHeaders).flatMap((headers) =>
+          Object.keys(headers).map((name) => name.toLowerCase()),
+        ),
+      );
+      this.dispatcher = this.dispatcher.compose((dispatch) => (opts, handler) => {
+        const input = opts.headers;
+        const entries: [string, string][] = !input
+          ? []
+          : Array.isArray(input)
+            ? Array.from({ length: input.length / 2 }, (_, i) => [input[i * 2], input[i * 2 + 1]])
+            : Symbol.iterator in input
+              ? [...(input as Iterable<[string, string]>)]
+              : Object.entries(input).flatMap(([name, value]) =>
+                  (Array.isArray(value) ? value : [value])
+                    .filter((v) => v !== undefined)
+                    .map((v) => [name, String(v)] as [string, string]),
+                );
+        const headers = entries.filter(([name]) => !protectedNames.has(name.toLowerCase())).flat();
+        const origin = new URL(String(opts.origin)).origin;
+        for (const [name, value] of Object.entries(options.originHeaders?.[origin] || {}))
+          headers.push(name, value);
+        return dispatch({ ...opts, headers }, handler);
+      });
     }
     this.directDispatcher = this.dispatcher;
     this.dispatcher = this.dispatcher.compose(interceptors.redirect({ maxRedirections: 8 }));

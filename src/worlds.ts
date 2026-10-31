@@ -25,7 +25,7 @@ export async function importWorlds(
       if ((await fs.stat(source)).size > 512 * 1024 ** 2)
         throw new Error('Extract archives larger than 512 MB before importing.');
       folder = path.join(staging, 'archive');
-      await extractZip(source, folder);
+      await extractZip(source, folder, 0, undefined, signal);
     }
     const worlds: string[] = [];
     const find = async (current: string, depth: number) => {

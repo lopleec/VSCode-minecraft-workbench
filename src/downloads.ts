@@ -66,7 +66,7 @@ export class Downloads {
     return (
       (await exists(file)) &&
       (!options.size || (await fs.stat(file)).size === options.size) &&
-      (!options.hash || (await hashFile(file, options.algorithm)) === options.hash)
+      (!options.hash || (await hashFile(file, options.algorithm, options.signal)) === options.hash)
     );
   }
   async download(url: string, destination: string, input: DownloadOptions = {}): Promise<void> {

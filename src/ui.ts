@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import AdmZip from 'adm-zip';
+import { curseforgeManifest } from './curseforge';
 import { Store } from './store';
 import { Minecraft } from './minecraft';
 import { Accounts } from './accounts';
@@ -465,15 +467,27 @@ export class UI {
   async importPack(archive?: string, packName?: string) {
     if (!archive) {
       const selected = await vscode.window.showOpenDialog({
-        filters: { 'Modrinth modpack': ['mrpack'] },
+        filters: { 'Minecraft modpacks': ['mrpack', 'zip'] },
         canSelectMany: false,
       });
       if (!selected?.[0]) return;
       archive = selected[0].fsPath;
     }
+    if ((await fs.stat(archive)).size > 512 * 1024 ** 2)
+      throw new Error('Modpack exceeds 512 MB. Import its extracted instance folder instead.');
+    if (
+      this.content.curseforge?.enabled &&
+      new AdmZip(archive).getEntry('manifest.json') &&
+      !new AdmZip(archive).getEntry('modrinth.index.json') &&
+      curseforgeManifest(archive).files.some((file) => file.required !== false) &&
+      !(await this.content.curseforge.hasKey())
+    ) {
+      await this.content.curseforge.configure();
+      if (!(await this.content.curseforge.hasKey())) return;
+    }
     const name = await input(
       t('Instance name', '实例名称'),
-      packName || path.basename(archive, '.mrpack'),
+      packName || path.basename(archive).replace(/\.(mrpack|zip)$/i, ''),
       (v) => (v.trim() ? undefined : t('Enter a name.', '请输入名称。')),
     );
     const id = randomUUID();

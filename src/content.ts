@@ -15,6 +15,16 @@ import {
   writeJson,
 } from './files';
 import { config, t } from './config';
+import { CurseForge } from './curseforge';
+import {
+  PackFile,
+  savePackFiles,
+  forgetPackFiles,
+  repairPackFiles,
+  managedPackPath,
+  trackPackFiles,
+  setPackFileEnabled,
+} from './pack-files';
 import {
   FabricModule,
   fabricSatisfies,
@@ -99,6 +109,7 @@ export class ContentService {
   constructor(
     private readonly net: Network,
     private readonly metadataDirectory?: string,
+    readonly curseforge?: CurseForge,
   ) {}
   private jarCache(version: ModVersion) {
     const file = contentFile(version);
@@ -646,6 +657,26 @@ export class ContentService {
           else installed.push(entry);
         }
         await this.persist(instance, installed);
+        await trackPackFiles(
+          instance,
+          prepared
+            .filter((entry) => entry.old)
+            .map((entry) => `${contentFolders[entry.change.kind]}/${entry.old!.file}`),
+          prepared.map(({ change, file }) => {
+            const remote = contentFile(
+              change.current,
+              change.current.id === version.id ? options.filename : undefined,
+            );
+            return {
+              path: `${contentFolders[change.kind]}/${file}`,
+              hash: remote.hashes.sha1,
+              algorithm: 'sha1',
+              size: remote.size,
+              source: 'modrinth',
+              urls: [remote.url],
+            };
+          }),
+        );
       } catch (error) {
         for (const entry of applied.reverse()) {
           await fs.rm(entry.destination, { force: true });
@@ -674,6 +705,7 @@ export class ContentService {
     entry.file = file;
     entry.enabled = !item.enabled;
     await this.persist(instance, items);
+    await setPackFileEnabled(instance, `${contentFolders[item.kind]}/${item.file}`, entry.enabled);
   }
   async remove(instance: ContentTarget, item: Content) {
     await rejectSymlinkParents(
@@ -685,6 +717,7 @@ export class ContentService {
       instance,
       (await this.list(instance)).filter((i) => i.file !== item.file || i.kind !== item.kind),
     );
+    await forgetPackFiles(instance, [`${contentFolders[item.kind]}/${item.file}`]);
   }
   async updates(instance: ContentTarget) {
     const items = await this.identify(instance);
@@ -802,9 +835,21 @@ export class ContentService {
     signal: AbortSignal,
     report: (text: string) => void,
   ) {
+    if ((await fs.stat(archive)).size > 512 * 1024 ** 2)
+      throw new Error('Modpack exceeds 512 MB. Import its extracted instance folder instead.');
     const zip = new AdmZip(archive);
+    if (zip.getEntry('manifest.json') && !zip.getEntry('modrinth.index.json')) {
+      if (!this.curseforge) throw new Error('CurseForge import is unavailable.');
+      return this.curseforge.importPack(archive, instance, signal, report);
+    }
     const entry = zip.getEntry('modrinth.index.json');
-    if (!entry) throw new Error('Not a Modrinth modpack');
+    if (!entry)
+      throw new Error(
+        t(
+          'Select a Modrinth .mrpack or CurseForge .zip. Use Import Instance for instance backups.',
+          '请选择 Modrinth .mrpack 或 CurseForge .zip，实例备份请使用导入实例。',
+        ),
+      );
     if (entry.header.size > 16 * 1024 ** 2) throw new Error('Modpack index exceeds size limit');
     const index = JSON.parse(entry.getData().toString()) as {
       formatVersion: number;
@@ -833,6 +878,7 @@ export class ContentService {
         instance.loaderVersion = index.dependencies[key];
       }
     }
+    const records: PackFile[] = [];
     for (const file of index.files) {
       signal.throwIfAborted();
       if (file.env?.client === 'unsupported' || file.env?.client === 'optional') continue;
@@ -862,13 +908,52 @@ export class ContentService {
         }
       }
       if (!done) throw last;
+      records.push({
+        path: file.path,
+        hash: file.hashes.sha1,
+        algorithm: 'sha1',
+        size: file.fileSize,
+        urls: file.downloads,
+        source: 'modrinth',
+      });
     }
     for (const prefix of ['overrides/', 'client-overrides/']) {
       for (const file of zip.getEntries().filter((e) => e.entryName.startsWith(prefix))) {
         if (path.posix.normalize(file.entryName.slice(prefix.length)).startsWith('.'))
           throw new Error('Reserved modpack override path');
       }
-      await extractZip(archive, instance.directory, 0, prefix);
+      await extractZip(archive, instance.directory, 0, prefix, signal);
+      for (const entry of zip
+        .getEntries()
+        .filter((entry) => !entry.isDirectory && entry.entryName.startsWith(prefix))) {
+        const relative = entry.entryName.slice(prefix.length);
+        if (!managedPackPath(relative)) continue;
+        const file = within(instance.directory, relative);
+        const old = records.findIndex((file) => file.path === relative);
+        if (old >= 0) records.splice(old, 1);
+        records.push({
+          path: relative,
+          hash: await hashFile(file, 'sha1', signal),
+          algorithm: 'sha1',
+          size: entry.header.size,
+          urls: [],
+          source: 'local',
+          archive,
+          entry: entry.entryName,
+        });
+      }
     }
+    await savePackFiles(instance, records);
+  }
+  async repairPack(instance: Instance, signal: AbortSignal, report: (text: string) => void) {
+    await repairPackFiles(
+      instance,
+      this.net,
+      signal,
+      report,
+      this.curseforge
+        ? (files) => this.curseforge!.repair(instance, files, signal, report)
+        : undefined,
+    );
   }
 }

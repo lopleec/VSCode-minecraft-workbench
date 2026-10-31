@@ -10,6 +10,76 @@ import { MockAgent } from 'undici';
 import { writeJson } from '../src/files';
 import { resourceOf, sourceUrl } from '../src/sources';
 
+test('origin-scoped credentials cover metadata and parallel downloads without leaking through redirects', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-origin-headers-'));
+  const large = Buffer.alloc(17 * 1024 ** 2, 9),
+    small = Buffer.from('redirected content');
+  const seen: { method?: string; range?: string; key?: string }[] = [];
+  let foreignKey: string | undefined;
+  const foreign = createServer((req, res) => {
+    foreignKey = req.headers['x-api-key'] as string | undefined;
+    res.end(small);
+  });
+  await new Promise<void>((resolve) => foreign.listen(0, '127.0.0.1', resolve));
+  const foreignOrigin = `http://127.0.0.1:${(foreign.address() as import('node:net').AddressInfo).port}`;
+  const server = createServer((req, res) => {
+    seen.push({
+      method: req.method,
+      range: req.headers.range,
+      key: req.headers['x-api-key'] as string,
+    });
+    if (req.url === '/redirect') {
+      res.writeHead(302, { location: foreignOrigin + '/file' });
+      res.end();
+      return;
+    }
+    if (req.url === '/json') {
+      res.end('{"ok":true}');
+      return;
+    }
+    const match = /bytes=(\d+)-(\d+)/.exec(req.headers.range || '');
+    const start = match ? Number(match[1]) : 0,
+      end = match ? Number(match[2]) : large.length - 1;
+    res.writeHead(match ? 206 : 200, {
+      'accept-ranges': 'bytes',
+      'content-length': end - start + 1,
+      ...(match ? { 'content-range': `bytes ${start}-${end}/${large.length}` } : {}),
+    });
+    res.end(req.method === 'HEAD' ? undefined : large.subarray(start, end + 1));
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const origin = `http://127.0.0.1:${(server.address() as import('node:net').AddressInfo).port}`;
+  const net = new Network({
+    proxy: '',
+    sources: {},
+    concurrency: 3,
+    retries: 0,
+    originHeaders: { [origin]: { 'x-api-key': 'fixture-private-key' } },
+  });
+  try {
+    assert.deepEqual(await net.json(origin + '/json'), { ok: true });
+    await net.download(origin + '/large', path.join(root, 'large'), {
+      hash: createHash('sha256').update(large).digest('hex'),
+      algorithm: 'sha256',
+      size: large.length,
+    });
+    await net.download(origin + '/redirect', path.join(root, 'redirect'), {
+      hash: createHash('sha1').update(small).digest('hex'),
+    });
+    assert.ok(seen.some((request) => request.method === 'HEAD'));
+    assert.ok(seen.some((request) => request.range));
+    assert.ok(seen.every((request) => request.key === 'fixture-private-key'));
+    assert.equal(foreignKey, undefined);
+  } finally {
+    await net.close();
+    await Promise.all([
+      new Promise<void>((resolve) => server.close(() => resolve())),
+      new Promise<void>((resolve) => foreign.close(() => resolve())),
+    ]);
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test('resource routing keeps authentication and unsupported hosts official', () => {
   assert.equal(resourceOf('https://resources.download.minecraft.net/ab/abcd'), 'assets');
   assert.equal(

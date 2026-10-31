@@ -4,7 +4,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { Java, preferredJava } from '../src/java';
+import { Java, preferredJava, inspectJava } from '../src/java';
 import { Store } from '../src/store';
 import { UI } from '../src/ui';
 import { Instance } from '../src/models';
@@ -30,6 +30,37 @@ test('Java preference uses instance, then global, then automatic; explicit runti
   } finally {
     vscode.workspace.getConfiguration = config;
   }
+});
+
+test('Java inspection respects an already cancelled launch', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(inspectJava(process.execPath, controller.signal), { name: 'AbortError' });
+});
+
+test('cancelling the owner of shared Java preparation does not cancel another instance', async () => {
+  const runtime = { path: '/fixture/java', major: 8, version: '1.8.0', architecture: 'test' };
+  const store = { state: { java: [] } } as unknown as Store;
+  const java = new Java(store, {} as never);
+  let attempts = 0;
+  java.detect = async (signal) => {
+    attempts++;
+    if (attempts === 1)
+      await new Promise((_resolve, reject) =>
+        signal!.addEventListener('abort', () => reject(signal!.reason), { once: true }),
+      );
+    store.state.java = [runtime];
+    return store.state.java;
+  };
+  java.select = async () => runtime;
+  const controller = new AbortController();
+  const first = java.ensure(8, controller.signal, () => {});
+  const rejection = assert.rejects(first, { name: 'AbortError' });
+  const other = java.ensure(8, new AbortController().signal, () => {});
+  controller.abort();
+  await rejection;
+  assert.equal(await other, runtime);
+  assert.equal(attempts, 2);
 });
 
 test('saving other instance settings retains an explicit Java override; empty clears only that override', async () => {

@@ -74,9 +74,13 @@ export async function writeText(target: string, data: string): Promise<void> {
     await fs.rm(temporary, { force: true });
   }
 }
-export async function hashFile(target: string, algorithm = 'sha1'): Promise<string> {
+export async function hashFile(
+  target: string,
+  algorithm = 'sha1',
+  signal?: AbortSignal,
+): Promise<string> {
   const hash = createHash(algorithm);
-  for await (const chunk of createReadStream(target)) hash.update(chunk);
+  for await (const chunk of createReadStream(target, { signal })) hash.update(chunk);
   return hash.digest('hex');
 }
 export async function rejectSymlinkParents(root: string, target: string): Promise<void> {
@@ -97,10 +101,13 @@ export async function extractZip(
   destination: string,
   strip = 0,
   prefix?: string,
+  signal?: AbortSignal,
 ): Promise<void> {
+  signal?.throwIfAborted();
   const zip = new AdmZip(archive);
   let size = 0;
   for (const entry of zip.getEntries()) {
+    signal?.throwIfAborted();
     if (prefix && !entry.entryName.startsWith(prefix)) continue;
     const raw = prefix ? entry.entryName.slice(prefix.length) : entry.entryName;
     const name = raw.split('/').slice(strip).join('/');
@@ -112,7 +119,7 @@ export async function extractZip(
     const target = within(destination, name);
     await rejectSymlinkParents(destination, target);
     await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.writeFile(target, entry.getData());
+    await fs.writeFile(target, entry.getData(), { signal });
     if (path.basename(target) === 'gradlew') await fs.chmod(target, 0o755);
   }
 }
@@ -126,7 +133,7 @@ export function redact(text: string): string {
   return text
     .replace(/(Bearer\s+)[^\s"']+/gi, '$1[redacted]')
     .replace(
-      /((?:access_token|refresh_token|identityToken|RpsTicket)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
+      /((?:access_token|refresh_token|identityToken|RpsTicket|x-api-key|api-key|api_key)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
       '$1[redacted]',
     )
     .replace(/(--accessToken\s+)\S+/g, '$1[redacted]')

@@ -76,7 +76,7 @@ export async function versionChain(root: string, version: string): Promise<Json[
   }
   return chain;
 }
-function loaderInfo(
+export function loaderInfo(
   libraries: Json[],
   minecraft: string,
 ): { loader: Loader; loaderVersion?: string } {

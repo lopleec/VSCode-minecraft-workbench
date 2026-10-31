@@ -181,6 +181,10 @@ test('failed modpack registration rolls back the selected instance and removes o
   vscode.window = { showInputBox: async () => 'Pack' };
   const { UI } = await import('../src/ui');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-pack-registration-'));
+  const archive = path.join(root, 'test.mrpack');
+  const zip = new AdmZip();
+  zip.addFile('modrinth.index.json', Buffer.from('{}'));
+  zip.writeZip(archive);
   const store = new Store(root, () => {});
   const existing = { id: 'existing', name: 'Existing' } as Instance;
   store.state.instances = [existing];
@@ -216,7 +220,7 @@ test('failed modpack registration rolls back the selected instance and removes o
     () => {},
   );
   try {
-    await assert.rejects(ui.importPack('test.mrpack'), /disk full/);
+    await assert.rejects(ui.importPack(archive), /disk full/);
     assert.deepEqual(store.state.instances, [existing]);
     assert.equal(store.state.selectedInstance, existing.id);
     assert.equal(

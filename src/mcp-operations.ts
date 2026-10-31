@@ -636,6 +636,7 @@ export const mcpOperations: McpOperation[] = [
         'output',
         'openStorage',
         'proxyCredentials',
+        'curseforgeKey',
         'help',
         'agreements',
         'checkExtensionUpdates',

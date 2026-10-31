@@ -73,6 +73,13 @@ test('required dependencies install once; updates retain disabled state and arch
     const current = (await service.list(instance)).find((i) => i.projectId === 'mod')!;
     assert.equal(current.enabled, false);
     assert.equal(current.file, 'mod-v2.jar.disabled');
+    await fs.rm(path.join(root, 'mods', current.file));
+    await service.repairPack(instance, new AbortController().signal, () => {});
+    assert.equal(
+      await fs.readFile(path.join(root, 'mods', current.file), 'utf8'),
+      payload.toString(),
+    );
+    await assert.rejects(fs.access(path.join(root, 'mods', 'mod-v2.jar')));
     await assert.rejects(fs.access(path.join(root, 'mods', 'mod-v1.jar.disabled')));
     assert.ok((await fs.readdir(path.join(root, '.workbench', 'history'))).length > 0);
     const conflict = version('conflict');

@@ -35,6 +35,15 @@ test('offline UUID matches Java UUID.nameUUIDFromBytes', () => {
   assert.equal(offlineUuid('Notch'), 'b50ad385829d3141a2167e7d7539ba7f');
   assert.notEqual(offlineUuid('Notch'), offlineUuid('notch'));
 });
+
+test('cancelled ZIP extraction does not create files', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    extractZip('not-opened.zip', 'not-created', 0, undefined, controller.signal),
+    { name: 'AbortError' },
+  );
+});
 test('tokens and proxy passwords are redacted', () => {
   const result = redact(
     'Bearer secret --accessToken hidden access_token="abc" refresh_token=def https://user:pass@proxy.test socks5h://name:password@proxy.test',

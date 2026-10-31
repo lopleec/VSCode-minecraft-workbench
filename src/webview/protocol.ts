@@ -59,6 +59,7 @@ export interface Bootstrap {
   terracotta?: TerracottaStatus;
   java: JavaRuntime[];
   running: string[];
+  instanceStatus: Record<string, 'running' | 'starting' | 'installing' | 'stopped'>;
   preferences: Preferences;
   defaults: {
     minMemory: number;

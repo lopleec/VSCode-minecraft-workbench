@@ -21,6 +21,7 @@ import { ServerActions } from './server-actions';
 import { runtimeDirectory } from './game-paths';
 import { Terracotta } from './terracotta';
 import { ExtensionUpdates } from './extension-updates';
+import { CurseForge } from './curseforge';
 
 let activeServers: Servers | undefined;
 let activeTerracotta: Terracotta | undefined;
@@ -143,8 +144,22 @@ export async function activate(context: vscode.ExtensionContext) {
   const jobs = new Jobs(refresh, output);
   const java = new Java(store, network);
   const accounts = new Accounts(store, context.secrets, network, () => consent.accepted);
-  const minecraft = new Minecraft(store, network, java, accounts, jobs, refresh);
-  const content = new ContentService(network, path.join(store.root, 'cache', 'mod-metadata'));
+  const curseforge = new CurseForge(network, context.secrets);
+  context.subscriptions.push(curseforge);
+  const content = new ContentService(
+    network,
+    path.join(store.root, 'cache', 'mod-metadata'),
+    curseforge,
+  );
+  const minecraft = new Minecraft(
+    store,
+    network,
+    java,
+    accounts,
+    jobs,
+    refresh,
+    (instance, signal, report) => content.repairPack(instance, signal, report),
+  );
   const developer = new Developer(store, network, java);
   const servers = new Servers(store, java, jobs, network, minecraft, refresh);
   activeServers = servers;
@@ -179,7 +194,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context,
     network,
     jobs,
-    () => minecraft.running.size > 0 || servers.running.size > 0,
+    () => minecraft.activeIds.length > 0 || servers.running.size > 0,
   );
   await updates.initialize();
   await vscode.commands.executeCommand(
@@ -222,6 +237,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
     agreements: () => workbench!.open('agreements'),
     checkExtensionUpdates: () => updates.check(),
+    curseforgeKey: () => curseforge.configure(),
     showView: async () => {
       const sections: Section[] = [
         'home',
@@ -381,6 +397,8 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('minecraftWorkbench.curseforge.enabled'))
+        curseforge.configurationChanged();
       if (event.affectsConfiguration('minecraftWorkbench.updates.enabled')) {
         updates.configurationChanged();
         void vscode.commands.executeCommand(

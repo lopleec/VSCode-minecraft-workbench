@@ -27,6 +27,7 @@ A service's terms and privacy policy govern access to that service. An open-sour
 | --- | --- | --- |
 | Microsoft / Mojang | Microsoft device sign-in, Xbox/Minecraft account checks, game metadata and downloads | [Microsoft services agreement](https://www.microsoft.com/servicesagreement), [privacy](https://privacy.microsoft.com/privacystatement), [Minecraft EULA](https://www.minecraft.net/en-us/eula), [usage guidelines](https://www.minecraft.net/en-us/usage-guidelines) |
 | Modrinth | Project search, version/dependency metadata, icons and content downloads | [Terms](https://modrinth.com/legal/terms), [privacy](https://modrinth.com/legal/privacy), [modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions); each project's own license governs its files |
+| CurseForge / Overwolf | Local modpack manifests; optional Beta API metadata and authenticated CDN downloads | [API terms](https://support.curseforge.com/support/solutions/articles/9000207405-curseforge-3rd-party-api-terms-and-conditions), [platform terms](https://legal.overwolf.com/docs/overwolf/platform/platform-terms-of-use/), [privacy](https://legal.overwolf.com/docs/overwolf/platform/platform-privacy-policy/), [API access](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key); each downloaded file retains its author’s license and distribution settings |
 | BMCLAPI by bangbang93 | Optional Minecraft/loader/download mirrors | [Service documentation and conditions](https://bmclapidoc.bangbang93.com/); mirrored files retain their upstream owners and licenses |
 | GitHub, GitHub Releases and codeload | Project templates and official component downloads | [Terms](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service), [privacy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement); repository content retains its own license |
 | Eclipse Adoptium | Temurin JDK metadata and downloads | [API documentation](https://github.com/adoptium/api.adoptium.net), [Temurin licensing FAQ](https://adoptium.net/docs/faq) |
@@ -71,3 +72,9 @@ Mods, plugins, JAR installers and Gradle projects can execute code with local pr
 - **镜像、代理和自定义服务器**：运营者可能获得请求路径、连接地址等信息。认证地址识别与凭据请求绕过下载镜像，但仍使用已配置的代理。通过专用命令设置的代理凭据存入 SecretStorage；写在设置 URL 中的凭据仍属于该设置值。
 - **执行与分发**：模组、插件、安装器、Gradle 可执行本地代码；哈希校验不等于安全审计。分享导出的本地内容前需核对再分发权限，并保留独立备份。
 - **陶瓦与 MCP**：联机涉及的节点、参与者和数据已在独立 Beta 须知中说明；AI 客户端可能按自身政策处理 MCP 返回的路径、元数据和日志。
+
+## CurseForge access / CurseForge 接入
+
+CurseForge is an Overwolf service. No CurseForge client, SDK, shared API key or mod binaries are bundled. Local manifest/override import works without network access. Automatic API/CDN access is an optional Beta feature, off by default, using a user-provided key stored in VS Code SecretStorage. Author distribution restrictions are respected; blocked files require manual download and checksum verification. API access, availability and downloaded content remain governed by the service and authors’ terms.
+
+CurseForge 为 Overwolf 服务；本扩展不附带 CurseForge 客户端、SDK、公共 API 密钥或模组二进制。本地清单与覆盖文件导入无需联网。自动 API/CDN 接入属于默认关闭的可选 Beta 功能，使用用户提供、保存在 VS Code SecretStorage 中的密钥。尊重作者分发设置；受限文件需手动下载并校验哈希。API 接入、可用性和下载内容仍受服务方、作者条款约束。

@@ -25,7 +25,7 @@ export class ImportSession {
         const parent = path.join(this.store.root, 'cache', 'imports');
         await fs.mkdir(parent, { recursive: true });
         this.stage = await fs.mkdtemp(path.join(parent, 'import-'));
-        await extractZip(source, this.stage);
+        await extractZip(source, this.stage, 0, undefined, signal);
         directory = this.stage;
       }
       this.scan = await scanInstances(directory, signal);

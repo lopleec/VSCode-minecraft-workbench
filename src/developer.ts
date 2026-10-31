@@ -180,7 +180,7 @@ export class Developer {
     try {
       await this.net.download(template.url, archive, { signal, kind: 'project' });
       await fs.mkdir(stage, { recursive: true });
-      await extractZip(archive, stage, template.loader === 'forge' ? 0 : 1);
+      await extractZip(archive, stage, template.loader === 'forge' ? 0 : 1, undefined, signal);
       for (const relative of ['.github', '.git', '.idea', '.vscode'])
         await fs.rm(path.join(stage, relative), { recursive: true, force: true });
       const propFile = path.join(stage, 'gradle.properties');
