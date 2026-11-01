@@ -50,6 +50,7 @@ const browser = await context({
   target: 'es2022',
   format: 'iife',
   outfile: 'dist/workbench.js',
+  metafile: production,
   ...output,
   logLevel: 'info',
 });
@@ -58,8 +59,15 @@ if (process.argv.includes('--watch')) {
   await browser.watch();
 } else {
   const result = await ctx.rebuild();
-  await browser.rebuild();
-  if (production) await writeFile('dist/bundle-meta.json', JSON.stringify(result.metafile));
+  const renderer = await browser.rebuild();
+  if (production)
+    await writeFile(
+      'dist/bundle-meta.json',
+      JSON.stringify({
+        inputs: { ...result.metafile.inputs, ...renderer.metafile.inputs },
+        outputs: { ...result.metafile.outputs, ...renderer.metafile.outputs },
+      }),
+    );
   await ctx.dispose();
   await browser.dispose();
 }
