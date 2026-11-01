@@ -1,6 +1,6 @@
 import { context } from 'esbuild';
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 const production = process.argv.includes('--production');
 const output = { minify: production, sourcemap: !production, sourcesContent: false };
 // XMCL 6.3.6 references an unpublished utils entry; unzip 2.2.0 points main at an omitted source file.
@@ -25,16 +25,13 @@ const ctx = await context({
         build.onLoad({ filter: /[\\/]package\.json$/ }, async ({ path: file }) => {
           if (file !== path.resolve('package.json')) return;
           // Commands, menus and build metadata belong in the VSIX manifest, not the JS bundle.
-          const { name, version, publisher, repository, contributes } = JSON.parse(
-            await readFile(file, 'utf8'),
-          );
+          const { name, version, publisher, repository } = JSON.parse(await readFile(file, 'utf8'));
           return {
             contents: JSON.stringify({
               name,
               version,
               publisher,
               repository,
-              contributes: { configuration: contributes.configuration },
             }),
             loader: 'json',
           };
@@ -42,6 +39,7 @@ const ctx = await context({
       },
     },
   ],
+  metafile: production,
   ...output,
   logLevel: 'info',
 });
@@ -59,8 +57,9 @@ if (process.argv.includes('--watch')) {
   await ctx.watch();
   await browser.watch();
 } else {
-  await ctx.rebuild();
+  const result = await ctx.rebuild();
   await browser.rebuild();
+  if (production) await writeFile('dist/bundle-meta.json', JSON.stringify(result.metafile));
   await ctx.dispose();
   await browser.dispose();
 }

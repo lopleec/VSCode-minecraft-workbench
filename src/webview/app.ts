@@ -1,5 +1,8 @@
 import { h } from './dom';
-import { renderServers, renderServerCreate, renderServer, serverContent } from './server-page';
+import { renderServers } from './server-page';
+import { renderServerCreate } from './server-create-page';
+import { renderServer } from './server-detail-page';
+import { serverContent } from '../server-types';
 import { renderAgreements } from './agreements-page';
 import { renderInstances, renderSetup } from './setup-page';
 import { renderImport } from './import-page';
@@ -9,7 +12,7 @@ import { renderProjects } from './projects-page';
 import { renderServerImport } from './server-import-page';
 import { requestParameters } from './protocol';
 import { managementPages, defaultPage, resolvePage } from '../navigation';
-import type { PageContext } from './page-ui';
+import { field, select, type PageContext } from './page-ui';
 import type {
   Bootstrap,
   BrowserHit,
@@ -1503,15 +1506,6 @@ function markdown(text: string): Node[] {
   }
   return result;
 }
-function field(label: string, node: HTMLElement, hint?: string) {
-  return h(
-    'label',
-    { class: 'field' },
-    h('span', { class: 'field-label' }, label),
-    node,
-    hint && h('span', { class: 'field-hint' }, hint),
-  );
-}
 function formInput(name: string, value: string | number, type = 'text', placeholder = '') {
   return h('input', {
     name,
@@ -1528,8 +1522,7 @@ function formInput(name: string, value: string | number, type = 'text', placehol
   });
 }
 function formSelect(name: string, value: string, options: [string, string][]) {
-  const result = dropdown(name, value, options, () => {});
-  result.name = name;
+  const result = select(name, value, options);
   result.id = `setting-${name}`;
   return result;
 }

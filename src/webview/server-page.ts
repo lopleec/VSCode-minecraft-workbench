@@ -1,9 +1,6 @@
 import { h } from './dom';
 import { PageContext, heading, blank } from './page-ui';
 import { statusLabel } from './server-ui';
-export { serverContent } from './server-ui';
-export { renderServerCreate } from './server-create-page';
-export { renderServer } from './server-detail-page';
 
 export function renderServers(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;

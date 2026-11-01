@@ -5,7 +5,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import AdmZip from 'adm-zip';
 import { Store } from '../src/store';
-import { InstanceImporter, scanInstances, versionChain } from '../src/instance-import';
+import { InstanceImporter, scanInstances } from '../src/instance-import';
+import { versionChain } from '../src/version-profile';
 import { ImportSession } from '../src/import-session';
 import {
   defaultMinecraftDirectory,

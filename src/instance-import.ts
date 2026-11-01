@@ -10,7 +10,6 @@ import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } fr
 import { InstanceSettings, validateInstanceSettings } from './instance-settings';
 import { normalizeProfile, resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
-export { versionChain } from './version-profile';
 
 type Json = Record<string, any>;
 export interface ImportCandidate {

@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { x as untar } from 'tar';
+import { extract as untar } from 'tar/extract';
 import { Network } from './network';
 import { Store } from './store';
 import { JavaRuntime } from './models';

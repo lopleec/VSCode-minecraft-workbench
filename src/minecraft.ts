@@ -13,14 +13,13 @@ import { config, t, trusted } from './config';
 import { filename, readJson, redact, writeJson, exists } from './files';
 import { runtimeDirectory, writeInstanceMetadata } from './game-paths';
 import { prepareGameLanguage } from './game-language';
-import { versionChain } from './instance-import';
 import { neoForgePrefix } from './versions';
 import { memorySettings } from './memory';
 import { waitFor } from './abort';
 import { launchPrecheck } from './launch-prechecks';
 import { installRuntime } from './runtime-install';
 import { RuntimeQueue } from './runtime-queue';
-import { resolveGameVersion } from './version-profile';
+import { resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 
 export class Minecraft {

@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { spawn, ChildProcess } from 'node:child_process';
 import { Agent, request } from 'undici';
-import { x as untar } from 'tar';
+import { extract as untar } from 'tar/extract';
 import type * as vscode from 'vscode';
 import { config, t } from './config';
 import { exists, filename, readJson } from './files';

@@ -11,6 +11,6 @@
 !CHANGELOG.md
 !dist/extension.js
 !dist/workbench.js
-!media/*.png
-!media/*.svg
-!media/*.css
+!media/icon.png
+!media/minecraft.svg
+!media/workbench.css

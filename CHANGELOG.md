@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- Reduce duplicate settings metadata, form helpers and unused archive code in the extension package. Include license texts for the dependencies actually bundled.
+- Preserve cleared instance, account and server selections during background file synchronization.
 - Register native sidebar views before loading saved data and credentials, avoiding the missing data provider message during startup.
 - Import HMCL patched profiles and renamed client JARs; reuse complete installations without reinstalling. Accept valid modpack override directories and hidden configuration files.
 - Restore horizontal content rows with action buttons on the right and simplify Alpha/Beta labels. Failed content requests now show Retry instead of loading indefinitely. Improve version recommendations, Chinese settings and native sidebar proportions; separate Tasks and Output under More, and preserve project settings during background refreshes.
@@ -28,6 +30,8 @@
 
 ### 修复
 
+- 精简重复设置数据、表单组件及未使用的归档代码；按实际打包依赖收集许可文本，缩小安装包。
+- 修复后台文件同步重新选中已取消选择的实例、账户或服务端。
 - 提前注册原生侧栏，修复启动时短暂显示“没有可提供视图数据的已注册数据提供程序”。
 - 修复 HMCL 补丁配置和重命名客户端 JAR 的导入，完整安装可直接复用；修复整合包覆盖目录、隐藏配置文件被误拦截。
 - 修复内容列表变成纵向布局、操作按钮偏离右侧的问题，简化 Alpha／Beta 文案；内容加载失败后可重试，不再持续转圈；改进版本推荐、中文设置和原生侧栏比例，任务与输出分别放入更多，后台刷新保留项目设置输入。

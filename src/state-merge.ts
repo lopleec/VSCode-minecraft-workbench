@@ -43,11 +43,15 @@ export function mergeState(current: State, base: State, next: State): State {
     }
     (merged[field] as unknown[]) = [...result.values()];
   }
-  if (!merged.instances.some((i) => i.id === merged.selectedInstance))
-    merged.selectedInstance = merged.instances[0]?.id;
-  if (!merged.accounts.some((a) => a.id === merged.selectedAccount))
-    merged.selectedAccount = merged.accounts[0]?.id;
-  if (!merged.servers.some((s) => s.id === merged.selectedServer))
-    merged.selectedServer = merged.servers[0]?.id;
+  for (const [field, selected] of [
+    ['instances', 'selectedInstance'],
+    ['accounts', 'selectedAccount'],
+    ['servers', 'selectedServer'],
+  ] as const)
+    if (
+      merged[selected] !== undefined &&
+      !merged[field].some((item) => item.id === merged[selected])
+    )
+      merged[selected] = merged[field][0]?.id;
   return merged;
 }

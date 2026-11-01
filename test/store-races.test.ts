@@ -114,3 +114,33 @@ test('edits made while a save writes remain dirty for the following save', async
     await cleanup();
   }
 });
+
+test('file synchronization preserves deliberately cleared instance, account and server selections', async () => {
+  const { store, file, cleanup } = await fixture();
+  try {
+    for (const [field, selected] of [
+      ['instances', 'selectedInstance'],
+      ['accounts', 'selectedAccount'],
+      ['servers', 'selectedServer'],
+    ] as const) {
+      store.state[field] = [{ id: field }] as never;
+      store.state[selected] = field;
+    }
+    await store.save();
+    const external = JSON.parse(await fs.readFile(file, 'utf8'));
+    store.state.selectedInstance = undefined;
+    store.state.selectedAccount = undefined;
+    store.state.selectedServer = undefined;
+    external.mode = 'server';
+    await fs.writeFile(file, JSON.stringify(external));
+    await until(() => store.state.mode === 'server');
+    for (const key of ['selectedInstance', 'selectedAccount', 'selectedServer'] as const)
+      assert.equal(store.state[key], undefined);
+    await store.save();
+    const persisted = JSON.parse(await fs.readFile(file, 'utf8'));
+    for (const key of ['selectedInstance', 'selectedAccount', 'selectedServer'])
+      assert.equal(persisted[key], undefined);
+  } finally {
+    await cleanup();
+  }
+});

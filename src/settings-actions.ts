@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
-import manifest from '../package.json';
-import { redact } from './files';
-import english from '../package.nls.json';
-import chinese from '../package.nls.zh-cn.json';
+import * as path from 'node:path';
+import { readJson, redact } from './files';
 import { setLanguage, t } from './config';
 import { validGameLanguage } from './game-language';
 
@@ -19,6 +17,11 @@ interface SettingSchema {
   properties?: Record<string, SettingSchema>;
   additionalProperties?: boolean;
 }
+interface SettingsManifest {
+  contributes: { configuration: { title: string; properties: Record<string, SettingSchema> }[] };
+}
+let manifest: Promise<SettingsManifest> | undefined;
+const dictionaries = new Map<string, Promise<Record<string, string>>>();
 function validate(value: unknown, schema: SettingSchema): void {
   const type = Array.isArray(value) ? 'array' : typeof value;
   if (
@@ -56,15 +59,23 @@ function redactValue(value: unknown): unknown {
     return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactValue(item)]));
   return value;
 }
-const definitions = Object.assign(
-  {},
-  ...manifest.contributes.configuration.map((group) => group.properties),
-) as Record<string, SettingSchema>;
-
 export async function settingsAction(method: string, params: Record<string, unknown>) {
+  const root = path.resolve(__dirname, '..');
+  const metadata = await (manifest ??= readJson<SettingsManifest>(path.join(root, 'package.json')));
+  const groups = metadata.contributes.configuration;
+  const definitions = Object.assign({}, ...groups.map((group) => group.properties)) as Record<
+    string,
+    SettingSchema
+  >;
   const settings = vscode.workspace.getConfiguration('minecraftWorkbench');
   if (method === 'settings.read') {
-    const dictionary = t('en', 'zh-cn') === 'en' ? english : chinese;
+    const locale = t('en', 'zh-cn');
+    if (!dictionaries.has(locale))
+      dictionaries.set(
+        locale,
+        readJson(path.join(root, locale === 'en' ? 'package.nls.json' : 'package.nls.zh-cn.json')),
+      );
+    const dictionary = await dictionaries.get(locale)!;
     const translate = (value: string) =>
       value.replace(
         /^%(.+)%$/,
@@ -86,9 +97,7 @@ export async function settingsAction(method: string, params: Record<string, unkn
       Object.entries(definitions).map(([full, schema]) => {
         const key = full.replace(/^minecraftWorkbench\./, '');
         const value = settings.get(key, schema.default);
-        const group = manifest.contributes.configuration.find((group) =>
-          Object.hasOwn(group.properties, full),
-        )!;
+        const group = groups.find((group) => Object.hasOwn(group.properties, full))!;
         return [
           key,
           {
