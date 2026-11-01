@@ -25,22 +25,43 @@ import { CurseForge } from './curseforge';
 import { showOutput } from './output';
 import { extensionVersion } from './build-info';
 import { serverTarget } from './server-settings';
+import { Sidebar, sidebarTitles } from './sidebar';
 
 let activeServers: Servers | undefined;
 let activeTerracotta: Terracotta | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
+  const sidebar = new Sidebar();
   const output = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
+  context.subscriptions.push(sidebar, output);
+  try {
+    return await initialize(context, sidebar, output);
+  } catch (error) {
+    output.error(String(error));
+    sidebar.fail(
+      t(
+        'Minecraft Workbench could not start. See Output for details.',
+        'Minecraft Workbench 启动失败，请查看输出。',
+      ),
+    );
+    throw error;
+  }
+}
+
+async function initialize(
+  context: vscode.ExtensionContext,
+  sidebar: Sidebar,
+  output: vscode.LogOutputChannel,
+) {
   output.info(
     `Minecraft Workbench ${extensionVersion} | VS Code ${vscode.version} | Node ${process.versions.node} | ${process.platform}/${process.arch}`,
   );
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
-  context.subscriptions.push(output, status);
-  const views: { section: Section; provider: View; tree: vscode.TreeView<Item> }[] = [];
+  context.subscriptions.push(status);
   let workbench: Workbench | undefined;
   let mcp: WorkbenchMcp | undefined;
   const refresh = () => {
-    for (const { provider } of views) provider.refresh();
+    sidebar.refresh();
     updateStatus(status, store);
     if (!consent.accepted) {
       status.text = '$(shield) ' + t('Agreements required', '请先确认协议');
@@ -82,6 +103,7 @@ export async function activate(context: vscode.ExtensionContext) {
   )
     root = legacy;
   if (!path.isAbsolute(root)) {
+    sidebar.fail(t('Storage directory must be an absolute path.', '存储目录必须是绝对路径。'));
     void vscode.window.showErrorMessage(
       t('Storage directory must be an absolute path.', '存储目录必须是绝对路径。'),
     );
@@ -92,6 +114,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await store.load();
   } catch (error) {
     output.error(String(error));
+    sidebar.fail(
+      t('Could not read instance data. See Output for details.', '无法读取实例数据，请查看输出。'),
+    );
     void vscode.window.showErrorMessage(
       t(
         'Minecraft Workbench could not read its state. Check the output before changing or restoring state.json.',
@@ -228,35 +253,10 @@ export async function activate(context: vscode.ExtensionContext) {
     updates.visible,
   );
   context.subscriptions.push(updates);
-  const titles: Record<Section, [string, string]> = {
-    home: ['Workbench', '工作台'],
-    instances: ['Instances', '实例'],
-    projects: ['Projects', '项目'],
-    servers: ['Servers', '服务端'],
-    content: ['Content', '内容'],
-    accounts: ['Accounts', '账户'],
-    java: ['Java', 'Java'],
-    downloads: ['Tasks', '任务'],
-  };
-  for (const section of Object.keys(titles) as Section[]) {
-    const provider = new View(
-      section,
-      store,
-      minecraft,
-      content,
-      jobs,
-      () => consent.accepted,
-      servers,
-      updates,
-    );
-    const tree = vscode.window.createTreeView(`minecraftWorkbench.${section}`, {
-      treeDataProvider: provider,
-      showCollapseAll: section === 'instances' || section === 'content',
-    });
-    tree.title = t(...titles[section]);
-    views.push({ section, provider, tree });
-    context.subscriptions.push(provider, tree);
-  }
+  sidebar.initialize(
+    (section) =>
+      new View(section, store, minecraft, content, jobs, () => consent.accepted, servers, updates),
+  );
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
     agreements: () => workbench!.open('agreements'),
     checkExtensionUpdates: () => updates.check(),
@@ -274,7 +274,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ...(config('showRuntimeViews', false) ? (['java', 'downloads'] as Section[]) : []),
       ];
       const selected = await vscode.window.showQuickPick(
-        sections.map((section) => ({ label: t(...titles[section]), section })),
+        sections.map((section) => ({ label: t(...sidebarTitles[section]), section })),
         { title: t('Show Sidebar View', '显示侧栏分类') },
       );
       if (selected)
@@ -477,7 +477,6 @@ export async function activate(context: vscode.ExtensionContext) {
         void terracotta.configurationChanged().catch((error) => output.error(String(error)));
       if (!event.affectsConfiguration('minecraftWorkbench')) return;
       refresh();
-      for (const { section, tree } of views) tree.title = t(...titles[section]);
       if (
         [
           'proxy',
