@@ -149,7 +149,7 @@
   "label.compatibleContentOnly": "Compatible content only",
   "label.contentReleaseChannel": "Content release channel",
   "enum.contentReleaseChannel.release": "Release",
-  "enum.contentReleaseChannel.beta": "Release and beta",
+  "enum.contentReleaseChannel.beta": "Release and Beta",
   "enum.contentReleaseChannel.all": "All versions",
   "label.installOptionalDependencies": "Install optional dependencies",
   "label.showProjectIcons": "Show project icons",

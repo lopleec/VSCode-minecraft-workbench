@@ -990,10 +990,10 @@ body[data-density='compact'] .project-icon {
 .management-row .inline-actions {
   flex-shrink: 0;
 }
-.project-row {
+.mod-project-row {
   display: block;
 }
-.project-row > .inline-actions {
+.mod-project-row > .inline-actions {
   margin-top: 10px;
   flex-wrap: wrap;
 }

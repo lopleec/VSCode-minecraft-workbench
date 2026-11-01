@@ -24,6 +24,7 @@ import { ContentInstallOptions, contentFile } from './modrinth';
 import { validateInstanceSettings } from './instance-settings';
 import { extensionId } from './build-info';
 import { importWorlds, exportWorld } from './worlds';
+import { authenticationPresets } from './auth-presets';
 
 class Cancelled extends Error {}
 async function input(
@@ -181,12 +182,27 @@ export class UI {
     await this.browser?.('import');
   }
   async authlibLogin(server?: string): Promise<boolean> {
-    const address =
-      server ||
-      (await vscode.window.showInputBox({
-        title: t('Authentication server API URL', '认证服务器 API 地址'),
-        ignoreFocusOut: true,
-      }));
+    let address = server;
+    if (!address) {
+      const provider = await vscode.window.showQuickPick(
+        [
+          ...authenticationPresets.map((preset) => ({
+            label: preset.name,
+            description: preset.url,
+            url: preset.url as string,
+          })),
+          { label: t('Custom…', '自定义…'), description: '', url: '' },
+        ],
+        { title: t('Authentication server', '认证服务器'), ignoreFocusOut: true },
+      );
+      if (!provider) return false;
+      address =
+        provider.url ||
+        (await vscode.window.showInputBox({
+          title: t('Authentication server API URL', '认证服务器 API 地址'),
+          ignoreFocusOut: true,
+        }));
+    }
     if (!address?.trim()) return false;
     const resolved = await this.jobs.run(
       t('Find authentication server', '识别认证服务器'),

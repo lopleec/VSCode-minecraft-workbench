@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { managementPagesFor, resolvePage, defaultPage, pageMode } from '../src/navigation';
 import type { Mode } from '../src/models';
+import { requestParameters } from '../src/webview/protocol';
 
 for (const mode of ['launcher', 'developer', 'server'] as Mode[]) {
   test(`${mode} management excludes project creation and other modes' pages`, () => {
@@ -32,4 +33,22 @@ test('closing Beta hides its management entry and redirects an already open page
   assert.equal(resolvePage('projects', 'launcher'), 'instances');
   assert.equal(resolvePage('discover', 'developer'), 'projects');
   assert.equal(resolvePage('unknown', 'server'), 'servers');
+});
+
+test('webview requests attach only the active target and explicit IDs override defaults', () => {
+  const state = { mode: 'server' as const, selectedInstance: 'client', selectedServer: 'server' };
+  assert.deepEqual(requestParameters(state, 'plugin'), { serverId: 'server', kind: 'plugin' });
+  assert.deepEqual(requestParameters({ ...state, mode: 'launcher' }, 'mod'), {
+    instanceId: 'client',
+    kind: 'mod',
+  });
+  assert.deepEqual(requestParameters({ ...state, mode: 'developer' }, 'mod'), { kind: 'mod' });
+  assert.deepEqual(requestParameters(state, 'mod', { instanceId: 'other' }), {
+    instanceId: 'other',
+    kind: 'mod',
+  });
+  assert.deepEqual(
+    requestParameters({ ...state, mode: 'launcher' }, 'plugin', { serverId: 'other' }),
+    { serverId: 'other', kind: 'plugin' },
+  );
 });

@@ -358,7 +358,7 @@ export class Workbench implements vscode.Disposable {
     if (params.serverId !== undefined && !server) throw new Error('Server not found');
     const target = server
       ? serverTarget(server)
-      : params.instanceId !== undefined || this.store.state.mode !== 'developer'
+      : params.instanceId !== undefined || this.store.state.mode === 'launcher'
         ? instance
         : undefined;
     const kind = kinds.includes(params.kind as ProjectKind)
@@ -366,14 +366,14 @@ export class Workbench implements vscode.Disposable {
       : (server && serverContent(server.engine)) || 'mod';
     if (
       !target &&
-      this.store.state.mode === 'developer' &&
+      this.store.state.mode !== 'launcher' &&
       ['install', 'toggle', 'remove'].includes(method) &&
       kind !== 'modpack'
     )
       throw new Error(
         t(
-          'Specify an instance or server ID for content changes in Developer Mode.',
-          '在开发模式中修改内容时，请指定实例或服务端 ID。',
+          'Specify an instance or server ID before changing content.',
+          '修改内容前请指定实例或服务端 ID。',
         ),
       );
     const id = (name: string) => {

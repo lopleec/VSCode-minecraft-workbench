@@ -378,7 +378,24 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         );
         update();
       })
-      .catch(ctx.error);
+      .catch((error) => {
+        if (!ctx.current() || tab !== 'settings') return;
+        loading.remove();
+        body.append(
+          blank(
+            L('Could not load settings', '无法加载设置'),
+            error instanceof Error ? error.message : String(error),
+          ),
+          ctx.button(
+            L('Retry', '重试'),
+            () => {
+              body.replaceChildren();
+              settingsTab();
+            },
+            'secondary',
+          ),
+        );
+      });
   }
   function backupTab() {
     const list = h('div', { class: 'management-list' });

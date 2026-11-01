@@ -8,13 +8,14 @@
 - Move managed instances and open their saves directories.
 - Import existing server directories, use local Spigot/Bukkit JARs, and manage server mods/plugins from Content. Add per-server EULA confirmation and independent agreement language selection.
 - Configure Java, Gradle arguments and debug ports per project. Expand MCP tools for all three modes, including direct project/server imports and project status.
+- Add a LittleSkin preset for external authentication while keeping custom API addresses editable.
 
 ### Fixed
 
 - Import HMCL patched profiles and renamed client JARs; reuse complete installations without reinstalling. Accept valid modpack override directories and hidden configuration files.
-- Improve content version recommendations, alignment, Chinese settings and native sidebar proportions. Separate Tasks and Output under More, and preserve project settings during background refreshes.
+- Restore horizontal content rows with action buttons on the right and simplify Alpha/Beta labels. Failed content requests now show Retry instead of loading indefinitely. Improve version recommendations, Chinese settings and native sidebar proportions; separate Tasks and Output under More, and preserve project settings during background refreshes.
 - Reuse installed game files and matching loaders across instances. Improve task logs, cancel project preparation when stopped, and use the configured Gradle debug port.
-- Correct MCP target selection and registration with workspace overrides, server JAR/version detection, and world backup validation before restoration.
+- Correct client/server target selection in the workbench and MCP, registration with workspace overrides, server JAR/version detection, and world backup validation before restoration.
 
 ### 新增
 
@@ -22,13 +23,14 @@
 - 移动整个托管实例，直接打开存档目录。
 - 导入已有服务端目录，使用本地 Spigot／Bukkit JAR，通过内容栏管理服务端模组和插件；增加独立的服务端 EULA 确认及协议语言切换。
 - 按项目设置 Java、Gradle 参数和调试端口；扩展三个模式的 MCP 工具，支持直接导入项目／服务端文件、查询项目状态。
+- 外置登录增加 LittleSkin 预设，保留自定义 API 地址。
 
 ### 修复
 
 - 修复 HMCL 补丁配置和重命名客户端 JAR 的导入，完整安装可直接复用；修复整合包覆盖目录、隐藏配置文件被误拦截。
-- 改进内容版本推荐、对齐、中文设置和原生侧栏比例；任务与输出分别放入更多，后台刷新保留项目设置输入。
+- 修复内容列表变成纵向布局、操作按钮偏离右侧的问题，简化 Alpha／Beta 文案；内容加载失败后可重试，不再持续转圈；改进版本推荐、中文设置和原生侧栏比例，任务与输出分别放入更多，后台刷新保留项目设置输入。
 - 复用已安装的游戏文件及匹配的加载器；完善任务日志，停止项目时取消准备过程，修复 Gradle 调试端口不一致。
-- 修复 MCP 目标选择、工作区设置影响注册开关、服务端 JAR／版本识别，以及恢复存档前的备份校验。
+- 修复工作台与 MCP 的客户端／服务端目标选择、工作区设置影响注册开关、服务端 JAR／版本识别，以及恢复存档前的备份校验。
 
 ## 0.4.5 — 2026-10-31
 

@@ -16,6 +16,8 @@ async function fixture(
   const calls: unknown[][] = [];
   const events: string[] = [];
   const retries: (() => Promise<unknown>)[] = [];
+  const discovered: string[] = [];
+  let provider: 'preset' | 'custom' | 'cancel' = 'preset';
   Object.assign(vscode, {
     workspace: {
       ...vscode.workspace,
@@ -23,6 +25,12 @@ async function fixture(
     },
     env: { ...vscode.env, language: locale },
     window: {
+      showQuickPick: async (items: { url: string }[]) => {
+        events.push('provider');
+        return provider === 'cancel'
+          ? undefined
+          : items[provider === 'preset' ? 0 : items.length - 1];
+      },
       showWarningMessage: async (
         message: string,
         options: VSCode.MessageOptions,
@@ -53,7 +61,8 @@ async function fixture(
     },
     accounts: {
       authlib: {
-        discover: async () => {
+        discover: async (address: string) => {
+          discovered.push(address);
           events.push('discover');
           return { url: 'https://auth.example.net/api/yggdrasil/', name: 'Microsoft' };
         },
@@ -71,6 +80,10 @@ async function fixture(
     calls,
     events,
     retries,
+    discovered,
+    provider: (choice: typeof provider) => {
+      provider = choice;
+    },
     decline: () => {
       confirmed = false;
     },
@@ -136,5 +149,33 @@ test('risk notice follows VS Code Chinese and cancelling either credential promp
     } finally {
       f.restore();
     }
+  }
+});
+
+test('LittleSkin preset fills the official API and still requires confirmation before credentials', async () => {
+  const f = await fixture('en', false);
+  try {
+    assert.equal(await f.ui.authlibLogin(), false);
+    assert.deepEqual(f.discovered, ['https://littleskin.cn/api/yggdrasil']);
+    assert.deepEqual(f.events, ['provider', 'discover', 'warning']);
+    assert.equal(f.prompts.length, 0);
+    assert.equal(f.calls.length, 0);
+  } finally {
+    f.restore();
+  }
+});
+
+test('custom authentication addresses remain editable and cancelling preset selection makes no request', async () => {
+  const f = await fixture('en', false, ['https://custom.example.org/api/yggdrasil']);
+  try {
+    f.provider('cancel');
+    assert.equal(await f.ui.authlibLogin(), false);
+    assert.equal(f.discovered.length, 0);
+    f.provider('custom');
+    assert.equal(await f.ui.authlibLogin(), false);
+    assert.deepEqual(f.discovered, ['https://custom.example.org/api/yggdrasil']);
+    assert.equal(f.calls.length, 0);
+  } finally {
+    f.restore();
   }
 });

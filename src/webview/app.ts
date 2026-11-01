@@ -7,6 +7,7 @@ import { renderBatchInstall } from './batch-install';
 import { renderManagement } from './manage-pages';
 import { renderProjects } from './projects-page';
 import { renderServerImport } from './server-import-page';
+import { requestParameters } from './protocol';
 import { managementPages, defaultPage, resolvePage } from '../navigation';
 import type { PageContext } from './page-ui';
 import type {
@@ -40,14 +41,7 @@ function call<T>(method: string, params: Record<string, unknown> = {}): Promise<
     bridge.postMessage({
       id,
       method,
-      params: {
-        instanceId: boot?.selectedInstance,
-        ...(boot?.mode === 'server' && boot.selectedServer
-          ? { serverId: boot.selectedServer }
-          : {}),
-        kind,
-        ...params,
-      },
+      params: requestParameters(boot, kind, params),
     });
   });
 }
@@ -65,6 +59,8 @@ const selectedMods = new Set<string>();
 let selectionTarget = '';
 let totalHits = 0;
 let installed: InstalledEntry[] = [];
+let installedLoading = false;
+let installedError: string | undefined;
 let serverUpdates = new Map<string, string>();
 let detail: ProjectDetail | undefined;
 let detailTab: 'about' | 'versions' = 'about';
@@ -829,7 +825,12 @@ async function loadSearch(append: boolean) {
 }
 async function loadInstalled() {
   const sequence = ++generation;
+  installed = [];
+  installedError = undefined;
+  installedLoading = true;
+  find('result-count').textContent = '';
   if (!currentTarget()) {
+    installedLoading = false;
     find('results').replaceChildren(
       empty(
         L('Select an instance', '选择实例'),
@@ -851,6 +852,7 @@ async function loadInstalled() {
   try {
     const result = await call<InstalledEntry[]>('installed');
     if (sequence !== generation || page !== 'installed') return;
+    installedLoading = false;
     installed = result;
     renderInstalled();
     void call<InstalledEntry[]>('installedMetadata')
@@ -874,10 +876,23 @@ async function loadInstalled() {
       })
       .catch(() => {});
   } catch (error) {
-    if (sequence === generation) showError(error);
+    if (sequence === generation && page === 'installed') {
+      installedLoading = false;
+      installedError = error instanceof Error ? error.message : String(error);
+      renderInstalled();
+    }
   }
 }
 function renderInstalled() {
+  if (installedLoading) return;
+  if (installedError) {
+    find('results').replaceChildren(
+      empty(L('Could not load installed files', '无法加载已安装文件'), installedError, () =>
+        loadInstalled(),
+      ),
+    );
+    return;
+  }
   const filtered = installed.filter((entry) =>
     `${entry.name} ${entry.title || ''} ${entry.file}`.toLowerCase().includes(query.toLowerCase()),
   );
@@ -1001,7 +1016,15 @@ async function openProject(id: string, tab: 'about' | 'versions') {
     optional = boot.preferences.optional;
     renderDetail();
   } catch (error) {
-    showError(error);
+    if (sequence === versionGeneration) {
+      find('detail').replaceChildren(
+        empty(
+          L('Could not load project', '无法加载项目'),
+          error instanceof Error ? error.message : String(error),
+          () => openProject(id, tab),
+        ),
+      );
+    }
   }
 }
 function renderDetail() {
@@ -1194,7 +1217,7 @@ function renderVersionFilters() {
         versionChannel,
         [
           ['release', L('Releases', '正式版')],
-          ['beta', L('Release + beta', '正式版和测试版')],
+          ['beta', L('Release + Beta', '正式版 + Beta')],
           ['all', L('All channels', '全部类型')],
         ],
         (value) => {
@@ -1247,7 +1270,15 @@ async function loadVersions(append: boolean) {
     find('version-count').textContent = L(`${versionsTotal} versions`, `${versionsTotal} 个版本`);
     renderVersions();
   } catch (error) {
-    if (sequence === versionGeneration) showError(error);
+    if (sequence === versionGeneration) {
+      find('versions-list').replaceChildren(
+        empty(
+          L('Could not load versions', '无法加载版本'),
+          error instanceof Error ? error.message : String(error),
+          () => loadVersions(false),
+        ),
+      );
+    }
   }
 }
 function renderVersions() {
@@ -1286,9 +1317,9 @@ function renderVersions() {
         h('strong', {}, v.name),
         badge(
           v.version_type === 'alpha'
-            ? L('Alpha', 'Alpha 测试版')
+            ? 'Alpha'
             : v.version_type === 'beta'
-              ? L('Beta', 'Beta 测试版')
+              ? 'Beta'
               : L('Release', '正式版'),
           v.version_type || 'release',
         ),

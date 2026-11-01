@@ -207,7 +207,7 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
         );
         return h(
           'article',
-          { class: 'management-row project-row' },
+          { class: 'management-row mod-project-row' },
           h(
             'div',
             { class: 'row-body' },

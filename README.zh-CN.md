@@ -262,7 +262,7 @@ npm run package
 
 游戏语言首次跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家在游戏中选择的语言；可在实例设置或 `minecraftWorkbench.gameLanguage` 中覆盖，取值为 `auto`、`preserve` 或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
 
-**账户 → 外置登录**支持 authlib-injector。填写 HTTPS Yggdrasil API 地址，例如 LittleSkin 的 `https://littleskin.cn/api/yggdrasil`，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
+**账户 → 外置登录**支持 authlib-injector。可选择 **LittleSkin** 预设，或填写自定义 HTTPS Yggdrasil API 地址，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
 
 输入凭据前，需在原生风险提示中核对识别后的完整认证 API 地址并确认。用户名、密码会发送给服务商，由其签发令牌；请使用独立密码，切勿填写 Microsoft 密码。HTTPS 不代表服务商可信。移除账户只删除本地凭据，如需撤销访问，请前往服务商处理。界面不预选服务商。[第三方服务与许可](THIRD_PARTY_NOTICES.md)列明服务条款、隐私链接及单独下载组件的许可。
 

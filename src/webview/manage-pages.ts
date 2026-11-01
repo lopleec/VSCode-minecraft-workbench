@@ -4,6 +4,7 @@ import type { WorkbenchPage } from './protocol';
 import { renderTerracotta } from './terracotta-page';
 import { renderSettings } from './settings-page';
 import { managementPagesFor } from '../navigation';
+import { authenticationPresets } from '../auth-presets';
 
 export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: PageContext) {
   const L = ctx.text;
@@ -129,7 +130,21 @@ function accounts(body: HTMLElement, ctx: PageContext) {
       h('legend', {}, L('External authentication', '外置登录')),
       field(
         L('Authentication server API URL', '认证服务器 API 地址'),
-        authServer,
+        h(
+          'div',
+          { class: 'input-action' },
+          authServer,
+          ...authenticationPresets.map((preset) =>
+            ctx.button(
+              preset.name,
+              () => {
+                authServer.value = preset.url;
+                authServer.focus();
+              },
+              'secondary',
+            ),
+          ),
+        ),
         L(
           'Use this provider’s credentials. Do not enter your Microsoft password.',
           '使用此服务商的账户与独立密码，请勿填写 Microsoft 密码。',

@@ -96,6 +96,21 @@ export interface InstalledEntry extends Content {
   icon?: string;
   versionName?: string;
 }
+export function requestParameters(
+  state: Pick<Bootstrap, 'mode' | 'selectedInstance' | 'selectedServer'> | undefined,
+  kind: ProjectKind,
+  params: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const explicit = params.instanceId !== undefined || params.serverId !== undefined;
+  const target = explicit
+    ? {}
+    : state?.mode === 'server'
+      ? { serverId: state.selectedServer }
+      : state?.mode === 'launcher'
+        ? { instanceId: state.selectedInstance }
+        : {};
+  return { ...target, kind, ...params };
+}
 export interface VersionsPage {
   versions: ModVersion[];
   recommendedId?: string;

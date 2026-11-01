@@ -149,7 +149,7 @@
   "label.compatibleContentOnly": "仅显示兼容内容",
   "label.contentReleaseChannel": "内容版本通道",
   "enum.contentReleaseChannel.release": "正式版",
-  "enum.contentReleaseChannel.beta": "正式版与测试版",
+  "enum.contentReleaseChannel.beta": "正式版与 Beta",
   "enum.contentReleaseChannel.all": "所有版本",
   "label.installOptionalDependencies": "安装可选依赖",
   "label.showProjectIcons": "显示项目图标",

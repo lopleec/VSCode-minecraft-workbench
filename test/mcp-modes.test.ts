@@ -8,6 +8,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { NativeMcpProvider } from '../src/mcp';
 import type { Mode, Instance, ServerProfile, Project, ContentTarget } from '../src/models';
+import { requestParameters } from '../src/webview/protocol';
 
 test('one MCP connection manages clients, projects and servers in every UI mode without changing targets', async () => {
   const vscode = require('vscode');
@@ -215,6 +216,15 @@ test('one MCP connection manages clients, projects and servers in every UI mode 
       );
       const state = await invoke('workbench_state');
       assert.equal(state.mode, mode);
+      await invoke(
+        'content_search',
+        requestParameters(state, mode === 'server' ? 'plugin' : 'mod'),
+      );
+      assert.deepEqual(calls.pop(), {
+        action: 'search',
+        id: mode === 'server' ? paper.id : mode === 'launcher' ? instance.id : undefined,
+        kind: mode === 'server' ? 'plugin' : 'mod',
+      });
       await invoke('content_search');
       assert.deepEqual(calls.pop(), {
         action: 'search',
@@ -297,6 +307,20 @@ test('one MCP connection manages clients, projects and servers in every UI mode 
         );
       assert.equal(calls.length, before, 'Invalid targets never reach installation');
     }
+    await invoke('workbench_mode', { mode: 'server' });
+    store.state.selectedServer = undefined;
+    await invoke('content_search');
+    assert.deepEqual(calls.pop(), { action: 'search', id: undefined, kind: 'mod' });
+    const count = calls.length;
+    assert.equal(
+      (await client.callTool({ name: 'content_install', arguments: { versionId: 'mod' } })).isError,
+      true,
+    );
+    assert.equal(
+      calls.length,
+      count,
+      'An empty server selection cannot fall back to the selected client',
+    );
     assert.equal(store.state.projects.length, 1);
     assert.equal(
       (
