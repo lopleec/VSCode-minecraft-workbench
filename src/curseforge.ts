@@ -14,6 +14,7 @@ import {
   copyPackFile,
   savePackFiles,
   managedPackPath,
+  validatePackPath,
 } from './pack-files';
 
 const api = 'https://api.curseforge.com/v1';
@@ -318,8 +319,7 @@ export class CurseForge {
     const zip = new AdmZip(archive);
     for (const entry of zip.getEntries().filter((entry) => entry.entryName.startsWith(prefix))) {
       const relative = entry.entryName.slice(prefix.length);
-      if (relative && relative.split('/').some((part) => part.startsWith('.')))
-        throw new Error('Reserved modpack override path.');
+      if (relative) validatePackPath(relative, true);
     }
     let records: PackFile[] = [];
     const refs = [

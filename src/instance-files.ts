@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import AdmZip from 'adm-zip';
-import { Instance, ContentKind, Content } from './models';
+import { Instance, ContentKind, Content, ContentTarget } from './models';
 import { Store } from './store';
 import { ContentService, contentFolders } from './content';
 import { exists, filename, hashFile, rejectSymlinkParents, writeJson } from './files';
@@ -98,7 +98,7 @@ export class InstanceFiles {
       await fs.rm(staging, { recursive: true, force: true });
     }
   }
-  async importLocal(instance: Instance, kind: ContentKind, paths: string[]) {
+  async importLocal(instance: ContentTarget, kind: ContentKind, paths: string[]) {
     const folder = path.join(instance.directory, contentFolders[kind]);
     await rejectSymlinkParents(instance.directory, path.join(folder, 'file'));
     const existing = await this.content.list(instance);
@@ -106,10 +106,11 @@ export class InstanceFiles {
     const stage = path.join(instance.directory, '.workbench', 'local-import', randomUUID());
     await rejectSymlinkParents(instance.directory, stage);
     await fs.mkdir(stage, { recursive: true });
+    const applied: string[] = [];
     try {
       for (const source of paths) {
         const name = filename(path.basename(source));
-        if (!(kind === 'mod' ? /\.jar$/i : /\.zip$/i).test(name))
+        if (!(['mod', 'plugin'].includes(kind) ? /\.jar$/i : /\.zip$/i).test(name))
           throw new Error('Invalid content file');
         if ((await exists(path.join(folder, name))) || pending.some((i) => i.file === name))
           throw new Error(`Target filename already exists: ${name}`);
@@ -119,12 +120,17 @@ export class InstanceFiles {
         pending.push({ file: name, name, kind, enabled: true });
       }
       await fs.mkdir(folder, { recursive: true });
-      for (const item of pending)
+      for (const item of pending) {
         await fs.rename(path.join(stage, item.file), path.join(folder, item.file));
+        applied.push(item.file);
+      }
       await writeJson(path.join(instance.directory, '.workbench', 'content.json'), [
         ...existing,
         ...pending,
       ]);
+    } catch (error) {
+      for (const file of applied) await fs.rm(path.join(folder, file), { force: true });
+      throw error;
     } finally {
       await fs.rm(stage, { recursive: true, force: true });
     }

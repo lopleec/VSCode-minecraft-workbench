@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import AdmZip from 'adm-zip';
+import { randomUUID } from 'node:crypto';
 import { Servers } from './servers';
 import { ContentService } from './content';
 import { ServerEngine, ServerProfile } from './models';
@@ -13,8 +13,11 @@ import {
   serverJvm,
 } from './server-settings';
 import { t } from './config';
-import { exists, filename, rejectSymlinkParents } from './files';
+import { exists, filename, rejectSymlinkParents, writeText } from './files';
 import { Jobs } from './jobs';
+import { manualServer } from './server-types';
+import { inspectServer, importServer, readServerJar } from './server-import';
+import { InstanceFiles } from './instance-files';
 
 export class ServerActions {
   constructor(
@@ -33,25 +36,55 @@ export class ServerActions {
   private async confirm(message: string, label = t('Continue', '继续')) {
     return (await vscode.window.showWarningMessage(message, { modal: true }, label)) === label;
   }
+  private async localJars(value: unknown, many: boolean): Promise<string[] | undefined> {
+    if (value === undefined) {
+      const selected = await vscode.window.showOpenDialog({
+        canSelectMany: many,
+        filters: { JAR: ['jar'] },
+      });
+      value = selected?.map((file) => file.fsPath);
+      if (!value) return;
+    }
+    const files = typeof value === 'string' && !many ? [value] : value;
+    if (!Array.isArray(files) || files.length < 1 || files.length > (many ? 100 : 1))
+      throw new Error(t('Select valid local JAR files.', '请选择有效的本地 JAR 文件。'));
+    for (const file of files) {
+      if (
+        typeof file !== 'string' ||
+        !path.isAbsolute(file) ||
+        file.includes('\0') ||
+        !/\.jar$/i.test(file)
+      )
+        throw new Error(t('Select valid local JAR files.', '请选择有效的本地 JAR 文件。'));
+      const stat = await fs.stat(file);
+      if (!stat.isFile() || stat.size > 512 * 1024 ** 2)
+        throw new Error(
+          t('Select JAR files smaller than 512 MB.', '请选择小于 512 MB 的 JAR 文件。'),
+        );
+    }
+    return files as string[];
+  }
   private async start(server: ServerProfile) {
     if (server.engine !== 'velocity' && !server.eulaAccepted) {
-      if (
-        !(await this.confirm(
-          t(
-            'Starting this server requires acceptance of the Minecraft EULA: https://www.minecraft.net/en-us/eula',
-            '启动此服务端需要同意 Minecraft EULA：https://www.minecraft.net/en-us/eula',
-          ),
-          t('Accept and start', '同意并启动'),
-        ))
-      )
-        return false;
-      server.eulaAccepted = true;
+      this.servers.store.state.selectedServer = server.id;
       await this.servers.store.save();
+      await vscode.commands.executeCommand('minecraftWorkbench.reviewServerEula');
+      return false;
     }
     await this.servers.start(server);
     return true;
   }
   async handle(method: string, params: Record<string, unknown>): Promise<unknown> {
+    if (method === 'server.importJar' || method === 'server.importContent')
+      return this.handle('server.action', { ...params, action: method.slice('server.'.length) });
+    if (method === 'server.inspect') return inspectServer(String(params.directory || ''));
+    if (method === 'server.import') {
+      if (!params.value || typeof params.value !== 'object' || Array.isArray(params.value))
+        throw new Error('Invalid server settings');
+      return this.jobs.run(t('Import server', '导入服务端'), (signal) =>
+        importServer(this.servers.store, params.value as Record<string, unknown>, signal),
+      );
+    }
     if (method === 'server.catalog') {
       const engine = params.engine as ServerEngine;
       if (!serverEngines.some((e) => e.id === engine)) throw new Error('Unknown server software');
@@ -91,14 +124,29 @@ export class ServerActions {
       const properties = validateProperties(params.properties || {});
       return this.servers.exclusive(server, async () => {
         const old = { ...server };
+        const file = path.join(server.directory, 'server.properties');
+        await rejectSymlinkParents(server.directory, file);
+        const original =
+          server.engine === 'velocity'
+            ? undefined
+            : await fs.readFile(file, 'utf8').catch((error) => {
+                if (error.code === 'ENOENT') return undefined;
+                throw error;
+              });
+        await this.servers.properties(server, properties);
         Object.assign(server, update);
         try {
           await this.servers.store.save();
         } catch (error) {
+          for (const key of Object.keys(server))
+            delete (server as unknown as Record<string, unknown>)[key];
           Object.assign(server, old);
+          if (server.engine !== 'velocity') {
+            if (original === undefined) await fs.rm(file, { force: true });
+            else await writeText(file, original);
+          }
           throw error;
         }
-        await this.servers.properties(server, properties);
         return true;
       });
     }
@@ -214,7 +262,7 @@ export class ServerActions {
         this.servers.showLog(server);
         return true;
       case 'directory':
-        return vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(server.directory));
+        return vscode.env.openExternal(vscode.Uri.file(server.directory));
       case 'config': {
         const file = path.join(
           server.directory,
@@ -230,58 +278,63 @@ export class ServerActions {
         return vscode.window.showTextDocument(vscode.Uri.file(file));
       }
       case 'importJar': {
-        if (server.engine !== 'custom')
+        if (!manualServer(server.engine))
           throw new Error('JAR import is available for custom servers');
-        const selected = await vscode.window.showOpenDialog({
-          canSelectMany: false,
-          filters: { JAR: ['jar'] },
-        });
+        const selected = await this.localJars(params.path, false);
         if (!selected?.[0]) return false;
         return this.servers.exclusive(server, async () => {
-          const zip = new AdmZip(selected[0].fsPath);
-          const manifest = zip.getEntry('META-INF/MANIFEST.MF');
-          if (!manifest || !/Main-Class:/i.test(manifest.getData().toString()))
-            throw new Error('JAR has no Main-Class');
+          const metadata = await readServerJar(selected[0]);
           const destination = path.join(server.directory, 'server.jar');
           await rejectSymlinkParents(server.directory, destination);
-          if (await exists(destination))
-            await fs.copyFile(
-              destination,
-              path.join(server.directory, '.workbench', 'server-previous.jar'),
-            );
-          await fs.copyFile(selected[0].fsPath, destination);
-          server.installed = false;
-          server.requiredJava = undefined;
-          await this.servers.store.save();
-          return true;
+          const staging = path.join(server.directory, '.workbench', `server-${randomUUID()}.jar`);
+          await fs.mkdir(path.dirname(staging), { recursive: true });
+          const backup = path.join(server.directory, '.workbench', 'server-previous.jar');
+          const existing = await exists(destination);
+          const old = { ...server };
+          let applied = false;
+          try {
+            await fs.copyFile(selected[0], staging);
+            if (existing) await fs.copyFile(destination, backup);
+            await fs.rename(staging, destination);
+            applied = true;
+            server.installed = false;
+            server.requiredJava = metadata.javaMajor;
+            server.launchArgs = ['-jar', 'server.jar', 'nogui'];
+            await this.servers.store.save();
+            return true;
+          } catch (error) {
+            for (const key of Object.keys(server))
+              delete (server as unknown as Record<string, unknown>)[key];
+            Object.assign(server, old);
+            if (applied) {
+              if (existing) await fs.copyFile(backup, destination);
+              else await fs.rm(destination, { force: true });
+            }
+            throw error;
+          } finally {
+            await fs.rm(staging, { force: true });
+          }
         });
       }
       case 'importContent': {
         const kind = serverEngines.find((e) => e.id === server.engine)?.content;
         if (!kind) throw new Error('This server does not support managed content');
-        const selected = await vscode.window.showOpenDialog({
-          canSelectMany: true,
-          filters: { JAR: ['jar'] },
-        });
+        const selected = await this.localJars(params.paths, true);
         if (!selected?.length) return false;
         return this.servers.exclusive(server, () =>
           this.content.exclusive(target, async () => {
-            const directory = path.join(server.directory, kind === 'plugin' ? 'plugins' : 'mods');
-            await rejectSymlinkParents(server.directory, directory);
-            await fs.mkdir(directory, { recursive: true });
-            for (const file of selected) {
-              const destination = path.join(directory, filename(path.basename(file.fsPath)));
-              await rejectSymlinkParents(server.directory, destination);
-              if (await exists(destination)) throw new Error('Filename already exists');
-              await fs.copyFile(file.fsPath, destination, fs.constants.COPYFILE_EXCL);
-            }
+            await new InstanceFiles(this.servers.store, this.content).importLocal(
+              target,
+              kind,
+              selected,
+            );
             return true;
           }),
         );
       }
       case 'version': {
         this.servers.assertIdle(server);
-        if (server.engine === 'custom') return false;
+        if (manualServer(server.engine)) return false;
         const versions = await this.servers.catalog.versions(server.engine);
         const version = await vscode.window.showQuickPick(versions, {
           title: t('Server version', '服务端版本'),

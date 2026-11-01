@@ -47,6 +47,29 @@ exports.run = async () => {
   await api.accounts.offline('WorkbenchTest');
   assert.equal(api.store.state.accounts[0].kind, 'offline');
   assert.ok(!JSON.stringify(api.store.state).includes('accessToken'));
+  const taskName = 'Workbench compatibility task';
+  const task = new vscode.Task(
+    { type: 'minecraftWorkbench', project: 'compatibility', action: 'build' },
+    vscode.TaskScope.Global,
+    taskName,
+    'Minecraft Workbench',
+    new vscode.ProcessExecution(process.execPath, ['--version'], {
+      env: { ELECTRON_RUN_AS_NODE: '1' },
+    }),
+  );
+  await vscode.tasks.executeTask(task);
+  const taskDeadline = Date.now() + 15000;
+  let tracked;
+  do {
+    tracked = api.ui.jobs.items.find((job) => job.label === taskName);
+    if (tracked && tracked.status !== 'running') break;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  } while (Date.now() < taskDeadline);
+  assert.equal(
+    tracked?.status,
+    'done',
+    'Native Gradle-style tasks appear in the task history with their process exit status',
+  );
 
   const AdmZip = require('adm-zip');
   const packDirectory = path.join(api.store.root, 'local-curseforge');
@@ -145,8 +168,61 @@ exports.run = async () => {
     );
     const tools = await client.listTools();
     assert.ok(tools.tools.some((tool) => tool.name === 'workbench_state'));
+    for (const name of [
+      'project_import',
+      'project_status',
+      'server_import_jar',
+      'server_import_content',
+    ])
+      assert.ok(
+        tools.tools.some((tool) => tool.name === name),
+        name,
+      );
     const result = await client.callTool({ name: 'workbench_state', arguments: {} });
     assert.equal(result.isError, undefined);
+    const mcpProject = path.join(api.store.root, 'mcp-project');
+    await fs.mkdir(path.join(mcpProject, 'gradle/wrapper'), { recursive: true });
+    await fs.writeFile(
+      path.join(mcpProject, 'gradle/wrapper/gradle-wrapper.jar'),
+      'wrapper-fixture',
+    );
+    await fs.writeFile(
+      path.join(mcpProject, 'gradle.properties'),
+      'mod_name=MCP Example\nminecraft_version=1.21.1\nneo_version=21.1.1',
+    );
+    const imported = await client.callTool({
+      name: 'project_import',
+      arguments: { directory: mcpProject },
+    });
+    assert.equal(imported.isError, undefined);
+    const project = JSON.parse(imported.content[0].text);
+    for (const mode of ['launcher', 'developer', 'server']) {
+      assert.equal(
+        (await client.callTool({ name: 'workbench_mode', arguments: { mode } })).isError,
+        undefined,
+      );
+      const status = await client.callTool({
+        name: 'project_status',
+        arguments: { id: project.id },
+      });
+      assert.equal(status.isError, undefined);
+      assert.equal(JSON.parse(status.content[0].text).status, 'idle');
+      assert.deepEqual(
+        (await client.listTools()).tools.map((tool) => tool.name),
+        tools.tools.map((tool) => tool.name),
+      );
+      assert.equal(api.store.state.mode, mode);
+    }
+    assert.equal(
+      (
+        await client.callTool({
+          name: 'project_action',
+          arguments: { id: project.id, action: 'remove' },
+        })
+      ).isError,
+      undefined,
+    );
+    await client.callTool({ name: 'workbench_mode', arguments: { mode: 'launcher' } });
     const update = (key, value) =>
       client.callTool({
         name: 'workbench_update_settings',

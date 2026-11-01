@@ -7,6 +7,7 @@ import { mcpOperations } from '../src/mcp-operations';
 test('older hosts keep MCP off by default and support authenticated manual connections without native MCP APIs', async () => {
   const vscode = require('vscode') as Record<string, unknown>;
   let enabled = false;
+  let workspaceEnabled: boolean | undefined;
   let copied = '';
   Object.assign(vscode, {
     EventEmitter: class {
@@ -23,9 +24,12 @@ test('older hosts keep MCP off by default and support authenticated manual conne
     workspace: {
       isTrusted: true,
       getConfiguration: () => ({
-        get: (key: string, fallback: unknown) => (key === 'mcp.enabled' ? enabled : fallback),
-        update: async (_key: string, value: boolean) => {
-          enabled = value;
+        get: (key: string, fallback: unknown) =>
+          key === 'mcp.enabled' ? (workspaceEnabled ?? enabled) : fallback,
+        inspect: () => ({ workspaceValue: workspaceEnabled }),
+        update: async (_key: string, value: boolean | undefined, scope: number) => {
+          if (scope === 2) workspaceEnabled = value;
+          else enabled = value === true;
         },
       }),
     },
@@ -59,7 +63,13 @@ test('older hosts keep MCP off by default and support authenticated manual conne
       assert.equal(mcp.enabled, false);
       mcp.refresh();
       await assert.rejects(mcp.copyConnection(), /Register MCP first/);
+      workspaceEnabled = false;
       await mcp.setEnabled(true);
+      assert.equal(
+        workspaceEnabled,
+        undefined,
+        'Registering clears a conflicting workspace override',
+      );
       await mcp.copyConnection();
       const connection = JSON.parse(copied).servers['minecraft-workbench'];
       const url = new URL(connection.url);
@@ -76,7 +86,13 @@ test('older hosts keep MCP off by default and support authenticated manual conne
         undefined,
       );
       await client.close();
+      workspaceEnabled = true;
       await mcp.setEnabled(false);
+      assert.equal(
+        workspaceEnabled,
+        undefined,
+        'Unregistering cannot be overridden by workspace settings',
+      );
       await assert.rejects(fetch(url));
       await assert.rejects(mcp.copyConnection(), /Register MCP first/);
     } finally {

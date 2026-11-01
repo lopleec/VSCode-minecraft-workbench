@@ -2,19 +2,8 @@ import { Network } from './network';
 import { Minecraft } from './minecraft';
 import { ServerEngine, ServerProfile } from './models';
 import { filename } from './files';
-
-export const serverEngines: { id: ServerEngine; name: string; content?: 'mod' | 'plugin' }[] = [
-  { id: 'vanilla', name: 'Vanilla' },
-  { id: 'paper', name: 'Paper', content: 'plugin' },
-  { id: 'purpur', name: 'Purpur', content: 'plugin' },
-  { id: 'folia', name: 'Folia', content: 'plugin' },
-  { id: 'fabric', name: 'Fabric', content: 'mod' },
-  { id: 'quilt', name: 'Quilt', content: 'mod' },
-  { id: 'forge', name: 'Forge', content: 'mod' },
-  { id: 'neoforge', name: 'NeoForge', content: 'mod' },
-  { id: 'velocity', name: 'Velocity', content: 'plugin' },
-  { id: 'custom', name: 'Custom JAR' },
-];
+import { manualServer } from './server-types';
+export { serverEngines } from './server-types';
 export interface ServerBuild {
   id: string;
   stable: boolean;
@@ -102,6 +91,7 @@ export class ServerCatalog {
   async artifact(server: ServerProfile, signal: AbortSignal): Promise<ServerArtifact> {
     const version = encodeURIComponent(server.softwareVersion || server.minecraft);
     const engine = server.engine;
+    if (manualServer(engine)) throw new Error('Import a server JAR first.');
     if (['paper', 'folia', 'velocity'].includes(engine)) {
       const build = (
         await this.paperBuilds(engine, server.softwareVersion || server.minecraft)

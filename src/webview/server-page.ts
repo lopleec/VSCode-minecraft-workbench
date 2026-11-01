@@ -14,6 +14,11 @@ export function renderServers(main: HTMLElement, ctx: PageContext) {
       'div',
       { class: 'inline-actions page-actions' },
       ctx.button(L('New server', '新建服务端'), () => ctx.navigate('serverCreate'), 'primary'),
+      ctx.button(
+        L('Import server…', '导入服务端…'),
+        () => ctx.navigate('serverImport'),
+        'secondary',
+      ),
     ),
     rows,
   );

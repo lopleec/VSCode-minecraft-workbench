@@ -29,6 +29,8 @@ import {
 } from './version-repair';
 import { t } from './config';
 import { loaderInfo } from './instance-import';
+import { resolveGameVersion } from './version-profile';
+import { isRuntimeReady } from './runtime-status';
 
 const exec = promisify(execFile);
 interface RuntimeServices {
@@ -37,6 +39,7 @@ interface RuntimeServices {
   output: Pick<vscode.LogOutputChannel, 'append'>;
   manifest(signal: AbortSignal): Promise<VersionManifest>;
   loaders(loader: Loader, minecraft: string, signal: AbortSignal): Promise<string[]>;
+  instances?: Instance[];
 }
 export async function installRuntime(
   instance: Instance,
@@ -47,8 +50,46 @@ export async function installRuntime(
   const root = runtimeDirectory(instance);
   const folder = new MinecraftFolder(root);
   let loaderVersion = instance.loaderVersion;
+  if (
+    !instance.installed &&
+    !instance.preserveVersion &&
+    (instance.loader === 'vanilla' || loaderVersion)
+  ) {
+    for (const peer of services.instances || []) {
+      signal.throwIfAborted();
+      if (
+        peer.id === instance.id ||
+        !peer.installed ||
+        peer.preserveVersion ||
+        !peer.versionId ||
+        peer.minecraft !== instance.minecraft ||
+        peer.loader !== instance.loader ||
+        peer.loaderVersion !== loaderVersion ||
+        path.resolve(runtimeDirectory(peer)) !== path.resolve(root)
+      )
+        continue;
+      const resolved = await resolveGameVersion(root, peer.versionId, signal).catch(
+        () => undefined,
+      );
+      if (!resolved) continue;
+      const detected = loaderInfo(resolved.libraries, instance.minecraft);
+      if (
+        detected.loader !== instance.loader ||
+        (loaderVersion && detected.loaderVersion !== loaderVersion)
+      )
+        continue;
+      if (!(await isRuntimeReady(peer, signal))) continue;
+      report(t('Using installed game files and loader', '复用已安装的游戏文件和加载器'));
+      const natives = path.join(instance.directory, '.workbench', 'natives');
+      await rejectSymlinkParents(instance.directory, natives);
+      await fs.rm(natives, { recursive: true, force: true });
+      return { versionId: peer.versionId, loaderVersion };
+    }
+  }
   if (!loaderVersion && instance.loader !== 'vanilla' && instance.versionId) {
-    const existing = await Version.parse(root, instance.versionId).catch(() => undefined);
+    const existing = await resolveGameVersion(root, instance.versionId, signal).catch(
+      () => undefined,
+    );
     if (existing) {
       const detected = loaderInfo(existing.libraries, instance.minecraft);
       if (detected.loader === instance.loader) loaderVersion = detected.loaderVersion;
@@ -134,6 +175,7 @@ export async function installRuntime(
 
   let manifest: Promise<VersionManifest> | undefined;
   const official = async (id: string) => {
+    report(t(`Checking version profile: ${id}`, `检查版本配置：${id}`));
     const entry = (await (manifest ??= services.manifest(signal))).versions.find(
       (v) => v.id === id,
     );
@@ -152,11 +194,15 @@ export async function installRuntime(
     return true;
   };
   const clientFiles = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
+    report(
+      t(`Checking client and libraries: ${resolved.id}`, `检查客户端和运行库：${resolved.id}`),
+    );
     const jar = resolveMinecraftJarInstallFile(resolved);
     if (jar) await installFiles([jar]);
     await installFiles(resolveLibraryInstallFiles(resolved.libraries, folder));
   };
   const assets = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
+    report(t('Checking asset index and game assets', '检查资源索引和游戏资源'));
     await installFiles(resolveAssetMetadataInstallFiles(resolved, folder));
     await installFiles(await resolveAssetObjectInstallFiles(resolved, folder));
   };
@@ -270,7 +316,7 @@ export async function installRuntime(
       )
         throw error;
       await repairVersionChain(root, instance.minecraft, signal, official);
-      const base = await Version.parse(root, instance.minecraft);
+      const base = await resolveGameVersion(root, instance.minecraft, signal);
       const jar = resolveMinecraftJarInstallFile(base);
       if (jar) await installFiles([jar]);
       await backupVersionProfile(root, versionId);
@@ -291,7 +337,7 @@ export async function installRuntime(
     }
     if (!rebuilt && ['forge', 'neoforge'].includes(instance.loader) && loaderVersion) {
       await repairVersionChain(root, instance.minecraft, signal, official);
-      const base = await Version.parse(root, instance.minecraft);
+      const base = await resolveGameVersion(root, instance.minecraft, signal);
       const jar = resolveMinecraftJarInstallFile(base);
       if (jar) await installFiles([jar]);
       for (const profile of profiles)
@@ -302,19 +348,19 @@ export async function installRuntime(
         await restoreVersionProfiles(profiles);
       }
     }
-    const resolved = await Version.parse(root, versionId);
+    const resolved = await resolveGameVersion(root, versionId, signal);
     await clientFiles(resolved);
     await assets(resolved);
   } else {
     if (!(await official(instance.minecraft))) throw new Error('Minecraft version not found');
-    let resolved = await Version.parse(root, instance.minecraft);
+    let resolved = await resolveGameVersion(root, instance.minecraft, signal);
     await clientFiles(resolved);
     versionId = instance.minecraft;
     if (instance.loader !== 'vanilla') {
       const generated = await installLoader(resolved);
       versionId = generated.versionId;
       loaderVersion = generated.loaderVersion;
-      resolved = await Version.parse(root, versionId);
+      resolved = await resolveGameVersion(root, versionId, signal);
       await clientFiles(resolved);
     }
     await assets(resolved);

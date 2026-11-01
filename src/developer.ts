@@ -3,11 +3,12 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { Network } from './network';
-import { Java } from './java';
+import { Java, preferredJava } from './java';
 import { Store } from './store';
 import { Project } from './models';
-import { exists, extractZip, writeJson } from './files';
+import { exists, extractZip, writeJson, writeText } from './files';
 import { config, t, trusted } from './config';
+import type { Jobs } from './jobs';
 
 export interface Template {
   name: string;
@@ -24,6 +25,14 @@ export function properties(text: string): Record<string, string> {
         const index = l.indexOf('=');
         return [l.slice(0, index).trim(), l.slice(index + 1).trim()];
       }),
+  );
+}
+async function readProperties(directory: string) {
+  return properties(
+    await fs.readFile(path.join(directory, 'gradle.properties'), 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') return '';
+      throw error;
+    }),
   );
 }
 export function configureProperties(text: string, project: Project): string {
@@ -113,11 +122,57 @@ export function validPackage(value: string): boolean {
     value.split('.').every((part) => !keywords.has(part))
   );
 }
+export function projectSettings(
+  raw: Record<string, unknown>,
+): Pick<Project, 'java' | 'gradleArgs' | 'debugPort'> {
+  if (typeof raw.java !== 'string' || raw.java.length > 4096 || /[\r\n\0]/.test(raw.java))
+    throw new Error('Invalid Java path');
+  if (
+    raw.debugPort !== undefined &&
+    raw.debugPort !== 0 &&
+    (!Number.isInteger(raw.debugPort) || Number(raw.debugPort) < 1 || Number(raw.debugPort) > 65535)
+  )
+    throw new Error('Invalid debug port');
+  if (
+    !Array.isArray(raw.gradleArgs) ||
+    raw.gradleArgs.length > 100 ||
+    raw.gradleArgs.some(
+      (arg) =>
+        typeof arg !== 'string' ||
+        !arg.startsWith('-') ||
+        /[\r\n\0]/.test(arg) ||
+        arg.length > 4096,
+    )
+  )
+    throw new Error('Invalid Gradle arguments');
+  return {
+    java: raw.java.trim() || undefined,
+    debugPort: Number(raw.debugPort) || undefined,
+    gradleArgs: raw.gradleArgs as string[],
+  };
+}
+export function debugInit(port: number): string {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid debug port');
+  return `gradle.projectsEvaluated {
+    allprojects {
+        tasks.withType(org.gradle.api.tasks.JavaExec).all {
+            if (name == 'runClient') {
+                debug = false
+                jvmArgs = (jvmArgs ?: []).findAll { !it.startsWith('-agentlib:jdwp=') && !it.startsWith('-Xrunjdwp:') }
+                jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:${port}'
+            }
+        }
+    }
+}
+`;
+}
 export class Developer {
+  private readonly preparing = new Map<string, AbortController>();
   constructor(
     private readonly store: Store,
     private readonly net: Network,
     private readonly java: Java,
+    private readonly jobs?: Jobs,
   ) {}
   async templates(loader: 'fabric' | 'neoforge'): Promise<Template[]> {
     if (loader === 'fabric') {
@@ -266,14 +321,22 @@ export class Developer {
             request: 'attach',
             name: 'Minecraft Client',
             hostName: '127.0.0.1',
-            port: 5005,
+            port: config('debugPort', 5005),
           },
         ],
       });
       signal.throwIfAborted();
       await fs.rename(stage, directory);
       this.store.state.projects.push(project);
-      await this.store.save();
+      try {
+        await this.store.save();
+      } catch (error) {
+        this.store.state.projects = this.store.state.projects.filter(
+          (entry) => entry.id !== project.id,
+        );
+        await fs.rm(directory, { recursive: true, force: true });
+        throw error;
+      }
       return project;
     } finally {
       await fs.rm(stage, { recursive: true, force: true });
@@ -281,16 +344,29 @@ export class Developer {
     }
   }
   async import(directory: string): Promise<Project> {
+    if (!path.isAbsolute(directory) || directory.includes('\0'))
+      throw new Error('Absolute project directory required');
+    directory = await fs.realpath(directory);
     if (!(await exists(path.join(directory, 'gradle', 'wrapper', 'gradle-wrapper.jar'))))
       throw new Error('Gradle wrapper not found');
-    const prop = properties(await fs.readFile(path.join(directory, 'gradle.properties'), 'utf8'));
-    const loader = (await exists(
-      path.join(directory, 'src', 'main', 'resources', 'fabric.mod.json'),
-    ))
-      ? 'fabric'
-      : prop.neo_version || prop.neoforge_version
-        ? 'neoforge'
-        : 'forge';
+    const prop = await readProperties(directory);
+    const build = (
+      await Promise.all(
+        ['build.gradle', 'build.gradle.kts'].map((file) =>
+          fs.readFile(path.join(directory, file), 'utf8').catch((error) => {
+            if (error.code === 'ENOENT') return '';
+            throw error;
+          }),
+        ),
+      )
+    ).join('\n');
+    const loader =
+      (await exists(path.join(directory, 'src', 'main', 'resources', 'fabric.mod.json'))) ||
+      /fabric-loom/.test(build)
+        ? 'fabric'
+        : prop.neo_version || prop.neoforge_version || /net\.neoforged\./.test(build)
+          ? 'neoforge'
+          : 'forge';
     const project: Project = {
       id: randomUUID(),
       name: prop.mod_name || path.basename(directory),
@@ -300,17 +376,91 @@ export class Developer {
       loader,
       directory,
     };
-    if (!this.store.state.projects.some((p) => p.directory === directory))
-      this.store.state.projects.push(project);
-    await this.store.save();
-    return this.store.state.projects.find((p) => p.directory === directory)!;
+    const existing = this.store.state.projects.find(
+      (entry) => path.resolve(entry.directory) === directory,
+    );
+    const before = existing && { ...existing };
+    if (existing)
+      Object.assign(existing, project, {
+        id: existing.id,
+        minecraft: project.minecraft || existing.minecraft,
+        buildJava: undefined,
+        buildJavaKey: undefined,
+      });
+    else this.store.state.projects.push(project);
+    try {
+      await this.store.save();
+    } catch (error) {
+      if (existing) Object.assign(existing, before);
+      else
+        this.store.state.projects = this.store.state.projects.filter((entry) => entry !== project);
+      throw error;
+    }
+    return existing || project;
+  }
+  async configure(project: Project, raw: Record<string, unknown>) {
+    this.assertIdle(project);
+    const update = projectSettings(raw);
+    const old = { ...project };
+    Object.assign(project, update);
+    try {
+      await this.store.save();
+    } catch (error) {
+      Object.assign(project, old);
+      throw error;
+    }
+  }
+  private executions(project: Project) {
+    return vscode.tasks.taskExecutions.filter(
+      (execution) =>
+        execution.task.definition.type === 'minecraftWorkbench' &&
+        execution.task.definition.project === project.id,
+    );
+  }
+  status(project: Project) {
+    const tasks = this.executions(project).map(({ task }) => ({
+      name: task.name,
+      action: String(task.definition.action || ''),
+    }));
+    return {
+      id: project.id,
+      status: this.preparing.has(project.id) ? 'preparing' : tasks.length ? 'running' : 'idle',
+      tasks,
+      debugPort: project.debugPort || config('debugPort', 5005),
+      buildJava: project.buildJava,
+    };
+  }
+  private assertIdle(project: Project) {
+    if (this.preparing.has(project.id) || this.executions(project).length)
+      throw new Error(
+        t(
+          'Stop this project’s Gradle task before starting another action.',
+          '请先停止此项目的 Gradle 任务，再执行其他操作。',
+        ),
+      );
+  }
+  stop(project: Project) {
+    this.preparing.get(project.id)?.abort(new DOMException(t('Cancelled', '已取消'), 'AbortError'));
+    for (const execution of this.executions(project)) execution.terminate();
+  }
+  async remove(project: Project) {
+    this.assertIdle(project);
+    const previous = this.store.state.projects;
+    this.store.state.projects = previous.filter((entry) => entry.id !== project.id);
+    try {
+      await this.store.save();
+    } catch (error) {
+      this.store.state.projects = previous;
+      throw error;
+    }
   }
   async open(project: Project) {
     await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(project.directory), {
       forceNewWindow: config('openProjectsInNewWindow', true),
     });
   }
-  async requiredJava(project: Project): Promise<number> {
+  async requiredJava(project: Project, signal?: AbortSignal): Promise<number> {
+    signal?.throwIfAborted();
     const major = /^1\.(\d+)(?:\.(\d+))?/.exec(project.minecraft);
     let required = major
       ? Number(major[1]) >= 20 && (Number(major[1]) > 20 || Number(major[2] || 0) >= 5)
@@ -320,10 +470,10 @@ export class Developer {
           : Number(major[1]) === 17
             ? 16
             : 8
-      : 25;
-    const props = properties(
-      await fs.readFile(path.join(project.directory, 'gradle.properties'), 'utf8'),
-    );
+      : project.minecraft
+        ? 25
+        : 8;
+    const props = await readProperties(project.directory);
     const wrapper = await fs
       .readFile(path.join(project.directory, 'gradle/wrapper/gradle-wrapper.properties'), 'utf8')
       .catch(() => '');
@@ -336,7 +486,7 @@ export class Developer {
       try {
         let artifact = version;
         if (version.endsWith('-SNAPSHOT')) {
-          const xml = await this.net.text(`${base}/maven-metadata.xml`);
+          const xml = await this.net.text(`${base}/maven-metadata.xml`, { signal });
           artifact =
             [...xml.matchAll(/<snapshotVersion>([\s\S]*?)<\/snapshotVersion>/g)]
               .map((m) => m[1])
@@ -345,12 +495,13 @@ export class Developer {
         }
         const metadata = await this.net.json<{
           variants: { attributes?: Record<string, unknown> }[];
-        }>(`${base}/fabric-loom-${artifact}.module`);
+        }>(`${base}/fabric-loom-${artifact}.module`, { signal });
         for (const variant of metadata.variants) {
           const value = Number(variant.attributes?.['org.gradle.jvm.version']);
           if (value > required && value < 100) required = value;
         }
       } catch {
+        signal?.throwIfAborted();
         const [a, b] = version.split(/[.\-]/).map(Number);
         if (a > 1 || (a === 1 && b >= 19)) required = Math.max(required, 25);
       }
@@ -362,48 +513,85 @@ export class Developer {
   }
   async run(project: Project, action: 'build' | 'runClient' | 'debug' | 'sources' | 'clean') {
     await trusted();
-    const required = await this.requiredJava(project);
-    const runtime = await this.java.select(required, config('javaPath', ''));
-    if (
-      !(await exists(
-        path.join(path.dirname(runtime.path), process.platform === 'win32' ? 'javac.exe' : 'javac'),
-      ))
-    )
-      throw new Error(t('Development requires a JDK, not a JRE.', '开发模式需要完整 JDK。'));
-    const args = [
-      '-classpath',
-      path.join(project.directory, 'gradle', 'wrapper', 'gradle-wrapper.jar'),
-      'org.gradle.wrapper.GradleWrapperMain',
-    ];
-    if (action === 'debug') args.push('runClient', '--debug-jvm');
-    else if (action === 'sources')
-      args.push(
-        project.loader === 'fabric'
-          ? 'genSources'
-          : project.loader === 'neoforge'
-            ? 'createMinecraftArtifacts'
-            : 'genVSCodeRuns',
+    this.assertIdle(project);
+    const controller = new AbortController();
+    this.preparing.set(project.id, controller);
+    try {
+      const prepare = async (signal: AbortSignal, report: (message: string) => void) => {
+        signal = AbortSignal.any([signal, controller.signal]);
+        report(t('Preparing JDK', '准备 JDK'));
+        const required = await this.requiredJava(project, signal);
+        signal.throwIfAborted();
+        const preferred = preferredJava(project.java);
+        let runtime = await this.java.ensure(required, signal, report, preferred);
+        const isJdk = (file: string) =>
+          exists(
+            path.join(path.dirname(file), process.platform === 'win32' ? 'javac.exe' : 'javac'),
+          );
+        if (!(await isJdk(runtime.path)) && !preferred) {
+          await this.java.download(required, signal, report);
+          for (const candidate of this.store.state.java)
+            if (candidate.major === required && (await isJdk(candidate.path))) {
+              runtime = await this.java.select(required, candidate.path, signal);
+              break;
+            }
+        }
+        if (!(await isJdk(runtime.path)))
+          throw new Error(t('Development requires a JDK, not a JRE.', '开发模式需要完整 JDK。'));
+        signal.throwIfAborted();
+        return runtime;
+      };
+      const runtime = this.jobs
+        ? await this.jobs.run(t(`Prepare ${project.name}`, `准备 ${project.name}`), prepare)
+        : await prepare(new AbortController().signal, () => {});
+      controller.signal.throwIfAborted();
+      this.jobs?.output.info(
+        `[${project.name}] Gradle ${action}\nProject: ${project.directory}\nJava ${runtime.major} (${runtime.version}): ${runtime.path}`,
       );
-    else args.push(action);
-    args.push('--console=plain');
-    const task = new vscode.Task(
-      { type: 'minecraftWorkbench', project: project.id, action },
-      vscode.TaskScope.Workspace,
-      `${project.name}: ${action}`,
-      'Minecraft Workbench',
-      new vscode.ProcessExecution(runtime.path, args, {
-        cwd: project.directory,
-        env: { ...process.env, JAVA_HOME: path.dirname(path.dirname(runtime.path)) },
-      }),
-      ['$javac'],
-    );
-    task.presentationOptions = {
-      reveal: vscode.TaskRevealKind.Always,
-      panel: vscode.TaskPanelKind.Dedicated,
-      clear: false,
-    };
-    task.group = action === 'build' ? vscode.TaskGroup.Build : undefined;
-    await vscode.tasks.executeTask(task);
+      const args = [
+        '-classpath',
+        path.join(project.directory, 'gradle', 'wrapper', 'gradle-wrapper.jar'),
+        'org.gradle.wrapper.GradleWrapperMain',
+      ];
+      if (action === 'debug') {
+        const port = project.debugPort || config('debugPort', 5005);
+        const init = path.join(this.store.root, 'cache', 'gradle', `debug-${port}.gradle`);
+        await writeText(init, debugInit(port));
+        args.push('runClient', '--init-script', init);
+        this.jobs?.output.info(`[${project.name}] JDWP 127.0.0.1:${port}`);
+      } else if (action === 'sources')
+        args.push(
+          project.loader === 'fabric'
+            ? 'genSources'
+            : project.loader === 'neoforge'
+              ? 'createMinecraftArtifacts'
+              : 'genVSCodeRuns',
+        );
+      else args.push(action);
+      args.push(...(project.gradleArgs || []), '--console=plain');
+      const task = new vscode.Task(
+        { type: 'minecraftWorkbench', project: project.id, action },
+        vscode.TaskScope.Workspace,
+        `${project.name}: ${action}`,
+        'Minecraft Workbench',
+        new vscode.ProcessExecution(runtime.path, args, {
+          cwd: project.directory,
+          env: { ...process.env, JAVA_HOME: path.dirname(path.dirname(runtime.path)) },
+        }),
+        ['$javac'],
+      );
+      task.presentationOptions = {
+        reveal: vscode.TaskRevealKind.Always,
+        panel: vscode.TaskPanelKind.Dedicated,
+        clear: false,
+      };
+      task.group = action === 'build' ? vscode.TaskGroup.Build : undefined;
+      controller.signal.throwIfAborted();
+      const execution = await vscode.tasks.executeTask(task);
+      if (controller.signal.aborted) execution.terminate();
+    } finally {
+      this.preparing.delete(project.id);
+    }
   }
   async attach(project: Project) {
     await trusted();
@@ -425,7 +613,7 @@ export class Developer {
       request: 'attach',
       name: `${project.name}: Minecraft`,
       hostName: '127.0.0.1',
-      port: config('debugPort', 5005),
+      port: project.debugPort || config('debugPort', 5005),
     });
   }
 }

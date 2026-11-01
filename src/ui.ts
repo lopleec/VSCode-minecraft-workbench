@@ -18,7 +18,7 @@ import { config, t, trusted, setLanguage } from './config';
 import { exists, suggestedFilename } from './files';
 import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } from './game-paths';
 import { ImportSession } from './import-session';
-import { describeError } from './errors';
+import { describeError, diagnosticError } from './errors';
 import { InstanceFiles } from './instance-files';
 import { ContentInstallOptions, contentFile } from './modrinth';
 import { validateInstanceSettings } from './instance-settings';
@@ -92,7 +92,7 @@ export class UI {
       )
         return;
       const message = describeError(error);
-      this.jobs.output.error(message);
+      this.jobs.output.error(diagnosticError(error));
       const action = await vscode.window.showErrorMessage(message, t('Show output', '查看输出'));
       if (action) this.jobs.output.show(true);
     } finally {
@@ -391,10 +391,7 @@ export class UI {
     await this.minecraft.install(instance);
   }
   async openInstance(item?: Item) {
-    await vscode.commands.executeCommand(
-      'revealFileInOS',
-      vscode.Uri.file((await this.instance(item)).directory),
-    );
+    await vscode.env.openExternal(vscode.Uri.file((await this.instance(item)).directory));
   }
   async gameLog(item?: Item) {
     await this.minecraft.logs(await this.instance(item));

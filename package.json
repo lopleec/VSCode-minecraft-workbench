@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -832,6 +832,30 @@
         "title": "配置 CurseForge API 密钥",
         "category": "Minecraft Workbench",
         "icon": "$(key)"
+      },
+      {
+        "command": "minecraftWorkbench.reviewServerEula",
+        "title": "Review Server EULA",
+        "category": "Minecraft Workbench",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "minecraftWorkbench.reviewServerEula.zh",
+        "title": "确认服务端 EULA",
+        "category": "Minecraft Workbench",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "minecraftWorkbench.importServer",
+        "title": "Import Server",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "minecraftWorkbench.importServer.zh",
+        "title": "导入服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
       }
     ],
     "viewsContainers": {
@@ -848,52 +872,52 @@
         {
           "id": "minecraftWorkbench.home",
           "name": "%view.home%",
-          "initialSize": 2
+          "initialSize": 35
         },
         {
           "id": "minecraftWorkbench.instances",
           "name": "%view.instances%",
           "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 3
+          "initialSize": 45
         },
         {
           "id": "minecraftWorkbench.projects",
           "name": "%view.projects%",
           "when": "minecraftWorkbench.mode == developer && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 3
+          "initialSize": 45
         },
         {
           "id": "minecraftWorkbench.servers",
           "name": "%view.servers%",
           "when": "minecraftWorkbench.mode == server && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 3
+          "initialSize": 45
         },
         {
           "id": "minecraftWorkbench.content",
           "name": "%view.content%",
-          "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
-          "initialSize": 2
+          "when": "(minecraftWorkbench.mode == launcher || minecraftWorkbench.mode == server) && minecraftWorkbench.agreementsAccepted",
+          "initialSize": 15
         },
         {
           "id": "minecraftWorkbench.accounts",
           "name": "%view.accounts%",
           "visibility": "collapsed",
-          "initialSize": 1,
-          "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.mode == launcher && minecraftWorkbench.agreementsAccepted",
+          "initialSize": 5
         },
         {
           "id": "minecraftWorkbench.java",
           "name": "%view.java%",
           "visibility": "collapsed",
-          "initialSize": 1,
-          "when": "minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.agreementsAccepted && config.minecraftWorkbench.showRuntimeViews",
+          "initialSize": 15
         },
         {
           "id": "minecraftWorkbench.downloads",
           "name": "%view.downloads%",
           "visibility": "collapsed",
-          "initialSize": 1,
-          "when": "minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.agreementsAccepted && config.minecraftWorkbench.showRuntimeViews",
+          "initialSize": 15
         }
       ]
     },
@@ -905,7 +929,7 @@
       },
       {
         "view": "minecraftWorkbench.instances",
-        "contents": "创建独立的 Minecraft 实例。\n[新建实例](command:minecraftWorkbench.createInstance)\n[导入整合包](command:minecraftWorkbench.importPack)\n[Import Instance](command:minecraftWorkbench.importInstance)",
+        "contents": "创建独立的 Minecraft 实例。\n[新建实例](command:minecraftWorkbench.createInstance)\n[导入整合包](command:minecraftWorkbench.importPack)\n[导入实例](command:minecraftWorkbench.importInstance)",
         "when": "minecraftWorkbench.language == zh-cn"
       },
       {
@@ -939,16 +963,6 @@
         "when": "minecraftWorkbench.language == zh-cn"
       },
       {
-        "view": "minecraftWorkbench.content",
-        "contents": "Select an instance to manage its content.",
-        "when": "minecraftWorkbench.language != zh-cn"
-      },
-      {
-        "view": "minecraftWorkbench.content",
-        "contents": "选择实例以管理内容。",
-        "when": "minecraftWorkbench.language == zh-cn"
-      },
-      {
         "view": "minecraftWorkbench.downloads",
         "contents": "Installation and download tasks appear here.",
         "when": "minecraftWorkbench.language != zh-cn"
@@ -960,12 +974,12 @@
       },
       {
         "view": "minecraftWorkbench.servers",
-        "contents": "[New Server](command:minecraftWorkbench.createServer)",
+        "contents": "[New Server](command:minecraftWorkbench.createServer)\n[Import Server](command:minecraftWorkbench.importServer)",
         "when": "minecraftWorkbench.language != zh-cn"
       },
       {
         "view": "minecraftWorkbench.servers",
-        "contents": "[新建服务端](command:minecraftWorkbench.createServer)",
+        "contents": "[新建服务端](command:minecraftWorkbench.createServer)\n[导入服务端](command:minecraftWorkbench.importServer)",
         "when": "minecraftWorkbench.language == zh-cn"
       }
     ],
@@ -1200,6 +1214,16 @@
           "command": "minecraftWorkbench.importInstance.zh",
           "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
+        },
+        {
+          "command": "minecraftWorkbench.importServer",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "group": "navigation@3"
+        },
+        {
+          "command": "minecraftWorkbench.importServer.zh",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -1880,6 +1904,14 @@
         {
           "command": "minecraftWorkbench.curseforgeKey.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.importServer",
+          "when": "minecraftWorkbench.language != zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.importServer.zh",
+          "when": "minecraftWorkbench.language == zh-cn"
         }
       ]
     },
@@ -1896,6 +1928,11 @@
               "en",
               "zh-cn",
               "auto"
+            ],
+            "enumItemLabels": [
+              "%enum.language.en%",
+              "%enum.language.zh-cn%",
+              "%enum.language.auto%"
             ]
           },
           "minecraftWorkbench.storageDirectory": {
@@ -1950,6 +1987,11 @@
             "default": true,
             "scope": "application",
             "markdownDescription": "%setting.updates.enabled%"
+          },
+          "minecraftWorkbench.showRuntimeViews": {
+            "type": "boolean",
+            "default": false,
+            "description": "%config.showRuntimeViews%"
           }
         }
       },
@@ -1992,6 +2034,11 @@
               "default",
               "g1",
               "zgc"
+            ],
+            "enumItemLabels": [
+              "%enum.gc.default%",
+              "%enum.gc.g1%",
+              "%enum.gc.zgc%"
             ]
           },
           "minecraftWorkbench.jvmArgs": {
@@ -2062,6 +2109,13 @@
               "follows",
               "updated",
               "newest"
+            ],
+            "enumItemLabels": [
+              "%enum.modrinthSort.downloads%",
+              "%enum.modrinthSort.relevance%",
+              "%enum.modrinthSort.follows%",
+              "%enum.modrinthSort.updated%",
+              "%enum.modrinthSort.newest%"
             ]
           },
           "minecraftWorkbench.modrinthPageSize": {
@@ -2084,6 +2138,11 @@
               "release",
               "beta",
               "all"
+            ],
+            "enumItemLabels": [
+              "%enum.contentReleaseChannel.release%",
+              "%enum.contentReleaseChannel.beta%",
+              "%enum.contentReleaseChannel.all%"
             ]
           },
           "minecraftWorkbench.installOptionalDependencies": {
@@ -2103,6 +2162,10 @@
             "enum": [
               "comfortable",
               "compact"
+            ],
+            "enumItemLabels": [
+              "%enum.contentDensity.comfortable%",
+              "%enum.contentDensity.compact%"
             ]
           }
         }

@@ -81,3 +81,48 @@ test('MCP language changes clear a conflicting workspace override', async () => 
     config.mock.restore();
   }
 });
+
+test('settings expose localized names, groups and enum choices in the extension language', async () => {
+  const config = mock.method(vscode.workspace, 'getConfiguration', () => ({
+    get: (key: string, fallback: unknown) => (key === 'language' ? 'zh-cn' : fallback),
+  }));
+  try {
+    const result = (await settingsAction('settings.read', {})) as Record<
+      string,
+      { label: string; group: string; description: string; enumItemLabels?: string[] }
+    >;
+    assert.equal(result.javaPath.label, '默认 Java 路径');
+    assert.match(result.javaPath.group, /Java/);
+    assert.deepEqual(result.language.enumItemLabels, ['English', '简体中文', '跟随 VS Code']);
+    assert.equal(result.contentReleaseChannel.enumItemLabels?.[0], '正式版');
+    for (const entry of Object.values(result)) {
+      assert.ok(entry.label && !entry.label.startsWith('label.'));
+      assert.ok(!/^%.*%$/.test(entry.description));
+    }
+  } finally {
+    config.mock.restore();
+  }
+});
+
+test('settings page edits the active workspace override while MCP updates keep their global scope', async () => {
+  const writes: unknown[][] = [];
+  const config = mock.method(vscode.workspace, 'getConfiguration', () => ({
+    get: (_key: string, fallback: unknown) => fallback,
+    inspect: () => ({ workspaceValue: 4 }),
+    update: async (...args: unknown[]) => {
+      writes.push(args);
+    },
+  }));
+  try {
+    await settingsAction('settings.update', {
+      key: 'downloadConcurrency',
+      value: 8,
+      scope: 'effective',
+    });
+    await settingsAction('settings.update', { key: 'downloadConcurrency', value: 6 });
+    assert.equal(writes[0][2], vscode.ConfigurationTarget.Workspace);
+    assert.equal(writes[1][2], vscode.ConfigurationTarget.Global);
+  } finally {
+    config.mock.restore();
+  }
+});

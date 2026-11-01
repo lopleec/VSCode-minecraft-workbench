@@ -29,7 +29,9 @@ export const workbenchPages = [
   'multiplayer',
   'servers',
   'serverCreate',
+  'serverImport',
   'server',
+  'settings',
 ] as const;
 export type WorkbenchPage = (typeof workbenchPages)[number];
 export interface Preferences {
@@ -96,6 +98,7 @@ export interface InstalledEntry extends Content {
 }
 export interface VersionsPage {
   versions: ModVersion[];
+  recommendedId?: string;
   total: number;
   games: string[];
   loaders: string[];

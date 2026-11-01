@@ -47,14 +47,8 @@ const messages: [string, string][] = [
   ['Version profile ID does not match its folder:', '版本配置 ID 与目录名称不一致：'],
   ['Unsupported MultiMC component:', '不支持的 MultiMC 组件：'],
   ['Legacy jar mods require a compatible launcher.', '旧式 Jar 模组需要使用兼容的启动器。'],
-  [
-    'This profile uses launcher-specific patches; create a copy to rebuild its loader.',
-    '此配置包含原启动器特有的补丁，请复制导入以重新安装加载器。',
-  ],
-  [
-    'This profile must be copied to rebuild its launcher-specific patches.',
-    '此配置需要复制导入，以重建原启动器特有的补丁。',
-  ],
+  ['Invalid instance patch list.', '实例补丁列表无效。'],
+  ['Unsupported nested instance patch.', '不支持嵌套或单独继承的实例补丁。'],
   ['Invalid MultiMC component list.', 'MultiMC 组件列表无效。'],
   ['MultiMC instance has no Minecraft version.', 'MultiMC 实例缺少 Minecraft 版本。'],
   ['Multiple mod loaders are not supported in one instance.', '不支持单个实例同时使用多个加载器。'],
@@ -110,6 +104,23 @@ const messages: [string, string][] = [
   ['Invalid server properties', '服务端属性无效'],
   ['Invalid server property', '服务端属性无效'],
   ['Invalid Java path', 'Java 路径无效'],
+  ['Invalid debug port', '调试端口无效'],
+  ['Invalid Gradle arguments', 'Gradle 参数无效'],
+  ['Invalid project settings', '项目设置无效'],
+  ['Absolute project directory required', '请选择项目的绝对路径'],
+  ['Choose an absolute server directory.', '请选择服务端的绝对路径。'],
+  ['Server JAR exceeds 512 MB.', '服务端 JAR 超过 512 MB。'],
+  ['Select an executable server JAR.', '请选择可执行的服务端 JAR。'],
+  ['This server is already registered.', '此服务端已导入。'],
+  ['Enter a server name and Minecraft version.', '请输入服务端名称和 Minecraft 版本。'],
+  [
+    'No executable server JAR or Forge argument file was found.',
+    '未找到可执行的服务端 JAR 或 Forge 参数文件。',
+  ],
+  [
+    'Select a server JAR or keep the detected Forge/NeoForge software.',
+    '请选择服务端 JAR，或保留识别出的 Forge / NeoForge 类型。',
+  ],
   ['Invalid Java version', 'Java 版本无效'],
   ['Invalid JVM arguments', 'JVM 参数无效'],
   ['Reserved world folder', '存档目录名称被保留'],
@@ -238,4 +249,17 @@ export function describeError(error: unknown): string {
       ),
   );
   return message;
+}
+export function diagnosticError(error: unknown): string {
+  const details: string[] = [];
+  const seen = new Set<unknown>();
+  for (
+    let current = error;
+    current instanceof Error && !seen.has(current) && details.length < 4;
+    current = current.cause
+  ) {
+    seen.add(current);
+    details.push(current.stack || `${current.name}: ${current.message}`);
+  }
+  return redact(details.length ? details.join('\nCaused by: ') : String(error));
 }

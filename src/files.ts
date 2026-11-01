@@ -139,3 +139,11 @@ export function redact(text: string): string {
     .replace(/(--accessToken\s+)\S+/g, '$1[redacted]')
     .replace(/((?:https?|socks(?:5h?)?):\/\/)[^/\s@?#"'<>]+@/gi, '$1[redacted]@');
 }
+export function diagnosticUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.protocol}//${url.host}${url.pathname}`;
+  } catch {
+    return '[invalid URL]';
+  }
+}

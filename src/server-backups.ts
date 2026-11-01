@@ -24,6 +24,7 @@ export class ServerBackups {
     for (const name of [level, level + '_nether', level + '_the_end']) {
       const folder = within(server.directory, name);
       if (await exists(folder)) {
+        if (!(await fs.stat(folder)).isDirectory()) throw new Error('Invalid world folder');
         await noLinks(folder);
         worlds.push(name);
       }
@@ -52,7 +53,12 @@ export class ServerBackups {
     const source = path.join(this.directory(server), filename(id));
     await noLinks(source);
     const { worlds } = await readJson<{ worlds: string[] }>(path.join(source, 'backup.json'));
-    if (!Array.isArray(worlds) || !worlds.length || worlds.length > 3)
+    if (
+      !Array.isArray(worlds) ||
+      !worlds.length ||
+      worlds.length > 3 ||
+      new Set(worlds).size !== worlds.length
+    )
       throw new Error('Invalid server backup');
     for (const world of worlds) {
       filename(world);
@@ -61,8 +67,25 @@ export class ServerBackups {
         ['libraries', 'mods', 'plugins', 'logs', 'config'].includes(world)
       )
         throw new Error('Invalid world folder');
+      if (!(await fs.stat(within(source, world))).isDirectory())
+        throw new Error('Invalid world folder');
+      const target = within(server.directory, world);
+      if (await exists(target)) {
+        await rejectSymlinkParents(server.directory, target);
+        if (!(await fs.stat(target)).isDirectory()) throw new Error('Invalid world folder');
+      }
     }
-    if (await exists(within(server.directory, filename(level)))) await this.create(server, level);
+    filename(level);
+    if (
+      (
+        await Promise.all(
+          [level, level + '_nether', level + '_the_end'].map((name) =>
+            exists(within(server.directory, name)),
+          ),
+        )
+      ).some(Boolean)
+    )
+      await this.create(server, level);
     const rollback = path.join(server.directory, '.restore-' + randomUUID());
     const moved: string[] = [];
     const applied: string[] = [];

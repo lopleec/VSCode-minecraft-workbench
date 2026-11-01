@@ -1,6 +1,6 @@
 {
-  "version": "2026-10-29.1",
-  "updated": "2026-10-29",
+  "version": "2026-11-01.1",
+  "updated": "2026-11-01",
   "links": {
     "eula": "https://www.minecraft.net/en-us/eula",
     "guidelines": "https://www.minecraft.net/en-us/usage-guidelines",
@@ -8,7 +8,8 @@
     "license": "https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE",
     "modPermissions": "https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions",
     "modrinthTerms": "https://modrinth.com/legal/terms",
-    "thirdParty": "https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md"
+    "thirdParty": "https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md",
+    "microsoftServices": "https://www.microsoft.com/servicesagreement"
   },
   "disclaimer": {
     "en": "Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.",
@@ -108,6 +109,18 @@
         {
           "en": "The software is provided as-is, with the warranty and liability terms stated in MIT, to the extent permitted by applicable law. These notices do not waive liability that cannot lawfully be excluded, remove applicable consumer rights, or restrict permissions granted by MIT.",
           "zh": "软件按原样提供，在适用法律允许范围内采用 MIT 中的担保与责任条款。本文不免除依法不得排除的责任，不剥夺适用的消费者权利，也不限制 MIT 授予的权限。"
+        }
+      ]
+    },
+    {
+      "title": {
+        "en": "Servers and mod development",
+        "zh": "开服与模组开发"
+      },
+      "paragraphs": [
+        {
+          "en": "Hosting or using a Minecraft server is subject to the Minecraft EULA and applicable Usage Guidelines. Server software, loaders, mods, plugins, JDKs, Gradle and project templates retain their own licenses. Importing a server does not confirm its EULA on your behalf; the first start requires confirmation in the extension. Do not redistribute Minecraft binaries or third-party content without the required permission.",
+          "zh": "运行或使用 Minecraft 服务端须遵守 Minecraft EULA 与适用的使用指南。服务端软件、加载器、模组、插件、JDK、Gradle 和项目模板分别适用各自许可。导入服务端不会代为确认 EULA，首次启动需在插件中确认；未经所需授权，请勿再分发 Minecraft 二进制或第三方内容。"
         }
       ]
     }

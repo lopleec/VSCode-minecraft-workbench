@@ -24,6 +24,25 @@ export interface PackFile {
 }
 const index = (instance: Pick<Instance, 'directory'>) =>
   path.join(instance.directory, '.workbench', 'pack-files.json');
+export function validatePackPath(relative: string, override = false) {
+  const normalized = path.posix.normalize(relative);
+  const root = normalized
+    .split('/')[0]
+    .replace(/[. ]+$/, '')
+    .toLowerCase();
+  if (
+    !relative ||
+    relative.includes('\\') ||
+    relative.includes('\0') ||
+    relative.startsWith('/') ||
+    /^[a-z]:/i.test(relative) ||
+    relative.split('/').includes('..') ||
+    ['.workbench', '.runtime', '.git', '.vscode'].some(
+      (name) => root === name || root.startsWith(name + ':'),
+    )
+  )
+    throw new Error(override ? 'Reserved modpack override path' : 'Reserved modpack path');
+}
 export function managedPackPath(relative: string) {
   return (
     /^(mods|coremods|resourcepacks|texturepacks|shaderpacks)\//.test(relative) &&

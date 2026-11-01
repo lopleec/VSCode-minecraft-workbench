@@ -15,6 +15,8 @@ import { ServerProfile, ServerEngine, JavaRuntime } from './models';
 import { Minecraft } from './minecraft';
 import { ServerCatalog, serverEngines } from './server-catalog';
 import { ServerBackups } from './server-backups';
+import { manualServer } from './server-types';
+import { reserveNamedDirectory } from './game-paths';
 import { config, t, trusted } from './config';
 import {
   exists,
@@ -165,7 +167,7 @@ export class Servers implements vscode.Disposable {
       : builds.find((b) => b.stable);
     if (builds.length && !build)
       throw new Error(t('Select a server build.', '请选择服务端构建版本。'));
-    if (!['vanilla', 'custom'].includes(engine) && !build)
+    if (engine !== 'vanilla' && !manualServer(engine) && !build)
       throw new Error('No compatible server builds');
     const parent = String(
       value.parent || config('serverDirectory', '') || path.join(this.store.root, 'servers'),
@@ -178,10 +180,9 @@ export class Servers implements vscode.Disposable {
       await this.catalog.metadata(minecraft);
     }
     const id = randomUUID();
-    const directory = path.join(parent, id);
-    await rejectSymlinkParents(parent, directory);
     await fs.mkdir(parent, { recursive: true });
-    await fs.mkdir(directory, { recursive: false });
+    const directory = await reserveNamedDirectory(parent, name);
+    await rejectSymlinkParents(parent, directory);
     const server: ServerProfile = {
       id,
       name,
@@ -253,11 +254,23 @@ export class Servers implements vscode.Disposable {
     signal: AbortSignal,
     report: (text: string) => void,
   ) {
-    if (server.engine === 'custom') {
-      if (!(await exists(path.join(server.directory, 'server.jar'))))
+    if (manualServer(server.engine)) {
+      const jar =
+        server.imported && server.launchArgs?.[0] === '-jar'
+          ? filename(server.launchArgs[1])
+          : 'server.jar';
+      await rejectSymlinkParents(server.directory, path.join(server.directory, jar));
+      if (!(await exists(path.join(server.directory, jar))))
         throw new Error(t('Import a server JAR first.', '请先导入服务端 JAR。'));
-      server.launchArgs = ['-jar', 'server.jar', 'nogui'];
+      server.launchArgs = ['-jar', jar, 'nogui'];
     } else {
+      if (server.imported && server.engine !== 'vanilla' && !server.build)
+        throw new Error(
+          t(
+            'Choose a server version and build before reinstalling. Existing files can be started directly.',
+            '重新安装前请选择服务端版本和构建。已有文件可直接启动。',
+          ),
+        );
       const artifact = await this.catalog.artifact(server, signal);
       const stage = path.join(server.directory, '.workbench', 'install');
       await rejectSymlinkParents(server.directory, stage);
@@ -395,6 +408,11 @@ export class Servers implements vscode.Disposable {
             : this.installCore(server, signal, report),
         () => this.start(server),
       );
+      this.jobs.output.info(
+        redact(
+          `[${server.name}] ${server.engine} ${server.minecraft} ${server.build || ''}\nGame: ${server.directory}\nJava ${java.major} (${java.version}): ${java.path}`,
+        ),
+      );
       if (this.shuttingDown) throw new Error('VS Code is shutting down');
       if (!server.launchArgs?.length) throw new Error('Install or repair the server first');
       if (server.engine !== 'velocity') {
@@ -420,6 +438,7 @@ export class Servers implements vscode.Disposable {
         phase: 'starting',
       };
       this.running.set(server.id, session);
+      this.jobs.output.info(`[${server.name}] Server process started (PID ${child.pid}).`);
       const unlock = release;
       release = undefined;
       let ended = false;
@@ -441,6 +460,7 @@ export class Servers implements vscode.Disposable {
         void finish();
       });
       child.once('close', (code) => {
+        this.jobs.output.info(`[${server.name}] Server exited (${code ?? 'signal'}).`);
         this.append(
           server,
           t(`Server exited (${code ?? 'signal'}).`, `服务端已退出（${code ?? '信号'}）。`),

@@ -16,9 +16,9 @@ import { Store } from '../src/store';
 import { hashFile, writeJson } from '../src/files';
 
 const sha1 = (bytes: Buffer) => createHash('sha1').update(bytes).digest('hex');
-function jar() {
+function jar(content = 'fixture') {
   const zip = new AdmZip();
-  zip.addFile('fixture.class', Buffer.from('fixture'));
+  zip.addFile('fixture.class', Buffer.from(content));
   return zip.toBuffer();
 }
 async function fixture(loader: Loader = 'vanilla') {
@@ -33,7 +33,7 @@ async function fixture(loader: Loader = 'vanilla') {
   }[loader];
   const client = jar(),
     library = jar(),
-    loaderJar = jar(),
+    loaderJar = jar('loader'),
     asset = Buffer.from('game asset');
   const assetHash = sha1(asset);
   const metadata = {
@@ -71,7 +71,7 @@ async function fixture(loader: Loader = 'vanilla') {
         name:
           loader === 'forge'
             ? `net.minecraftforge:forge:${game}-${pinned}`
-            : `example:${loader}:${pinned}`,
+            : `${{ fabric: 'net.fabricmc:fabric-loader', quilt: 'org.quiltmc:quilt-loader', neoforge: 'net.neoforged:neoforge', vanilla: 'example:vanilla' }[loader]}:${pinned}`,
         downloads: {
           artifact: {
             path: 'example/loader/loader.jar',
@@ -428,4 +428,74 @@ test('a cancelled queued repair never starts or lets another repair bypass the c
   release();
   await Promise.all([first, third]);
   assert.deepEqual(order, ['first', 'third']);
+});
+
+for (const loader of ['vanilla', 'fabric', 'quilt', 'forge', 'neoforge'] as const)
+  test(`new ${loader} instances reuse complete shared runtimes without downloading or rerunning the installer`, async () => {
+    const f = await fixture(loader);
+    try {
+      const result = await f.run();
+      Object.assign(f.instance, result);
+      const count = f.requests();
+      const target: Instance = {
+        ...f.instance,
+        id: 'second',
+        name: 'Second',
+        directory: path.join(f.root, 'second'),
+        installed: false,
+        versionId: undefined,
+      };
+      const shared = await installRuntime(
+        target,
+        {
+          ...f.services,
+          instances: [f.instance],
+          manifest: async () => {
+            throw new Error('Shared runtimes must not fetch a manifest');
+          },
+          java: {
+            ensure: async () => {
+              throw new Error('Shared loaders must not rerun Java installers');
+            },
+          } as never,
+        },
+        new AbortController().signal,
+        () => {},
+      );
+      assert.equal(shared.versionId, result.versionId);
+      assert.equal(shared.loaderVersion, result.loaderVersion);
+      assert.equal(f.requests(), count);
+      assert.notEqual(target.directory, f.instance.directory);
+    } finally {
+      await f.close();
+    }
+  });
+
+test('adding another loader downloads its own libraries while reusing the same client and assets', async () => {
+  const f = await fixture('fabric');
+  try {
+    const vanilla: Instance = {
+      ...f.instance,
+      id: 'vanilla',
+      loader: 'vanilla',
+      loaderVersion: undefined,
+      installed: false,
+      directory: path.join(f.root, 'vanilla'),
+    };
+    const base = await installRuntime(vanilla, f.services, new AbortController().signal, () => {});
+    Object.assign(vanilla, base, { installed: true });
+    const count = f.requests();
+    f.instance.installed = false;
+    await installRuntime(
+      f.instance,
+      { ...f.services, instances: [vanilla] },
+      new AbortController().signal,
+      () => {},
+    );
+    assert.equal(f.requests() - count, 1, 'Only the Fabric library is downloaded');
+    assert.equal(await hashFile(f.folder.getVersionJar(f.game)), sha1(f.client));
+    assert.deepEqual(await fs.readFile(f.folder.getAsset(f.assetHash)), f.asset);
+  } finally {
+    await f.close();
+  }
 });

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -20,6 +20,8 @@ import { Network } from '../src/network';
 import { ServerCatalog } from '../src/server-catalog';
 import { Minecraft } from '../src/minecraft';
 import { ServerBackups } from '../src/server-backups';
+import { InstanceFiles } from '../src/instance-files';
+import { Store } from '../src/store';
 
 const profile: ServerProfile = {
   id: 'server',
@@ -87,6 +89,35 @@ test('plugin compatibility includes Bukkit ancestry and requires explicit Folia 
     false,
   );
   assert.equal(compatible(version('one', 'fabric'), serverTarget(profile), 'plugin'), false);
+});
+
+test('local plugin import accepts JARs and rolls back files if the content index cannot be saved', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-local-plugins-'));
+  const store = new Store(path.join(root, 'state'), () => {});
+  const target = serverTarget({ ...profile, directory: path.join(root, 'server') });
+  const content = new ContentService({} as Network);
+  const files = new InstanceFiles(store, content);
+  try {
+    const zip = new AdmZip();
+    zip.addFile('plugin.yml', Buffer.from('name: example'));
+    const one = path.join(root, 'one.jar');
+    zip.writeZip(one);
+    await files.importLocal(target, 'plugin', [one]);
+    const installed = await content.list(target, 'plugin');
+    assert.equal(installed[0].file, 'one.jar');
+    await fs.access(path.join(target.directory, 'plugins/one.jar'));
+    const two = path.join(root, 'two.jar');
+    zip.writeZip(two);
+    await fs.rm(path.join(target.directory, '.workbench/content.json'));
+    await fs.mkdir(path.join(target.directory, '.workbench/content.json'));
+    mock.method(content, 'list', async () => installed);
+    await assert.rejects(files.importLocal(target, 'plugin', [two]));
+    await assert.rejects(fs.access(path.join(target.directory, 'plugins/two.jar')));
+    await fs.access(path.join(target.directory, 'plugins/one.jar'));
+  } finally {
+    store.dispose();
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 test('plugin dependencies stay in plugins and client-only mods are rejected on servers', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-server-content-'));
@@ -186,6 +217,52 @@ test('server backups preserve current worlds before restore', async () => {
   }
 });
 
+test('server restore rejects file/duplicate entries before touching worlds or unrelated files', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-backup-validation-'));
+  const server = { ...profile, directory: root };
+  const backups = new ServerBackups();
+  try {
+    await fs.mkdir(path.join(root, 'world'));
+    await fs.writeFile(path.join(root, 'world/level.dat'), 'keep world');
+    await fs.writeFile(path.join(root, 'server.jar'), 'keep server');
+    const id = await backups.create(server, 'world');
+    const source = path.join(backups.directory(server), id);
+    await fs.writeFile(path.join(source, 'server.jar'), 'bad backup');
+    await fs.writeFile(
+      path.join(source, 'backup.json'),
+      JSON.stringify({ worlds: ['server.jar'] }),
+    );
+    await assert.rejects(backups.restore(server, id, 'world'), /Invalid world/);
+    await fs.writeFile(
+      path.join(source, 'backup.json'),
+      JSON.stringify({ worlds: ['world', 'world'] }),
+    );
+    await assert.rejects(backups.restore(server, id, 'world'), /Invalid server backup/);
+    assert.equal(await fs.readFile(path.join(root, 'server.jar'), 'utf8'), 'keep server');
+    assert.equal(await fs.readFile(path.join(root, 'world/level.dat'), 'utf8'), 'keep world');
+    assert.equal((await backups.list(server)).length, 1);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('server restore backs up dimension folders even when the main world folder is absent', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-dimension-backup-'));
+  const server = { ...profile, directory: root };
+  const backups = new ServerBackups();
+  try {
+    await fs.mkdir(path.join(root, 'world_nether'));
+    await fs.writeFile(path.join(root, 'world_nether/level.dat'), 'before');
+    const id = await backups.create(server, 'world');
+    await fs.writeFile(path.join(root, 'world_nether/level.dat'), 'after');
+    await backups.restore(server, id, 'world');
+    assert.equal(await fs.readFile(path.join(root, 'world_nether/level.dat'), 'utf8'), 'before');
+    assert.equal((await backups.list(server)).length, 2);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test('server lifecycle prevents parallel starts, accepts console commands and releases locks before restart', async () => {
   const mutable = require('vscode') as { window: unknown };
   mutable.window = {
@@ -209,7 +286,7 @@ test('server lifecycle prevents parallel starts, accepts console commands and re
       _label: string,
       work: (s: AbortSignal, r: (text: string) => void) => Promise<unknown>,
     ) => work(new AbortController().signal, () => {}),
-    output: { error: () => {} },
+    output: { info: () => {}, error: () => {} },
   };
   const server = {
     ...profile,

@@ -1,20 +1,7 @@
 import type { PageContext } from './page-ui';
-export const engines: [string, string][] = [
-  ['vanilla', 'Vanilla'],
-  ['paper', 'Paper'],
-  ['purpur', 'Purpur'],
-  ['folia', 'Folia'],
-  ['fabric', 'Fabric'],
-  ['quilt', 'Quilt'],
-  ['forge', 'Forge'],
-  ['neoforge', 'NeoForge'],
-  ['velocity', 'Velocity'],
-  ['custom', 'Custom JAR'],
-];
-export function serverContent(engine: string): 'mod' | 'plugin' | undefined {
-  if (['paper', 'purpur', 'folia', 'velocity'].includes(engine)) return 'plugin';
-  if (['fabric', 'quilt', 'forge', 'neoforge'].includes(engine)) return 'mod';
-}
+import { serverEngines } from '../server-types';
+export { serverContent } from '../server-types';
+export const engines: [string, string][] = serverEngines.map((entry) => [entry.id, entry.name]);
 export function statusLabel(status: string, L: PageContext['text']) {
   return (
     (

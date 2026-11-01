@@ -3,7 +3,11 @@ import { renderServers, renderServerCreate, renderServer, serverContent } from '
 import { renderAgreements } from './agreements-page';
 import { renderInstances, renderSetup } from './setup-page';
 import { renderImport } from './import-page';
-import { renderManagement, managementPages } from './manage-pages';
+import { renderBatchInstall } from './batch-install';
+import { renderManagement } from './manage-pages';
+import { renderProjects } from './projects-page';
+import { renderServerImport } from './server-import-page';
+import { managementPages, defaultPage, resolvePage } from '../navigation';
 import type { PageContext } from './page-ui';
 import type {
   Bootstrap,
@@ -48,6 +52,8 @@ function call<T>(method: string, params: Record<string, unknown> = {}): Promise<
   });
 }
 let boot: Bootstrap;
+let initialState: Bootstrap | undefined;
+let initialNavigation: { page: WorkbenchPage; kind: ProjectKind } | undefined;
 let page: WorkbenchPage = 'discover';
 let agreementLanguage: 'auto' | 'en' | 'zh-cn' = 'auto';
 let kind: ProjectKind = 'mod';
@@ -55,6 +61,8 @@ let query = '';
 let order = 'downloads';
 let onlyCompatible = true;
 let hits: BrowserHit[] = [];
+const selectedMods = new Set<string>();
+let selectionTarget = '';
 let totalHits = 0;
 let installed: InstalledEntry[] = [];
 let serverUpdates = new Map<string, string>();
@@ -62,6 +70,7 @@ let detail: ProjectDetail | undefined;
 let detailTab: 'about' | 'versions' = 'about';
 let versions: ModVersion[] = [];
 let versionsTotal = 0;
+let recommendedVersion: string | undefined;
 let versionGames: string[] = [];
 let versionLoaders: string[] = [];
 let versionQuery = '';
@@ -260,7 +269,7 @@ function shell() {
     ],
     async (mode) => {
       boot = await call<Bootstrap>('mode', { mode });
-      page = mode === 'server' ? 'servers' : mode === 'developer' ? 'projects' : 'instances';
+      page = defaultPage(boot.mode);
       kind =
         mode === 'server'
           ? serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
@@ -325,10 +334,8 @@ function shell() {
               },
               value === page ||
                 (value === 'instances' && ['create', 'version', 'import'].includes(page)) ||
-                (value === 'servers' && page === 'serverCreate') ||
-                (['accounts', 'java'].includes(value) &&
-                  managementPages.includes(page) &&
-                  page !== 'projects')
+                (value === 'servers' && ['serverCreate', 'serverImport'].includes(page)) ||
+                (['accounts', 'java'].includes(value) && managementPages.includes(page))
                 ? 'tab active'
                 : 'tab',
             ),
@@ -344,7 +351,15 @@ function shell() {
           () => action('language'),
           'toolbar-button language',
         ),
-        button(L('Settings', '设置'), () => action('settings'), 'toolbar-button'),
+        button(
+          L('Settings', '设置'),
+          () => {
+            page = 'settings';
+            persist();
+            render();
+          },
+          'toolbar-button',
+        ),
       ),
     ),
     h('div', { id: 'notice', role: 'status', 'aria-live': 'polite', class: 'notice' }),
@@ -405,6 +420,7 @@ function categories() {
   );
 }
 function render() {
+  if (boot) page = resolvePage(page, boot.mode, boot.terracotta?.enabled);
   generation++;
   versionGeneration++;
   planGeneration++;
@@ -422,7 +438,7 @@ function render() {
           minecraftEula: true,
           workbenchTerms: true,
         });
-        page = 'instances';
+        page = defaultPage(boot.mode);
         persist();
         render();
       },
@@ -438,7 +454,7 @@ function render() {
     });
     return;
   }
-  if (boot.mode === 'server' && !['mod', 'plugin'].includes(kind))
+  if (boot.mode === 'server')
     kind =
       serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
       'plugin';
@@ -448,11 +464,13 @@ function render() {
     [
       'servers',
       'serverCreate',
+      'serverImport',
       'server',
       'instances',
       'create',
       'import',
       'version',
+      'projects',
       ...managementPages,
     ].includes(page)
   ) {
@@ -482,7 +500,9 @@ function render() {
       },
     };
     if (page === 'servers') updateManaged = renderServers(main, ctx);
+    else if (page === 'projects') updateManaged = renderProjects(main, ctx);
     else if (page === 'serverCreate') updateManaged = renderServerCreate(main, ctx);
+    else if (page === 'serverImport') renderServerImport(main, ctx);
     else if (page === 'server') updateManaged = renderServer(main, ctx);
     else if (page === 'instances') updateManaged = renderInstances(main, ctx);
     else if (page === 'import') renderImport(main, ctx);
@@ -542,6 +562,11 @@ function render() {
   if (detail) renderDetail();
 }
 function renderToolbar() {
+  const targetKey = `${boot.mode}:${currentTarget()?.id}:${kind}`;
+  if (selectionTarget !== targetKey) {
+    selectedMods.clear();
+    selectionTarget = targetKey;
+  }
   const search = h('input', {
     type: 'search',
     class: 'search-input',
@@ -601,6 +626,9 @@ function renderToolbar() {
         ),
         h('span', { class: 'muted', id: 'result-count' }),
       ),
+      ...(kind === 'mod' && currentTarget()
+        ? [h('div', { class: 'inline-actions batch-actions', id: 'batch-actions' })]
+        : []),
     );
   else
     find('browser-toolbar').replaceChildren(
@@ -624,6 +652,73 @@ function renderToolbar() {
         ),
       ),
     );
+  renderBatchActions();
+}
+function renderBatchActions() {
+  const bar = document.getElementById('batch-actions');
+  if (!bar) return;
+  bar.replaceChildren(
+    button(
+      L('Select page', '选择当前页'),
+      () => {
+        for (const hit of hits) {
+          if (selectedMods.size >= 100) break;
+          selectedMods.add(hit.project_id);
+        }
+        syncModSelection();
+      },
+      'text-button',
+      !hits.length,
+    ),
+    ...(selectedMods.size > 0
+      ? [
+          button(
+            L(`Install selected (${selectedMods.size})`, `安装所选（${selectedMods.size}）`),
+            () => {
+              detail = undefined;
+              plan = undefined;
+              planGeneration++;
+              find('layout').classList.add('has-detail');
+              void renderBatchInstall(find('detail'), [...selectedMods.keys()], {
+                text: L,
+                request: call,
+                button,
+                error: showError,
+                close: () => {
+                  find('layout').classList.remove('has-detail');
+                  find('detail').replaceChildren();
+                },
+                complete: () => {
+                  selectedMods.clear();
+                  notice(L('Mods installed.', '模组已安装。'));
+                  page = 'installed';
+                  render();
+                },
+              });
+            },
+            'primary',
+          ),
+          button(
+            L('Clear selection', '清除选择'),
+            () => {
+              selectedMods.clear();
+              syncModSelection();
+            },
+            'text-button',
+          ),
+        ]
+      : []),
+  );
+}
+function syncModSelection() {
+  for (const input of document.querySelectorAll<HTMLInputElement>('input[data-mod]'))
+    input.checked = selectedMods.has(input.dataset.mod!);
+  renderBatchActions();
+  const panel = document.getElementById('detail');
+  if (!detail && panel) {
+    panel.replaceChildren();
+    document.getElementById('layout')?.classList.remove('has-detail');
+  }
 }
 async function loadSearch(append: boolean) {
   const sequence = ++generation;
@@ -672,6 +767,25 @@ async function loadSearch(append: boolean) {
             class: `project-row ${detail?.project.id === hit.project_id ? 'selected' : ''}`,
             'data-project': hit.project_id,
           },
+          kind === 'mod' &&
+            currentTarget() &&
+            h('input', {
+              type: 'checkbox',
+              checked: selectedMods.has(hit.project_id),
+              'data-mod': hit.project_id,
+              'aria-label': L(`Select ${hit.title}`, `选择 ${hit.title}`),
+              onchange: (event: Event) => {
+                if ((event.target as HTMLInputElement).checked) {
+                  if (selectedMods.size >= 100) {
+                    (event.target as HTMLInputElement).checked = false;
+                    notice(L('Select up to 100 mods.', '最多选择 100 个模组。'));
+                    return;
+                  }
+                  selectedMods.add(hit.project_id);
+                } else selectedMods.delete(hit.project_id);
+                syncModSelection();
+              },
+            }),
           icon(hit.icon_url, hit.title),
           h(
             'div',
@@ -701,6 +815,7 @@ async function loadSearch(append: boolean) {
         ),
       );
     if (!append) find('list-scroll').scrollTop = 0;
+    renderBatchActions();
   } catch (error) {
     if (sequence === generation) {
       find('results').replaceChildren(
@@ -882,7 +997,7 @@ async function openProject(id: string, tab: 'about' | 'versions') {
     versionGame = '';
     versionLoader = '';
     versionChannel = boot.preferences.channel;
-    versionCompatible = boot.preferences.compatibleOnly;
+    versionCompatible = kind !== 'modpack' && boot.preferences.compatibleOnly;
     optional = boot.preferences.optional;
     renderDetail();
   } catch (error) {
@@ -1017,10 +1132,19 @@ function renderVersionFilters() {
     h(
       'div',
       { class: 'filter-row' },
-      check(L('Compatible only', '仅兼容版本'), versionCompatible, (value) => {
-        versionCompatible = value;
-        return loadVersions(false);
-      }),
+      ...(kind === 'modpack'
+        ? []
+        : [
+            check(
+              L('Compatible only', '仅兼容版本'),
+              versionCompatible,
+              (value) => {
+                versionCompatible = value;
+                return loadVersions(false);
+              },
+              !currentTarget(),
+            ),
+          ]),
       button(
         L('Show all versions', '查看全部版本'),
         () => {
@@ -1092,6 +1216,7 @@ async function loadVersions(append: boolean) {
     plan = undefined;
     planGeneration++;
     find('install-review').replaceChildren();
+    find('versions-list').after(find('install-review'));
     find('versions-list').replaceChildren(
       h('p', { class: 'loading' }, L('Loading versions…', '加载版本…')),
     );
@@ -1117,6 +1242,7 @@ async function loadVersions(append: boolean) {
     versionLoaders = result.loaders;
     if (first) renderVersionFilters();
     versions = append ? [...versions, ...result.versions] : result.versions;
+    recommendedVersion = result.recommendedId;
     versionsTotal = result.total;
     find('version-count').textContent = L(`${versionsTotal} versions`, `${versionsTotal} 个版本`);
     renderVersions();
@@ -1126,6 +1252,7 @@ async function loadVersions(append: boolean) {
 }
 function renderVersions() {
   const list = find('versions-list');
+  const review = find('install-review');
   list.replaceChildren();
   if (!versions.length)
     list.append(
@@ -1137,16 +1264,19 @@ function renderVersions() {
         ),
       ),
     );
-  for (const version of versions)
-    list.append(
-      button(
-        '',
-        () => chooseVersion(version.id),
-        `version-row ${version.id === selectedVersion ? 'selected' : ''}`,
-      ),
+  let otherHeading = false;
+  for (const v of versions) {
+    if (recommendedVersion && v.id === recommendedVersion)
+      list.append(h('h3', { class: 'version-group-title' }, L('Recommended', '推荐版本')));
+    else if (recommendedVersion && !otherHeading) {
+      list.append(h('h3', { class: 'version-group-title' }, L('Other versions', '其他版本')));
+      otherHeading = true;
+    }
+    const row = button(
+      '',
+      () => chooseVersion(v.id),
+      `version-row ${v.id === selectedVersion ? 'selected' : ''}`,
     );
-  [...list.querySelectorAll<HTMLButtonElement>('.version-row')].forEach((row, index) => {
-    const v = versions[index];
     row.setAttribute('aria-label', `${v.name} ${v.version_number}`);
     row.setAttribute('aria-pressed', String(v.id === selectedVersion));
     row.append(
@@ -1175,7 +1305,10 @@ function renderVersions() {
         h('span', {}, date(v.date_published)),
       ),
     );
-  });
+    list.append(row);
+    if (v.id === selectedVersion) list.append(review);
+  }
+  if (!list.contains(review)) list.after(review);
   if (versions.length < versionsTotal)
     list.append(
       button(
@@ -1452,6 +1585,13 @@ function renderInstance() {
           'primary',
         ),
         button(L('Install / repair', '安装 / 修复'), () => action('install'), 'secondary', running),
+        button(L('Open directory', '打开实例目录'), () => action('directory'), 'secondary'),
+        button(
+          L('Move instance…', '移动实例…'),
+          () => action('move'),
+          'secondary',
+          running || !!instance.linked,
+        ),
       ),
     ),
     h(
@@ -1632,8 +1772,6 @@ function renderInstance() {
         { class: 'maintenance-grid' },
         ...(
           [
-            ['directory', L('Open game directory', '打开游戏目录')],
-            ['move', L('Move game directory…', '移动游戏目录…')],
             ['backups', L('World backups', '存档备份')],
             ['log', L('Latest log', '最新日志')],
             ['clone', L('Duplicate instance', '复制实例')],
@@ -1731,6 +1869,10 @@ window.addEventListener('message', (event: MessageEvent) => {
     return;
   }
   if (message.event === 'navigate') {
+    if (!boot) {
+      initialNavigation = { page: message.page, kind: message.kind };
+      return;
+    }
     page = message.page;
     kind = message.kind;
     if (boot.mode === 'server' && ['discover', 'installed'].includes(page))
@@ -1741,6 +1883,10 @@ window.addEventListener('message', (event: MessageEvent) => {
     plan = undefined;
     persist();
     render();
+  }
+  if (message.event === 'state' && !boot) {
+    initialState = message.data;
+    return;
   }
   if (message.event === 'state' && boot) {
     const next = message.data as Bootstrap;
@@ -1760,8 +1906,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         next.selectedInstance !== boot.selectedInstance) ||
       JSON.stringify(next.preferences) !== JSON.stringify(boot.preferences);
     if (next.mode !== boot.mode) {
-      page =
-        next.mode === 'server' ? 'servers' : next.mode === 'developer' ? 'projects' : 'instances';
+      page = defaultPage(next.mode);
       kind = next.mode === 'server' ? 'plugin' : 'mod';
       query = '';
     }
@@ -1785,9 +1930,11 @@ window.addEventListener('message', (event: MessageEvent) => {
 });
 void call<Bootstrap>('ready')
   .then((value) => {
-    boot = value;
-    page = value.page;
-    kind = value.kind;
+    boot = initialState || value;
+    page = initialNavigation?.page || boot.page;
+    kind = initialNavigation?.kind || boot.kind;
+    initialState = undefined;
+    initialNavigation = undefined;
     const saved = bridge.getState() as
       | {
           page?: WorkbenchPage;
@@ -1802,11 +1949,11 @@ void call<Bootstrap>('ready')
       if (['auto', 'en', 'zh-cn'].includes(String(saved.agreementLanguage)))
         agreementLanguage = saved.agreementLanguage!;
       query = saved.query || '';
-      order = saved.order || value.preferences.order;
-      onlyCompatible = saved.onlyCompatible ?? value.preferences.compatibleOnly;
+      order = saved.order || boot.preferences.order;
+      onlyCompatible = saved.onlyCompatible ?? boot.preferences.compatibleOnly;
     } else {
-      order = value.preferences.order;
-      onlyCompatible = value.preferences.compatibleOnly;
+      order = boot.preferences.order;
+      onlyCompatible = boot.preferences.compatibleOnly;
     }
     render();
   })

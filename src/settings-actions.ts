@@ -10,6 +10,7 @@ interface SettingSchema {
   type: string;
   default?: unknown;
   enum?: unknown[];
+  enumItemLabels?: string[];
   minimum?: number;
   maximum?: number;
   description?: string;
@@ -64,20 +65,36 @@ export async function settingsAction(method: string, params: Record<string, unkn
   const settings = vscode.workspace.getConfiguration('minecraftWorkbench');
   if (method === 'settings.read') {
     const dictionary = t('en', 'zh-cn') === 'en' ? english : chinese;
+    const translate = (value: string) =>
+      value.replace(
+        /^%(.+)%$/,
+        (_match, id: string) => (dictionary as Record<string, string>)[id] || id,
+      );
+    const localize = (schema: SettingSchema): SettingSchema => ({
+      ...schema,
+      description: translate(schema.markdownDescription || schema.description || ''),
+      ...(schema.enumItemLabels ? { enumItemLabels: schema.enumItemLabels.map(translate) } : {}),
+      ...(schema.properties
+        ? {
+            properties: Object.fromEntries(
+              Object.entries(schema.properties).map(([key, value]) => [key, localize(value)]),
+            ),
+          }
+        : {}),
+    });
     return Object.fromEntries(
       Object.entries(definitions).map(([full, schema]) => {
         const key = full.replace(/^minecraftWorkbench\./, '');
         const value = settings.get(key, schema.default);
-        const description = schema.markdownDescription || schema.description || '';
-        const resolved = description.replace(
-          /^%(.+)%$/,
-          (_match, id: string) => (dictionary as Record<string, string>)[id] || id,
-        );
+        const group = manifest.contributes.configuration.find((group) =>
+          Object.hasOwn(group.properties, full),
+        )!;
         return [
           key,
           {
-            ...schema,
-            description: resolved,
+            ...localize(schema),
+            label: translate(`%label.${key}%`),
+            group: translate(group.title),
             value: redactValue(value),
           },
         ];
@@ -108,6 +125,14 @@ export async function settingsAction(method: string, params: Record<string, unkn
       throw new Error('Invalid proxy URL');
   }
   if (key === 'language') await setLanguage(value);
-  else await settings.update(key, value, vscode.ConfigurationTarget.Global);
+  else {
+    const workspace =
+      params.scope === 'effective' && settings.inspect?.(key)?.workspaceValue !== undefined;
+    await settings.update(
+      key,
+      value,
+      workspace ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global,
+    );
+  }
   return true;
 }

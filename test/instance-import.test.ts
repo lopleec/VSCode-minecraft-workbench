@@ -13,6 +13,10 @@ import {
   writeInstanceMetadata,
 } from '../src/game-paths';
 import { suggestedFilename, writeJson } from '../src/files';
+import { createHash } from 'node:crypto';
+import { resolveGameVersion, normalizeProfile } from '../src/version-profile';
+import { isRuntimeReady } from '../src/runtime-status';
+import { Minecraft } from '../src/minecraft';
 
 const signal = () => new AbortController().signal;
 const profile = (id: string, extra = {}) => ({
@@ -30,6 +34,173 @@ async function put(root: string, file: string, value: string) {
   await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
   await fs.writeFile(path.join(root, file), value);
 }
+
+test('installed HMCL patch profiles import in place and by copy without reinstalling or rewriting the original', async () => {
+  const root = await temp();
+  const runtime = path.join(root, 'hmcl');
+  const id = 'Minecraft Legendary Edition 1.20.1';
+  const game = path.join(runtime, 'versions', id);
+  const store = new Store(path.join(root, 'state'), () => {});
+  const digest = (value: string) => createHash('sha1').update(value).digest('hex');
+  const download = (value: string) => ({
+    url: 'https://example.test/file',
+    size: Buffer.byteLength(value),
+    sha1: digest(value),
+  });
+  const asset = 'asset';
+  const index = JSON.stringify({
+    objects: { fixture: { hash: digest(asset), size: asset.length } },
+  });
+  const source = {
+    id,
+    root: true,
+    patches: [
+      {
+        id: 'fabric',
+        version: '0.16.10',
+        priority: 30000,
+        mainClass: 'net.fabricmc.loader.impl.launch.knot.KnotClient',
+        arguments: { game: ['--fabric-test'] },
+        libraries: [
+          {
+            name: 'net.fabricmc:fabric-loader:0.16.10',
+            downloads: { artifact: { ...download('loader'), path: 'fixture/loader.jar' } },
+          },
+        ],
+      },
+      {
+        ...profile('game'),
+        version: '1.20.1',
+        priority: 0,
+        downloads: { client: download('client') },
+        assets: 'fixture',
+        assetIndex: { id: 'fixture', ...download(index) },
+        logging: {
+          client: {
+            file: { id: 'fixture.xml', ...download('logging') },
+            argument: '-Dlog=${path}',
+          },
+        },
+      },
+    ],
+  };
+  try {
+    await writeJson(path.join(game, id + '.json'), source);
+    const original = await fs.readFile(path.join(game, id + '.json'), 'utf8');
+    await put(game, id + '.jar', 'client');
+    await put(game, 'modpack.cfg', '{}');
+    await writeJson(path.join(game, 'hmclversion.cfg'), { gameDirType: 'ROOT_FOLDER' });
+    await put(runtime, 'libraries/fixture/loader.jar', 'loader');
+    await put(runtime, 'assets/indexes/fixture.json', index);
+    await put(runtime, `assets/objects/${digest(asset).slice(0, 2)}/${digest(asset)}`, asset);
+    await put(runtime, 'assets/log_configs/fixture.xml', 'logging');
+    const candidate = (await scanInstances(game)).candidates[0];
+    assert.equal(candidate.directory, await fs.realpath(game));
+    assert.equal(candidate.minecraft, '1.20.1');
+    assert.equal(candidate.loader, 'fabric');
+    assert.equal(candidate.loaderVersion, '0.16.10');
+    assert.deepEqual(candidate.warnings, []);
+    const linked = await new InstanceImporter(store).import(candidate, 'link', signal());
+    assert.equal(linked.installed, true);
+    assert.equal(linked.preserveVersion, true);
+    const resolved = await resolveGameVersion(runtime, id);
+    assert.equal(resolved.minecraftVersion, id);
+    assert.equal(resolved.mainClass, 'net.fabricmc.loader.impl.launch.knot.KnotClient');
+    assert.deepEqual(resolved.arguments.game, ['--fabric-test']);
+    const engine = new Minecraft(
+      store,
+      {
+        json: async () => {
+          throw new Error('Unexpected network request');
+        },
+      } as never,
+      {} as never,
+      {} as never,
+      {
+        run: async (_label: string, work: (s: AbortSignal, report: () => void) => Promise<void>) =>
+          work(signal(), () => {}),
+      } as never,
+      () => {},
+    );
+    linked.installed = false;
+    await engine.install(linked);
+    assert.equal(linked.installed, true);
+    assert.equal(await fs.readFile(path.join(game, id + '.json'), 'utf8'), original);
+    const copied = await new InstanceImporter(store).import(
+      candidate,
+      'copy',
+      signal(),
+      'Copied',
+      path.join(root, 'target'),
+    );
+    assert.equal(copied.installed, true);
+    await assert.rejects(fs.access(path.join(copied.directory, id + '.jar')));
+    await assert.rejects(fs.access(path.join(copied.directory, id + '.json')));
+    assert.equal(
+      await fs.readFile(path.join(copied.runtimeDirectory!, 'versions', id, id + '.json'), 'utf8'),
+      original,
+    );
+    await fs.rm(path.join(runtime, 'libraries', 'fixture', 'loader.jar'));
+    assert.equal(await isRuntimeReady(linked, signal()), false);
+    const incomplete = await new InstanceImporter(store).import(
+      candidate,
+      'copy',
+      signal(),
+      'Incomplete',
+      path.join(root, 'incomplete'),
+    );
+    assert.equal(incomplete.installed, false);
+    assert.equal(await isRuntimeReady(copied, signal()), true);
+    const aborted = new AbortController();
+    aborted.abort();
+    await assert.rejects(isRuntimeReady(copied, aborted.signal), { name: 'AbortError' });
+  } finally {
+    store.dispose();
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('HMCL patch metadata accepts flat vanilla profiles and preserves library and argument priority', async () => {
+  const root = await temp();
+  try {
+    const id = 'Renamed vanilla';
+    await writeJson(
+      path.join(root, 'versions', id, id + '.json'),
+      profile(id, { clientVersion: '1.20.1', patches: [] }),
+    );
+    await put(root, `versions/${id}/${id}.jar`, 'client');
+    const item = (await scanInstances(root)).candidates[0];
+    assert.equal(item.minecraft, '1.20.1');
+    assert.deepEqual(item.warnings, []);
+    assert.equal((await resolveGameVersion(root, id)).minecraftVersion, id);
+    const normalized = normalizeProfile({
+      id: 'ordered',
+      root: true,
+      patches: [
+        {
+          id: 'loader',
+          priority: 3,
+          arguments: { game: ['loader'], jvm: ['-Dloader=true'] },
+          mainClass: 'Loader',
+          libraries: [{ name: 'group:loader:2' }],
+        },
+        {
+          id: 'game',
+          priority: 0,
+          arguments: { game: ['game'] },
+          mainClass: 'Game',
+          libraries: [{ name: 'group:loader:1' }],
+        },
+      ],
+    });
+    assert.deepEqual(normalized.arguments.game, ['game', 'loader']);
+    assert.equal(normalized.mainClass, 'Loader');
+    assert.equal(normalized.libraries[1].name, 'group:loader:2');
+    assert.throws(() => normalizeProfile({ patches: [{ patches: [{}] }] }), /nested/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
 
 test('new instances use portable Prism/MultiMC metadata, readable unique names, and system game roots', async () => {
   const root = await temp();

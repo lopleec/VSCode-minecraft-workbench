@@ -1,17 +1,10 @@
 import { h } from './dom';
 import { PageContext, field, input, select, heading, blank, busy } from './page-ui';
 import type { WorkbenchPage } from './protocol';
-import { renderProjects } from './projects-page';
 import { renderTerracotta } from './terracotta-page';
+import { renderSettings } from './settings-page';
+import { managementPagesFor } from '../navigation';
 
-export const managementPages: WorkbenchPage[] = [
-  'accounts',
-  'java',
-  'downloads',
-  'backups',
-  'projects',
-  'multiplayer',
-];
 export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: PageContext) {
   const L = ctx.text;
   const labels: Record<string, string> = {
@@ -19,29 +12,20 @@ export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: Pa
     java: 'Java',
     downloads: L('Tasks', '任务'),
     backups: L('World backups', '存档备份'),
-    projects: L('Projects', '项目'),
     multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）'),
+    settings: L('Settings', '设置'),
   };
   main.append(
     h(
       'nav',
       { class: 'segments management-tabs', 'aria-label': L('Management pages', '管理页面') },
-      ...managementPages
-        .filter((value) => value !== 'multiplayer' || ctx.state().terracotta?.enabled)
-        .filter((value) =>
-          ctx.state().mode === 'server'
-            ? ['java', 'downloads'].includes(value)
-            : ctx.state().mode === 'developer'
-              ? ['projects', 'java', 'downloads'].includes(value)
-              : true,
-        )
-        .map((value) =>
-          ctx.button(
-            labels[value],
-            () => ctx.navigate(value),
-            value === page ? 'segment active' : 'segment',
-          ),
+      ...managementPagesFor(ctx.state().mode, ctx.state().terracotta?.enabled).map((value) =>
+        ctx.button(
+          labels[value],
+          () => ctx.navigate(value),
+          value === page ? 'segment active' : 'segment',
         ),
+      ),
     ),
   );
   const body = h('div', { class: 'management-body' });
@@ -50,8 +34,11 @@ export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: Pa
   if (page === 'java') return java(body, ctx);
   if (page === 'downloads') return downloads(body, ctx);
   if (page === 'backups') return backups(body, ctx);
-  if (page === 'projects') return renderProjects(body, ctx);
   if (page === 'multiplayer') return renderTerracotta(body, ctx);
+  if (page === 'settings') {
+    void renderSettings(body, ctx);
+    return;
+  }
 }
 
 function accounts(body: HTMLElement, ctx: PageContext) {
@@ -361,17 +348,8 @@ function downloads(body: HTMLElement, ctx: PageContext) {
   ]);
   filter.setAttribute('aria-label', L('Task status', '任务状态'));
   body.append(
-    heading(L('Download & background tasks', '下载与后台任务')),
-    h(
-      'div',
-      { class: 'inline-actions page-actions' },
-      filter,
-      ctx.button(
-        L('Show output', '显示输出'),
-        () => ctx.request('action', { action: 'output' }),
-        'secondary',
-      ),
-    ),
+    heading(L('Tasks', '任务')),
+    h('div', { class: 'inline-actions page-actions' }, filter),
     rows,
   );
   filter.onchange = update;
@@ -414,11 +392,6 @@ function downloads(body: HTMLElement, ctx: PageContext) {
                 }),
               'secondary',
             ),
-            ctx.button(
-              L('Output', '输出'),
-              () => ctx.request('launcher.jobAction', { id: job.id, action: 'output' }),
-              'text-button',
-            ),
           ),
         ),
       ),
@@ -443,6 +416,11 @@ function backups(body: HTMLElement, ctx: PageContext): (() => void) | undefined 
     h(
       'div',
       { class: 'inline-actions page-actions' },
+      ctx.button(
+        L('Open saves directory', '打开世界存档目录'),
+        () => ctx.request('launcher.openWorldDirectory'),
+        'secondary',
+      ),
       ctx.button(
         L('Import worlds…', '导入世界存档…'),
         async () => {

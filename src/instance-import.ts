@@ -8,6 +8,9 @@ import { Store } from './store';
 import { exists, filename, readJson, rejectSymlinkParents } from './files';
 import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } from './game-paths';
 import { InstanceSettings, validateInstanceSettings } from './instance-settings';
+import { normalizeProfile, resolveGameVersion, versionChain } from './version-profile';
+import { isRuntimeReady } from './runtime-status';
+export { versionChain } from './version-profile';
 
 type Json = Record<string, any>;
 export interface ImportCandidate {
@@ -59,23 +62,6 @@ async function json(file: string): Promise<Json | undefined> {
     throw new Error('Invalid instance metadata.');
   return value;
 }
-export async function versionChain(root: string, version: string): Promise<Json[]> {
-  const chain: Json[] = [];
-  const seen = new Set<string>();
-  let id: string | undefined = version;
-  while (id) {
-    filename(id);
-    if (seen.has(id) || seen.size >= 32)
-      throw new Error('Circular or excessively deep version inheritance.');
-    seen.add(id);
-    const profile = await json(path.join(root, 'versions', id, `${id}.json`));
-    if (!profile) throw new Error(`Missing version profile: ${id}`);
-    if (profile.id !== id) throw new Error(`Version profile ID does not match its folder: ${id}`);
-    chain.push(profile);
-    id = typeof profile.inheritsFrom === 'string' ? profile.inheritsFrom : undefined;
-  }
-  return chain;
-}
 export function loaderInfo(
   libraries: Json[],
   minecraft: string,
@@ -86,7 +72,9 @@ export function loaderInfo(
     ['net.neoforged:neoforge:', 'neoforge'],
     ['net.minecraftforge:forge:', 'forge'],
   ] as const) {
-    const found = libraries.find((l) => typeof l.name === 'string' && l.name.startsWith(group));
+    const found = [...libraries]
+      .reverse()
+      .find((l) => typeof l.name === 'string' && l.name.startsWith(group));
     if (found) {
       const version = found.name.slice(group.length).split(':')[0];
       return {
@@ -144,10 +132,7 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
     }
   }
   const folder = path.join(root, 'versions', filename(id));
-  const libraries = chain.flatMap((p) => [
-    ...(p.libraries || []),
-    ...(p.patches || []).flatMap((v: Json) => v.libraries || []),
-  ]);
+  const libraries = [...chain].reverse().flatMap((p) => normalizeProfile(p).libraries || []);
   const info = loaderInfo(libraries, minecraft);
   const settings = await json(path.join(folder, 'hmclversion.cfg'));
   const pcl = parseIni(await text(path.join(folder, 'PCL', 'Setup.ini')));
@@ -165,13 +150,10 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
     directory = folder;
   if (pcl.VersionArgumentIndie === '2' || pcl.VersionArgumentIndieV2?.toLowerCase() === 'false')
     directory = root;
+  if (await exists(path.join(folder, 'modpack.cfg'))) directory = folder;
   if (typeof override?.gameDir === 'string') directory = path.resolve(root, override.gameDir);
   directory = await fs.realpath(directory);
   const warnings: string[] = [];
-  if (chain.some((p) => Array.isArray(p.patches)))
-    warnings.push(
-      'This profile uses launcher-specific patches; create a copy to rebuild its loader.',
-    );
   return candidate({
     name: override?.name || id,
     minecraft,
@@ -357,7 +339,12 @@ export async function copyGameFiles(
   source: string,
   destination: string,
   signal: AbortSignal,
-  options: { worlds?: boolean; keepMetadata?: boolean; skipFile?: string } = {},
+  options: {
+    worlds?: boolean;
+    keepMetadata?: boolean;
+    skipFile?: string;
+    excludeFiles?: string[];
+  } = {},
 ): Promise<void> {
   const exclude = new Set([
     'assets',
@@ -395,6 +382,7 @@ export async function copyGameFiles(
       const relative = path.relative(source, file).split(path.sep);
       if (
         (options.skipFile && path.resolve(file) === path.resolve(options.skipFile)) ||
+        options.excludeFiles?.includes(path.resolve(file)) ||
         exclude.has(relative[0]) ||
         (options.worlds === false && relative[0] === 'saves') ||
         (relative[0] === '.workbench' &&
@@ -454,8 +442,6 @@ export class InstanceImporter {
       )
     )
       throw new Error(source.warnings.join('\n'));
-    if (mode === 'link' && source.warnings.some((v) => v.includes('launcher-specific patches')))
-      throw new Error('This profile must be copied to rebuild its launcher-specific patches.');
     const location =
       mode === 'copy'
         ? await reserveInstanceLocation(root, name)
@@ -466,8 +452,7 @@ export class InstanceImporter {
             layout: source.format === 'multimc' ? ('multimc' as const) : undefined,
           };
     const target = location.directory;
-    const preserveVersion =
-      !!source.versionId && !source.warnings.some((v) => v.includes('launcher-specific patches'));
+    const preserveVersion = !!source.versionId;
     const instance: Instance = {
       ...settings,
       id: randomUUID(),
@@ -493,7 +478,19 @@ export class InstanceImporter {
     const previous = this.store.state.selectedInstance;
     try {
       if (mode === 'copy') {
-        await copyGameFiles(directory, target, signal, { worlds });
+        const versionFolder =
+          source.runtimeDirectory && source.versionId
+            ? path.join(source.runtimeDirectory, 'versions', source.versionId)
+            : undefined;
+        await copyGameFiles(directory, target, signal, {
+          worlds,
+          excludeFiles:
+            versionFolder && path.resolve(directory) === path.resolve(versionFolder)
+              ? ['.json', '.jar'].map((extension) =>
+                  path.join(versionFolder, source.versionId + extension),
+                )
+              : undefined,
+        });
         if (source.runtimeDirectory)
           await copyRuntimeFiles(
             source.runtimeDirectory,
@@ -515,6 +512,7 @@ export class InstanceImporter {
             instance.versionId! + '.json',
           ),
         );
+        instance.installed = await isRuntimeReady(instance, signal);
       }
       signal.throwIfAborted();
       this.store.state.instances.push(instance);
@@ -570,6 +568,14 @@ async function copyRuntimeFiles(
         path.join(target, 'versions', id, id + '.jar'),
       );
     }
+  if (profiles && version) {
+    const resolved = await resolveGameVersion(source, version, signal);
+    const jar = filename(resolved.minecraftVersion);
+    await copy(
+      path.join(source, 'versions', jar, jar + '.jar'),
+      path.join(target, 'versions', jar, jar + '.jar'),
+    );
+  }
   for (const resource of ['libraries', 'assets'])
     await copy(path.join(source, resource), path.join(target, resource));
 }

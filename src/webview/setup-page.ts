@@ -56,6 +56,11 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
                       : L('Not installed', '未安装'),
             ),
             ctx.button(
+              L('Open directory', '打开实例目录'),
+              () => ctx.request('action', { action: 'directory', instanceId: instance.id }),
+              'secondary',
+            ),
+            ctx.button(
               L('Configure', '配置'),
               async () => {
                 await ctx.request('selectInstance', { instanceId: instance.id });
@@ -350,12 +355,6 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
         field(
           edit ? L('Game directory', '游戏目录') : L('Minecraft directory', 'Minecraft 目录'),
           directoryRow,
-          edit
-            ? undefined
-            : L(
-                'Prism / MultiMC instances use named folders. Libraries and assets are shared.',
-                '采用 Prism / MultiMC 实例格式，以名称建立文件夹，运行库和资源文件共用。',
-              ),
         ),
       ),
       h(

@@ -4,6 +4,8 @@ A Minecraft Java Edition launcher, mod development workspace and server manager 
 
 [Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [MIT License](LICENSE)
 
+**Java settings**, **Tasks** and **Output** are separate entries under **More**. Projects belong to Developer Mode; each mode shows its own management pages. Separate Java and Tasks panes can be enabled with `minecraftWorkbench.showRuntimeViews`. The extension Settings page follows the extension language and also links to VS Code Settings.
+
 Native sidebar views, commands, settings, tasks and output channels keep the extension at home in VS Code. Editor pages follow your theme, including light, dark and high contrast. The default language follows VS Code; English and Simplified Chinese can also be selected manually.
 
 ![Modrinth discovery in VS Code with the Dark Modern theme](docs/images/discover-dark.png)
@@ -57,7 +59,7 @@ The confirmation stores only the notice version, time and two choices locally in
 
 1. Open **Instances → New instance**. Choose a name, game version, loader and parent directory.
 2. Add an offline account in **Manage → Accounts**, or configure Microsoft sign-in below.
-3. Detect, add or download Java from **Manage → Java**.
+3. Detect, add or download Java from **More → Java settings**, or **Manage → Java**.
 4. Choose **Install / Repair**, then **Launch**. You can also save an instance first and install it later.
 
 ![Instance installation form with April Fools versions](docs/images/install-dark.png)
@@ -97,6 +99,8 @@ The **Installed** tab supports filtering, local imports, toggling files, removal
 
 Use **Instances → Import modpack** or **Installed → Import modpack…** to import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge exported ZIPs** (`manifest.json` + overrides) are also supported. With online access off, use bundled files or select local JAR/ZIP files; reference-only manifests do not contain the mods, and offline import cannot verify their CurseForge file IDs.
 
+Select mods in **Discover → Mods**, then choose **Install selected**. Versions are matched to the selected Minecraft version and loader, with stable releases preferred. Review required dependencies and conflicts before installing; incompatible projects can be excluded. Required dependencies shared by several selected mods are installed once.
+
 ### CurseForge downloads (Beta)
 
 Local CurseForge ZIP import is available by default. **Automatic CurseForge metadata and downloads are off by default**; enable `minecraftWorkbench.curseforge.enabled` in Settings to use them. Then run **Minecraft Workbench: Configure CurseForge API Key**, or use **Workbench → Settings → CurseForge API key**. The key is stored in SecretStorage and sent only to the official API/CDN origins; it is not included in settings, URLs or exported pack records. See [API key access](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key) and [CDN authentication](https://blog.curseforge.com/introducing-api-key-authentication-for-curseforge-file-downloads/).
@@ -115,11 +119,13 @@ Java selection uses the **instance override → global default → automatic det
 
 ## Existing instances and storage
 
+Use **Open directory** on an instance card or settings page to open its game files. **Instance settings → Move instance** moves the entire instance, including worlds and configuration, and supports moving between disks. Shared runtimes outside the instance remain in place. Linked instances must be duplicated before moving. **World backups → Open saves directory** opens `saves` directly.
+
 New instances use the **Prism / MultiMC format**: a named folder containing `instance.cfg`, `mmc-pack.json`, and a `.minecraft` game directory. World saves remain ordinary Java Edition worlds in `saves/<world>/`. Shared Minecraft versions, libraries and assets use the system Minecraft directory; `minecraftWorkbench.gameDirectory` changes that location. `minecraftWorkbench.instanceDirectory` selects the instances parent and can point to an existing PrismLauncher `instances` directory. Existing Workbench directories continue to work.
 
-Open **Instances → Import instance** to scan a Minecraft/HMCL/PCL directory, a Prism/MultiMC instances folder, a Modrinth profile folder, or a ZIP export. The preview shows detected Minecraft and loader versions. **Manage in place** keeps the original files and shares changes with the original launcher; removing that registration keeps its files. **Copy** creates a separate Prism/MultiMC instance with mods, configuration and worlds. Launcher hooks and account databases are not imported. Missing resources are repaired on first launch.
+Open **Instances → Import instance** to scan a Minecraft/HMCL/PCL directory, a Prism/MultiMC instances folder, a Modrinth profile folder, or a ZIP export. The preview shows detected Minecraft and loader versions. **Manage in place** keeps the original files and shares changes with the original launcher; removing that registration keeps its files. **Copy** creates a separate Prism/MultiMC instance with mods, configuration and worlds. Launcher hooks and account databases are not imported. Standard Minecraft/HMCL/PCL instances are marked as installed when their required runtime files are complete; missing resources are prepared as needed.
 
-**Export Instance** creates a Prism/MultiMC ZIP, optionally including worlds. **Import Modpack** and **Export .mrpack** use the [Modrinth pack format](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack). Current Modrinth App installations without a `profile.json` should be exported as `.mrpack` first. Legacy jar mods and unrecognized MultiMC components are reported instead of silently dropped. Launcher-specific profile patches require copying and rebuilding a supported loader. For ZIPs over 512 MB, extract or copy the instance folder directly.
+**Export Instance** creates a Prism/MultiMC ZIP, optionally including worlds. **Import Modpack** and **Export .mrpack** use the [Modrinth pack format](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack). Current Modrinth App installations without a `profile.json` should be exported as `.mrpack` first. Legacy jar mods and unrecognized MultiMC components are reported instead of silently dropped. Standard HMCL patch profiles support in-place management without rewriting the original metadata. For ZIPs over 512 MB, extract or copy the instance folder directly.
 
 **World backups → Import worlds / Export world** accepts standard Java world folders and ZIPs, including worlds from other launchers. Existing world names create a separate numbered copy. Bedrock `.mcworld` files require conversion and are not Java world imports.
 
@@ -155,13 +161,15 @@ Choose **Server** in the mode selector, then **Servers → New server**. Select 
 
 ![Server installation in VS Code](docs/images/server-create-dark.png)
 
-Supported software: **Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge and Velocity**. **Custom JAR** creates a directory where you can import an executable server JAR. Availability follows each project's published versions; not every historical Minecraft version has a dedicated server. Experimental builds require an explicit selection.
+Supported downloads: **Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge and Velocity**. **Spigot**, **Bukkit** and **Custom JAR** use a locally supplied executable server JAR. Availability follows each project's published versions; not every historical Minecraft version has a dedicated server. Experimental builds require an explicit selection.
+
+Use **Servers → Import server** to manage an existing directory in place. Executable JARs and Forge/NeoForge argument files are detected without running startup scripts or reinstalling. Existing worlds, configuration and plugins stay in place. Imported `eula.txt` files do not replace the manual EULA confirmation in **Console & settings → Agreements & licenses**. AI tools cannot perform that confirmation.
 
 **Console & settings** contains the console, commands, normal stop/restart, Java and memory settings, server properties, version changes, repair and world backups. Stop before editing content or restoring worlds. Normal stop sends the server's save/shutdown command; force stop asks for confirmation. A server can be removed from the list while retaining its files.
 
 ![Paper console and controls in VS Code](docs/images/server-console-dark.png)
 
-**Discover** and **Installed** use the selected server. Paper/Purpur list compatible Bukkit, Spigot and Paper plugins; Folia requires declared Folia support. Velocity filters for Velocity plugins. Fabric, Quilt, Forge and NeoForge use server mods. Modrinth versions, descriptions, icons, dependency review, updates, enable/disable and removal use the same pages as client content. Client-only projects are rejected. Local JARs can be imported. Custom JAR entries have no inferred plugin/mod platform.
+The sidebar's **Content**, **Discover** and **Installed** use the selected server. Paper/Purpur list compatible Bukkit, Spigot and Paper plugins; Folia requires declared Folia support. Spigot and Bukkit use their matching plugin platforms. Velocity filters for Velocity plugins. Fabric, Quilt, Forge and NeoForge use server mods. Modrinth versions, descriptions, icons, dependency review, updates, enable/disable and removal use the same pages as client content. Client-only projects are rejected. Local JARs can be imported. Custom JAR entries have no inferred plugin/mod platform.
 
 New game servers bind to `127.0.0.1` by default. Change **Settings → Network → Bind address** to `0.0.0.0` for LAN access. Firewall rules, router forwarding and public hosting are configured separately. Velocity is a proxy; configure its backend servers in `velocity.toml` using **Open configuration**.
 
@@ -171,11 +179,21 @@ MCP is **off by default**. Select **Workbench → Settings → Register MCP**, o
 
 Tools cover instance creation and launch, game/loader versions, Modrinth content and dependencies, accounts, Java, tasks, backups, Gradle projects, server management and extension settings. `workbench_state` lists the current entries. Operations requiring a file picker or confirmation open the native VS Code UI. AI tools cannot accept the first-use agreements; server EULA acceptance remains interactive.
 
+One registration covers all three modes. Switching the UI mode does not remove tools or require reconnecting. Read `workbench_state` for IDs, then target the relevant entry:
+
+| Mode | MCP operations |
+| --- | --- |
+| Launcher | Instance creation, import, settings, repair and launch; content, accounts and world backups |
+| Developer | `project_import`, `project_templates`, `project_create`, `project_configure`, `project_status`; `project_action` builds, runs, debugs, attaches, stops tasks and opens artifacts |
+| Server | Server catalogs, creation/import, local JAR and plugin/mod import, settings, start/stop, console commands, logs and world backups |
+
+Use either `instanceId` or `serverId` for content operations. An explicit ID takes priority over the current UI mode; server content defaults to the software's mod/plugin platform. Developer Mode requires an explicit content target. Java, tasks and extension settings are shared across modes. Project imports keep files in place and open a window only with `open=true`.
+
 For another MCP client, run **Copy MCP Connection** and adapt the copied Streamable HTTP configuration to that client's format. It contains a local URL and authorization header, valid for the current extension-host session. The listener accepts authenticated requests only on `127.0.0.1`; keep the copied header private. In remote workspaces it runs on the extension host. Tool results may contain local paths, project details and console logs; the connected AI client's data policy applies. Login tokens are never returned.
 
 ## Developer Mode
 
-Switch modes from the sidebar or status bar, then open **Manage → Projects**.
+Switch to **Developer Mode** from the sidebar or status bar, then open **Projects**.
 
 ![Fabric mod project creation using an official template](docs/images/projects-dark.png)
 
@@ -187,9 +205,11 @@ Switch modes from the sidebar or status bar, then open **Manage → Projects**.
 
 Gradle runs through the project's wrapper in VS Code Tasks. The first run downloads Gradle and project dependencies. Templates define compatible game, loader and Gradle versions; historical versions may have no maintained template. This creates mod projects, not decompiled standalone game clients. Extension proxy settings apply to extension-managed downloads; Gradle repositories and proxies follow Gradle/project configuration.
 
+Expand **Project settings** for a project-specific Java executable, Gradle options and debug port. Empty Java and port `0` follow extension defaults; project values take priority. Missing JDKs are prepared automatically. **Stop Gradle task** stops a running build or test client, and **Reload project metadata** reads changes to `gradle.properties`. Re-importing a project updates its metadata while retaining its settings.
+
 ## Settings, downloads and storage
 
-Open **Minecraft Workbench: Settings** to see the native grouped Settings page. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, tasks, logs and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens the native Settings page.
+Open **Minecraft Workbench: Settings** for settings in the extension language, with a link to VS Code Settings. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, Tasks, Output and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens extension settings.
 
 ```json
 {
@@ -207,11 +227,11 @@ Open **Minecraft Workbench: Settings** to see the native grouped Settings page. 
 
 - **Download sources:** choose `official`, `bmclapi` or an HTTPS base per resource type: `manifest`, `client`, `server`, `assets`, `libraries`, `loader`, `modrinth`, `java`, `project`. Custom bases preserve the original path/query. BMCLAPI applies only to supported endpoints; failed mirrors fall back to the original source. Authentication always uses official endpoints.
 - **Proxy:** HTTP, HTTPS, SOCKS5 and SOCKS5h are supported. SOCKS5 resolves names locally; SOCKS5h resolves through the proxy. An empty setting falls back to VS Code `http.proxy`. Use **Workbench → Settings → Proxy credentials** to save credentials in SecretStorage. Reload after network or storage changes.
-- **Reuse and speed:** verified files share a content-addressed cache across instances. Existing isolated runtimes can seed it after checksum verification. Reusing a version copies its verified files and downloads only missing or changed resources. Files of at least 16 MiB use up to four HTTP Range connections with 8 MiB segments; the global connection limit defaults to six. Completed segments survive retries, and unsupported hosts fall back to a single connection. Configure `sharedDownloadCache`, `downloadConnectionsPerFile`, `downloadChunkSize` and `downloadConcurrency`. Instance files are independent copies, so edits cannot change the shared cache.
+- **Reuse and speed:** verified files share a content-addressed cache across instances. New instances reuse a complete matching runtime and pinned loader in the same shared directory; changing loaders reuses the base client and assets and adds the required loader files. Existing isolated runtimes can seed it after checksum verification. Reusing a version copies its verified files and downloads only missing or changed resources. Files of at least 16 MiB use up to four HTTP Range connections with 8 MiB segments; the global connection limit defaults to six. Completed segments survive retries, and unsupported hosts fall back to a single connection. Configure `sharedDownloadCache`, `downloadConnectionsPerFile`, `downloadChunkSize` and `downloadConcurrency`. Instance files are independent copies, so edits cannot change the shared cache.
 - **Download recovery:** `.part` files and HTTP Range validators allow resuming when the server supports it. A server ignoring ranges restarts the file. Published Minecraft/Modrinth hashes and JDK SHA-256 checks verify downloads.
 - **Directories:** storage, game, server and project locations are configurable. New instance metadata follows Prism/MultiMC; `.workbench` holds only auxiliary content indexes, history and backups. Older instances may keep their existing `.runtime` directory.
 - **Process downloads:** these settings cover extension-managed downloads. Gradle and server bootstrappers/installers can make additional downloads under their own configuration.
-- **Diagnostics:** use **Show Output** or **Open Game Log**. Extension output redacts authentication tokens and proxy credentials. Review external game/mod logs before sharing them.
+- **Diagnostics:** **More → Tasks** shows background work and Gradle tasks, with cancellation and retry. **More → Output** offers Workbench logs and the current mode’s game log, server output or Gradle terminal. Workbench logs include stages, elapsed time and nested errors; set the output channel log level to Debug for download/cache diagnostics. Request diagnostics omit headers, bodies and URL query strings. Use **Open Game Log** for the full game log. Extension output redacts authentication tokens and proxy credentials. Review external game/mod logs before sharing them.
 
 ## Development and validation
 
@@ -253,6 +273,8 @@ Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://
 ---
 
 ## 简体中文
+
+**Java 设置**、**任务**、**输出**分别放在 **更多**。模组项目只出现在开发模式，各模式使用对应的管理页面。可通过 `minecraftWorkbench.showRuntimeViews` 单独显示 Java 和任务分栏。插件设置页跟随插件语言，也保留 VS Code 原生设置入口。
 
 在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文或简体中文。
 
@@ -303,7 +325,7 @@ GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击�
 
 1. 打开 **实例 → 新建实例**，填写名称，选择游戏版本、加载器和父目录。
 2. 在 **管理 → 账户** 添加离线账户，或按下文配置 Microsoft 登录。
-3. 在 **管理 → Java** 检测、添加 Java 或下载 Eclipse Temurin JDK。
+3. 在 **更多 → Java 设置** 或 **管理 → Java** 检测、添加 Java 或下载 Eclipse Temurin JDK。
 4. 选择 **安装 / 修复**，完成后启动。也可先保存实例，稍后安装。
 
 版本列表包含 Mojang 清单中的正式版、快照与预发布版、愚人节版本、旧 Beta 和旧 Alpha。支持对应游戏版本可用的 Vanilla、Fabric、Quilt、Forge、NeoForge，以及 Loader 测试版本。创建后可以更改游戏版本、更新或重装 Loader，失败后可修复重试。
@@ -340,6 +362,8 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 可从 **实例 → 导入整合包** 或 **已安装 → 导入整合包…** 导入本地 `.mrpack`，也可从 Modrinth 安装，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。同时支持 **CurseForge 导出的 ZIP**（`manifest.json` 与覆盖文件）。在线功能关闭时使用包内文件或选择本地 JAR/ZIP；只有引用的清单不包含实际模组，离线导入无法校验 CurseForge 文件 ID。
 
+在 **发现 → 模组** 中勾选多个项目，点击 **安装所选**。自动匹配当前实例的游戏版本和 Loader，优先正式版；确认前显示必需依赖与冲突，可排除没有兼容版本的项目。多个模组共用的前置只安装一次。
+
 ### CurseForge 下载（Beta）
 
 默认可手动导入本地 CurseForge ZIP。**CurseForge 元数据与自动下载默认关闭**，需在设置中开启 `minecraftWorkbench.curseforge.enabled`；然后执行 **Minecraft Workbench：配置 CurseForge API 密钥**，或打开 **工作台 → 设置 → CurseForge API 密钥**。密钥保存在 SecretStorage，仅发送至官方 API/CDN，不写入设置、URL 或导出的整合包记录。参见 [API 密钥申请](https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key) 与 [CDN 认证说明](https://blog.curseforge.com/introducing-api-key-authentication-for-curseforge-file-downloads/)。
@@ -356,27 +380,9 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 通过侧栏 **语言**、命令面板 **切换语言** 或 **EN / 中** 按钮即时切换。语言可独立于 VS Code 设置。
 
-修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除自有实例会将实例目录移至系统废纸篓（系统支持时）；移除原地管理的实例只取消登记，保留文件。
-
-Java 按**实例单独设置 → 全局默认 → 自动检测 / 下载**选择。实例 Java 可留空；修改其他设置会保留已有的单独配置，清空实例字段才恢复使用全局默认。
-
-### 现有实例与存储
-
-新建实例统一使用 **Prism / MultiMC 格式**：以实例名称建立目录，其中包含 `instance.cfg`、`mmc-pack.json` 和 `.minecraft` 游戏目录。世界存档仍是 `saves/世界名称/` 下的原生 Java 版存档。版本文件、运行库和资源使用系统 Minecraft 目录，也可通过 `minecraftWorkbench.gameDirectory` 更改。`minecraftWorkbench.instanceDirectory` 可单独指定实例父目录，包括现有的 PrismLauncher `instances` 目录。旧版工作台实例继续兼容。
-
-在 **实例 → 导入实例** 中扫描 Minecraft/HMCL/PCL 目录、Prism/MultiMC 实例目录、Modrinth 档案目录或 ZIP 导出文件，预览会显示识别出的 Minecraft 和 Loader 版本。**原地管理**保留原目录，与原启动器共用文件，移除登记时保留游戏文件；**复制导入**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界存档。不会导入原启动器的执行钩子或账户数据库。缺失的运行资源在首次启动时补齐。
-
-**导出实例**生成 Prism/MultiMC ZIP，可选包含世界存档；**导入整合包 / 导出 .mrpack** 使用 [Modrinth 格式](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack)。新版 Modrinth App 若未保留 `profile.json`，请先导出 `.mrpack`。旧式 Jar 模组、无法识别的 MultiMC 组件会明确提示，不会静默忽略。启动器专有补丁需要复制导入并重建受支持的 Loader。ZIP 超过 512 MB 时，请先解压或直接复制实例目录。
-
-**存档备份 → 导入 / 导出世界存档**支持原生 Java 版世界目录和 ZIP，可使用其他启动器中的存档。同名世界另建编号副本。基岩版 `.mcworld` 需先转换格式。
-
-游戏语言首次跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家在游戏中选择的语言；可在实例设置或 `minecraftWorkbench.gameLanguage` 中覆盖，取值为 `auto`、`preserve` 或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
+修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除实例会将整个游戏目录移至系统废纸篓（系统支持时）。
 
 ### 账户与 Microsoft 登录
-
-**账户 → 外置登录**支持 authlib-injector。填写 HTTPS Yggdrasil API 地址，例如 LittleSkin 的 `https://littleskin.cn/api/yggdrasil`，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
-
-输入凭据前，需在原生风险提示中核对识别后的完整认证 API 地址并确认。用户名、密码会发送给服务商，由其签发令牌；请使用独立密码，切勿填写 Microsoft 密码。HTTPS 不代表服务商可信。移除账户只删除本地凭据，如需撤销访问，请前往服务商处理。界面不预选服务商。[第三方服务与许可](THIRD_PARTY_NOTICES.md)列明服务条款、隐私链接及单独下载组件的许可。
 
 **插件不内置 Microsoft Client ID**；留空时使用离线账户。离线身份无法通过要求 Microsoft / Minecraft 验证的服务器认证。
 
@@ -384,30 +390,21 @@ Java 按**实例单独设置 → 全局默认 → 自动检测 / 下载**选择�
 
 通过 Microsoft 设备登录页面授权。刷新令牌和 Minecraft 访问令牌存于 **VS Code SecretStorage**，到期前及启动前自动刷新；刷新失败需重新登录。移除账户会删除保存的凭据，账户名和 UUID 作为本地元数据保存。插件不收集遥测。
 
-### 陶瓦联机（Beta）
-
-此可选功能**默认关闭**。在设置中开启 `minecraftWorkbench.terracotta.enabled` 后，从 **更多 → 陶瓦联机（Beta）** 进入。下载和运行组件前需阅读上游许可及联机须知，分别勾选确认；须知语言可以单独切换，不更改扩展语言。
-
-1. 下载官方组件，或选择已有的官方可执行文件。下载固定支持版本并校验官方 SHA-256；macOS 需先打开官方安装包，配置其后台组件，再连接。
-2. 连接组件。房主将 Minecraft 世界开放到局域网后点击**创建房间**；访客填写陶瓦房间码并**加入房间**。
-3. 访客可复制游戏地址，或直接启动所选实例进入房间；临时地址不会覆盖实例原有的服务器设置。
-4. 结束后退出房间。关闭设置或撤回确认会断开本扩展创建的连接。可通过 `minecraftWorkbench.terracotta.publicNodes` 指定额外公共节点。
-
-[Terracotta / 陶瓦联机](https://github.com/burningtnt/Terracotta) 是 Burning_TNT 及贡献者的独立项目，采用附带上游例外的 AGPL-3.0-or-later。插件通过本地 HTTP 接口调用未修改的官方程序，不将它打包进扩展。当前 Beta 面向陶瓦 0.4 接口及 Java 版局域网世界；穿透和中继可用性取决于各方网络与外部服务。请仅向希望加入的玩家分享房间码。
-
 ### 开服模式
 
 在模式选择器中选择 **开服**，然后打开 **服务端 → 新建服务端**。选择服务端类型、Minecraft / 软件版本和构建版本。**创建并启动** 会下载服务端、检测或下载所需 JDK，然后启动；也可选择仅安装或仅创建。首次启动游戏服务端时需要确认 Minecraft EULA。
 
 ![服务端安装界面](docs/images/server-create-dark.png)
 
-支持 **Vanilla、Paper、Purpur、Folia、Fabric、Quilt、Forge、NeoForge、Velocity**。**自定义 JAR** 可创建独立目录并导入可执行服务端 JAR。版本以各项目发布列表为准，并非每个历史 Minecraft 版本都提供独立服务端；实验构建需明确选择。
+支持下载 **Vanilla、Paper、Purpur、Folia、Fabric、Quilt、Forge、NeoForge、Velocity**。**Spigot、Bukkit、自定义 JAR** 使用本地提供的可执行服务端 JAR。版本以各项目发布列表为准，并非每个历史 Minecraft 版本都提供独立服务端；实验构建需明确选择。
+
+通过 **服务端 → 导入服务端** 可原地管理已有目录，识别可执行 JAR 和 Forge / NeoForge 参数文件，不运行启动脚本、不重复安装，保留已有存档、配置和插件。导入的 `eula.txt` 不代替手动确认，首次启动前需在 **控制台与设置 → 协议与许可** 勾选确认 EULA，AI 工具不能代为确认。
 
 **控制台与设置** 包含输出、指令、正常停止和重启、Java 与内存、服务端属性、版本更换、修复和存档备份。编辑内容或恢复存档前需要停服。正常停服会发送保存与关闭指令；强制停止需确认。从列表移除服务端时会保留文件。
 
 ![Paper 控制台与服务端管理](docs/images/server-console-dark.png)
 
-**发现** 与 **已安装** 使用当前服务端的兼容条件。Paper / Purpur 可安装兼容的 Bukkit、Spigot、Paper 插件；Folia 仅接受明确声明支持 Folia 的版本；Velocity 筛选其对应插件。Fabric、Quilt、Forge、NeoForge 使用服务端模组。版本、简介、图标、前置预览、更新、启用、禁用和删除与客户端使用同一套页面；拒绝仅客户端项目，也可导入本地 JAR。自定义 JAR 不会自动推断插件或模组平台。
+侧栏 **内容**、**发现** 与 **已安装** 使用当前服务端的兼容条件。Paper / Purpur 可安装兼容的 Bukkit、Spigot、Paper 插件；Folia 仅接受明确声明支持 Folia 的版本；Spigot / Bukkit 使用对应插件平台；Velocity 筛选其对应插件。Fabric、Quilt、Forge、NeoForge 使用服务端模组。版本、简介、图标、前置预览、更新、启用、禁用和删除与客户端使用同一套页面；拒绝仅客户端项目，也可导入本地 JAR。自定义 JAR 不会自动推断插件或模组平台。
 
 新游戏服务端默认绑定 `127.0.0.1`。局域网访问可在 **设置 → 网络 → 绑定地址** 中改为 `0.0.0.0`。防火墙、路由器端口转发和公网托管需另行配置。Velocity 属于代理端，可通过 **打开配置文件** 编辑 `velocity.toml`，设置后端服务端。
 
@@ -417,11 +414,21 @@ MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启�
 
 工具覆盖实例创建与启动、游戏及 Loader 版本、Modrinth 内容与前置、账户、Java、任务、备份、Gradle 项目、服务端管理和扩展设置。`workbench_state` 可获取当前列表。需要文件选择或确认的操作仍使用 VS Code 原生界面。AI 工具不能代替用户同意首次使用协议；服务端 EULA 也需要交互确认。
 
+注册一次即可调用三个模式的工具，切换界面模式不需要重新连接，也不会隐藏其他模式的工具。先用 `workbench_state` 获取 ID，再操作对应条目：
+
+| 模式 | MCP 功能 |
+| --- | --- |
+| 启动 | 实例创建、导入、设置、修复与启动；内容、账户和存档备份 |
+| 开发 | `project_import`、`project_templates`、`project_create`、`project_configure`、`project_status`；`project_action` 可构建、运行、调试、附加调试器、停止任务和打开产物 |
+| 开服 | 服务端版本、创建与导入、本地 JAR 和插件／模组导入、设置、启停、控制台指令、日志与存档备份 |
+
+内容操作使用 `instanceId` 或 `serverId`，两者不能同时传入；明确指定的 ID 优先于当前界面模式，服务端会默认匹配对应的模组／插件平台。在开发模式中操作内容需明确指定目标。Java、任务和插件设置由三个模式共用。项目导入保留原文件，仅 `open=true` 时打开窗口。
+
 其他 MCP 客户端可使用 **复制 MCP 连接**，按客户端格式填入复制的 Streamable HTTP 配置。配置包含本地 URL 与授权请求头，仅在当前扩展宿主会话中有效；请勿公开请求头。接口只监听 `127.0.0.1` 并检查授权。远程工作区中，接口运行在扩展宿主机器。工具结果可能包含本地路径、项目信息和控制台日志，并适用所连接 AI 客户端的数据政策；工具不会返回登录令牌。
 
 ### 开发模式
 
-在侧栏或状态栏切换模式，打开 **管理 → 项目**。
+在侧栏或状态栏切换到 **开发模式**，打开 **项目**。
 
 1. 选择 **Fabric / Forge / NeoForge** 和官方模板或 MDK 版本。
 2. 填写模组名称、ID、Java 包名和目录。包名建议使用通用的 `com.example.<mod_id>`，可自行修改。
@@ -431,11 +438,13 @@ MCP **默认关闭**。点击 **工作台 → 设置 → 注册 MCP**，或启�
 
 Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle 与依赖。模板提供对应的游戏、Loader 和 Gradle 版本，部分历史版本没有维护中的模板。生成的是模组项目，并非反编译后的独立游戏客户端。插件代理用于插件管理的下载；Gradle 的仓库与代理遵循项目及 Gradle 配置。
 
+展开 **项目设置** 可指定此项目的 Java、Gradle 参数和调试端口；Java 留空、端口填 `0` 使用插件默认值，项目设置优先。缺少 JDK 时会自动准备。**停止 Gradle 任务** 可停止正在构建或运行的测试客户端，**重新读取项目元数据** 会读取 `gradle.properties` 的变化；再次导入同一项目会更新元数据并保留原有设置。
+
 ### 网络、目录与诊断
 
-工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、日志和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字仍打开原生设置页。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
+工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、输出和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字打开插件设置页，其中保留 VS Code 原生设置入口。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
 
-全局选项位于 **Minecraft Workbench：设置** 的原生分组中。
+全局选项位于 **Minecraft Workbench：设置** 页面，也可从该页打开 VS Code 原生设置。
 
 ```json
 {
@@ -454,12 +463,12 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 - **下载源：** 可按 `manifest`、`client`、`server`、`assets`、`libraries`、`loader`、`modrinth`、`java`、`project` 设置 `official`、`bmclapi` 或 HTTPS 基地址。自定义地址保留原路径和查询参数；BMCLAPI 仅用于支持的端点。镜像失败回退原始地址，认证始终走官方端点。
 - **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **工作台 → 设置 → 代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
 - **断点与校验：** 保留 `.part`，在服务器支持时使用 HTTP Range 和校验器续传；服务器忽略范围则重新下载。校验 Minecraft / Modrinth 公布的哈希及 JDK SHA-256。
-- **目录：** 存储、游戏、服务端和项目目录可配置。新实例采用 Prism/MultiMC 格式；`.workbench` 只保存内容索引、历史和备份等辅助数据。旧实例保留原有 `.runtime` 目录。
-- **日志：** 使用 **显示输出** 或 **打开游戏日志**。插件输出会隐藏认证令牌和代理凭据；分享外部游戏或模组日志前仍需检查内容。
+- **目录：** 存储、游戏、服务端和项目目录可配置。新实例采用 Prism/MultiMC 格式；`.workbench` 只保存辅助索引、历史和备份。旧实例保留原有 `.runtime`。
+- **日志：** **更多 → 任务** 管理后台操作和 Gradle 任务；**更多 → 输出** 提供工作台日志及当前模式的游戏日志、服务端输出或 Gradle 终端。日志包含阶段、耗时与错误原因链；Debug 级别提供下载和缓存诊断，请求诊断不记录认证头、请求体或 URL 查询参数。分享外部日志前仍需检查内容。
 
 ### 下载复用与并发
 
-带校验和的文件在实例间使用共享缓存，包括客户端、库、资源、服务端、JDK 和 Modrinth 文件。旧实例中的文件也会在校验后纳入缓存；相同版本只补缺失或不同的资源，实例文件保持独立副本。
+带校验和的文件在实例间使用共享缓存，包括客户端、库、资源、服务端、JDK 和 Modrinth 文件。新实例会复用同一共享目录中已完整安装的对应核心与固定版本 Loader；切换 Loader 时保留基础客户端和资源，只补对应 Loader 所需文件。旧实例中的文件也会在校验后纳入缓存；相同版本只补缺失或不同的资源，实例文件保持独立副本。
 
 至少 16 MiB 的文件默认使用 4 个 HTTP Range 连接、每段 8 MiB；全局并发上限默认为 6。重试保留已完成分段，不支持分段的源自动回退单连接。可配置 `sharedDownloadCache`、`downloadConnectionsPerFile`、`downloadChunkSize`、`downloadConcurrency`。设置作用于插件管理的下载；Gradle、服务端引导程序和安装器可能另行下载其依赖。
 
@@ -509,3 +518,34 @@ npm run package
 ![版本选择与依赖安装预览](docs/images/dependencies-dark.png)
 
 ![官方 Fabric 模板项目创建](docs/images/projects-dark.png)
+## 现有实例与存储
+
+实例卡片和设置页的 **打开实例目录** 可直接打开游戏文件。**实例设置 → 移动实例** 搬迁整个实例，包含世界、模组和配置，支持跨磁盘移动；实例外部的共享运行库保持原位。原地管理的实例需先复制再移动。**存档备份 → 打开世界存档目录** 可直接打开 `saves`。
+
+新建实例统一使用 **Prism / MultiMC 格式**：以实例名称建立目录，其中包含 `instance.cfg`、`mmc-pack.json` 和 `.minecraft` 游戏目录。世界存档仍是 `saves/世界名称/` 下的原生 Java 版存档。版本文件、运行库和资源使用系统 Minecraft 目录，也可通过 `minecraftWorkbench.gameDirectory` 更改。`minecraftWorkbench.instanceDirectory` 可单独指定实例父目录，包括现有的 PrismLauncher `instances` 目录。旧版工作台实例继续兼容。
+
+在 **实例 → 导入实例** 中扫描 Minecraft/HMCL/PCL 目录、Prism/MultiMC 实例目录、Modrinth 档案目录或 ZIP 导出文件，预览会显示识别出的 Minecraft 和 Loader 版本。**原地管理**保留原目录，与原启动器共用文件，移除登记时保留游戏文件；**复制导入**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界存档。不会导入原启动器的执行钩子或账户数据库。标准 Minecraft / HMCL / PCL 实例的运行文件完整时会直接识别为已安装，缺失资源时才补齐。
+
+**导出实例**生成 Prism/MultiMC ZIP，可选包含世界存档；**导入整合包 / 导出 .mrpack** 使用 [Modrinth 格式](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack)。新版 Modrinth App 若未保留 `profile.json`，请先导出 `.mrpack`。旧式 Jar 模组、无法识别的 MultiMC 组件会明确提示，不会静默忽略。支持原地管理标准 HMCL 补丁配置，保留原始元数据。ZIP 超过 512 MB 时，请先解压或直接复制实例目录。
+
+**存档备份 → 导入 / 导出世界存档**支持原生 Java 版世界目录和 ZIP，可使用其他启动器中的存档。同名世界另建编号副本。基岩版 `.mcworld` 需先转换格式。
+
+游戏语言首次跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家在游戏中选择的语言；可在实例设置或 `minecraftWorkbench.gameLanguage` 中覆盖，取值为 `auto`、`preserve` 或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
+
+**账户 → 外置登录**支持 authlib-injector。填写 HTTPS Yggdrasil API 地址，例如 LittleSkin 的 `https://littleskin.cn/api/yggdrasil`，在 VS Code 中输入凭据并选择角色。支持 ALI 地址识别；令牌保存在 SecretStorage，不保存密码。启动前校验、刷新令牌，需要时下载并进行 SHA-256 校验的 authlib-injector。外置账户只能用于配置了对应认证服务的服务器。
+
+输入凭据前，需在原生风险提示中核对识别后的完整认证 API 地址并确认。用户名、密码会发送给服务商，由其签发令牌；请使用独立密码，切勿填写 Microsoft 密码。HTTPS 不代表服务商可信。移除账户只删除本地凭据，如需撤销访问，请前往服务商处理。界面不预选服务商。[第三方服务与许可](THIRD_PARTY_NOTICES.md)列明服务条款、隐私链接及单独下载组件的许可。
+
+### 陶瓦联机（Beta）
+
+此可选功能**默认关闭**。在设置中开启 `minecraftWorkbench.terracotta.enabled` 后，从 **更多 → 陶瓦联机（Beta）** 进入。下载和运行组件前需阅读上游许可及联机须知，分别勾选确认；须知语言可以单独切换，不更改扩展语言。
+
+1. 下载官方组件，或选择已有的官方可执行文件。下载固定支持版本并校验官方 SHA-256；macOS 需先打开官方安装包，配置其后台组件，再连接。
+2. 连接组件。房主将 Minecraft 世界开放到局域网后点击**创建房间**；访客填写陶瓦房间码并**加入房间**。
+3. 访客可复制游戏地址，或直接启动所选实例进入房间；临时地址不会覆盖实例原有的服务器设置。
+4. 结束后退出房间。关闭设置或撤回确认会断开本扩展创建的连接。可通过 `minecraftWorkbench.terracotta.publicNodes` 指定额外公共节点。
+
+[Terracotta / 陶瓦联机](https://github.com/burningtnt/Terracotta) 是 Burning_TNT 及贡献者的独立项目，采用附带上游例外的 AGPL-3.0-or-later。插件通过本地 HTTP 接口调用未修改的官方程序，不将它打包进扩展。当前 Beta 面向陶瓦 0.4 接口及 Java 版局域网世界；穿透和中继可用性取决于各方网络与外部服务。请仅向希望加入的玩家分享房间码。
+
+
+Java 优先级为：实例单独设置 → 全局默认 → 自动检测 / 下载。实例设置可留空；更改其他字段不会清除已有的 Java 配置。

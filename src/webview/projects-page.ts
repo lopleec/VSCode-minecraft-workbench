@@ -2,6 +2,7 @@ import { h } from './dom';
 import { PageContext, field, input, select, heading, blank, busy } from './page-ui';
 import type { Template } from '../developer';
 import type { VersionManifest } from '../models';
+import { projectSettings } from './project-settings';
 
 export function renderProjects(body: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
@@ -182,27 +183,31 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
   };
   body.append(form);
   void templates();
+  let projectsKey = '';
   function update() {
+    const key = JSON.stringify(ctx.state().projects);
+    if (key === projectsKey) return;
+    projectsKey = key;
     const actions: [string, string][] = [
-      ['build', L('Build', '构建')],
-      ['runClient', L('Run client', '运行客户端')],
-      ['debug', L('Run for debugging', '运行以调试')],
       ['attach', L('Attach debugger', '连接调试器')],
+      ['stop', L('Stop Gradle task', '停止 Gradle 任务')],
       ['sources', L('Generate sources / IDE runs', '生成源码 / IDE 配置')],
       ['clean', L('Clean', '清理构建')],
       ['artifacts', L('Show artifacts', '显示构建产物')],
+      ['directory', L('Open directory', '打开目录')],
+      ['refresh', L('Reload project metadata', '重新读取项目元数据')],
       ['remove', L('Remove from list', '从列表移除')],
     ];
     rows.replaceChildren(
       ...ctx.state().projects.map((project) => {
-        const action = select('projectAction', 'build', actions);
+        const action = select('projectAction', 'attach', actions);
         action.setAttribute(
           'aria-label',
           L(`Action for ${project.name}`, `${project.name} 的操作`),
         );
         return h(
           'article',
-          { class: 'management-row' },
+          { class: 'management-row project-row' },
           h(
             'div',
             { class: 'row-body' },
@@ -213,6 +218,7 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
               `${project.minecraft} · ${project.loader} · ${project.packageName}`,
             ),
             h('div', { class: 'path-value muted' }, project.directory),
+            projectSettings(project, ctx),
           ),
           h(
             'div',
@@ -221,6 +227,17 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
               L('Open', '打开'),
               () => ctx.request('launcher.projectAction', { id: project.id, action: 'open' }),
               'secondary',
+            ),
+            ...(['build', 'runClient', 'debug'] as const).map((action) =>
+              ctx.button(
+                action === 'build'
+                  ? L('Build', '构建')
+                  : action === 'runClient'
+                    ? L('Run client', '运行客户端')
+                    : L('Run for debugging', '运行以调试'),
+                () => ctx.request('launcher.projectAction', { id: project.id, action }),
+                'secondary',
+              ),
             ),
             action,
             ctx.button(

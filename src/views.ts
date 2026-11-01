@@ -10,6 +10,8 @@ import { memorySettings } from './memory';
 import type { ExtensionUpdates } from './extension-updates';
 import { Servers } from './servers';
 import type { ServerProfile } from './models';
+import { serverEngines } from './server-catalog';
+import { serverTarget } from './server-settings';
 
 export type ItemValue = Instance | Account | Project | Content | JavaRuntime | Job | ServerProfile;
 export class Item extends vscode.TreeItem {
@@ -97,9 +99,18 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             'symbol-method',
             'manageJava',
           ),
-          new Item(t('Tasks', '任务'), 'action', undefined, 'tasklist', 'manageTasks'),
-          new Item(t('Logs', '日志'), 'action', undefined, 'output', 'output'),
-          ...(config('terracotta.enabled', false)
+          new Item(
+            t('Tasks', '任务'),
+            'action',
+            undefined,
+            'tasklist',
+            'manageTasks',
+            this.jobs.items.some((job) => job.status === 'running')
+              ? String(this.jobs.items.filter((job) => job.status === 'running').length)
+              : undefined,
+          ),
+          new Item(t('Output', '输出'), 'action', undefined, 'output', 'output'),
+          ...(state.mode === 'launcher' && config('terracotta.enabled', false)
             ? [
                 new Item(
                   t('Terracotta (Beta)', '陶瓦联机（Beta）'),
@@ -127,7 +138,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             'key',
             'proxyCredentials',
           ),
-          ...(config('curseforge.enabled', false)
+          ...(state.mode === 'launcher' && config('curseforge.enabled', false)
             ? [
                 new Item(
                   t('CurseForge API key', 'CurseForge API 密钥'),
@@ -317,6 +328,41 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       'extensions',
       'browse',
     );
+    if (state.mode === 'server') {
+      const server = this.servers?.selected;
+      if (!server)
+        return [
+          new Item(
+            t('Manage servers', '管理服务端'),
+            'action',
+            undefined,
+            'server',
+            'manageServers',
+          ),
+        ];
+      const kind = serverEngines.find((entry) => entry.id === server.engine)?.content;
+      if (!kind)
+        return [
+          new Item(
+            t('This server does not load mods or plugins.', '此服务端不加载模组或插件。'),
+            'information',
+            undefined,
+            'info',
+          ),
+        ];
+      const counts = await this.content.list(serverTarget(server), kind);
+      return [
+        new Item(
+          kind === 'plugin' ? t('Plugins', '插件') : t('Mods', '模组'),
+          kind,
+          undefined,
+          'extensions',
+          'installed',
+          String(counts.length),
+        ),
+        browse,
+      ];
+    }
     if (!instance) return [browse];
     const counts = await this.content.list(instance);
     return [

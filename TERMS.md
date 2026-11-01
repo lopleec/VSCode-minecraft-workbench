@@ -2,7 +2,7 @@
 
 ## English
 
-Notice version: 2026-10-29.1
+Notice version: 2026-11-01.1
 
 Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
 
@@ -38,13 +38,17 @@ Server software and plugins run with your local permissions. Server operators ar
 
 The software is provided as-is, with the warranty and liability terms stated in MIT, to the extent permitted by applicable law. These notices do not waive liability that cannot lawfully be excluded, remove applicable consumer rights, or restrict permissions granted by MIT.
 
+### Servers and mod development
+
+Hosting or using a Minecraft server is subject to the Minecraft EULA and applicable Usage Guidelines. Server software, loaders, mods, plugins, JDKs, Gradle and project templates retain their own licenses. Importing a server does not confirm its EULA on your behalf; the first start requires confirmation in the extension. Do not redistribute Minecraft binaries or third-party content without the required permission.
+
 Minecraft use is governed by the official EULA linked below. The links provide the current official text; this notice does not replace it. The recorded version identifies this extension notice, not a Mojang EULA revision.
 
-[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)
+[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)
 
 ## 简体中文
 
-提示版本: 2026-10-29.1
+提示版本: 2026-11-01.1
 
 本软件并非 Minecraft 官方产品，未经 Mojang 或 Microsoft 批准，与其无关联。
 
@@ -80,6 +84,10 @@ Minecraft、相关商标和游戏资源归各自权利人所有。插件不授�
 
 软件按原样提供，在适用法律允许范围内采用 MIT 中的担保与责任条款。本文不免除依法不得排除的责任，不剥夺适用的消费者权利，也不限制 MIT 授予的权限。
 
+### 开服与模组开发
+
+运行或使用 Minecraft 服务端须遵守 Minecraft EULA 与适用的使用指南。服务端软件、加载器、模组、插件、JDK、Gradle 和项目模板分别适用各自许可。导入服务端不会代为确认 EULA，首次启动需在插件中确认；未经所需授权，请勿再分发 Minecraft 二进制或第三方内容。
+
 Minecraft 的使用以链接中的官方 EULA 全文为准，本文不替代官方条款。记录的版本号代表本插件提示版本，并非 Mojang EULA 的修订版本。
 
-[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)
+[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)

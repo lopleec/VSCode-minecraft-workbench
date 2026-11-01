@@ -14,6 +14,8 @@ export type ServerEngine =
   | 'paper'
   | 'purpur'
   | 'folia'
+  | 'spigot'
+  | 'bukkit'
   | 'fabric'
   | 'quilt'
   | 'forge'
@@ -37,6 +39,8 @@ export interface ServerProfile {
   launchArgs?: string[];
   installed?: boolean;
   eulaAccepted?: boolean;
+  eulaAcceptedAt?: string;
+  imported?: boolean;
   createdAt: string;
   lastStarted?: string;
 }
@@ -100,6 +104,9 @@ export interface Project {
   modId: string;
   buildJava?: number;
   buildJavaKey?: string;
+  java?: string;
+  gradleArgs?: string[];
+  debugPort?: number;
 }
 export interface Content {
   file: string;

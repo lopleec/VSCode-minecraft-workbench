@@ -16,7 +16,11 @@ for (const name of [
   assert.ok(entries.includes(name), `Missing ${name}`);
 assert.ok(bytes <= 1024 ** 2, `VSIX exceeds 1 MiB: ${bytes} bytes`);
 assert.ok(
-  !entries.some((name) => /\.map$|^extension\/(?:docs\/images|test|node_modules)\//.test(name)),
+  !entries.some((name) =>
+    /\.map$|^extension\/(?:docs\/images|src|test|tests|scripts|fixtures|coverage|output|\.playwright-cli|node_modules)\//.test(
+      name,
+    ),
+  ),
   'Unexpected development or documentation assets',
 );
 const readme = zip.readAsText('extension/readme.md');
@@ -33,6 +37,10 @@ for (const name of ['extension/dist/extension.js', 'extension/dist/workbench.js'
   assert.ok(
     !zip.readAsText(name).includes('sourceMappingURL='),
     'Production bundle references a missing source map',
+  );
+  assert.ok(
+    !zip.readAsText(name).includes('https://fixture.test/'),
+    'Temporary UI fixture leaked into the package',
   );
 }
 console.log(`${file}: ${(bytes / 1024).toFixed(0)} KiB; package checks passed.`);

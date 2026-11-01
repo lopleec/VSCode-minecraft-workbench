@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ChildProcess } from 'node:child_process';
-import { Version, launch } from '@xmcl/core';
+import { launch } from '@xmcl/core';
 import { Store } from './store';
 import { Network, HttpError } from './network';
 import { Java, preferredJava } from './java';
@@ -20,6 +20,8 @@ import { waitFor } from './abort';
 import { launchPrecheck } from './launch-prechecks';
 import { installRuntime } from './runtime-install';
 import { RuntimeQueue } from './runtime-queue';
+import { resolveGameVersion } from './version-profile';
+import { isRuntimeReady } from './runtime-status';
 
 export class Minecraft {
   readonly running = new Map<string, ChildProcess>();
@@ -124,19 +126,26 @@ export class Minecraft {
           const signal = AbortSignal.any([jobSignal, controller.signal]);
           report(t('Preparing shared game files', '准备共享游戏文件'));
           await this.runtimeQueue.run(runtimeDirectory(instance), signal, async () => {
-            const result = await installRuntime(
-              instance,
-              {
-                net: this.net,
-                java: this.java,
-                output: this.jobs.output,
-                manifest: (signal) => this.manifest(false, signal),
-                loaders: (loader, version, signal) => this.loaders(loader, version, signal),
-              },
-              signal,
-              report,
-            );
-            await this.repairPack?.(instance, signal, report);
+            const ready =
+              !instance.installed &&
+              instance.preserveVersion &&
+              (await isRuntimeReady(instance, signal));
+            const result = ready
+              ? { versionId: instance.versionId!, loaderVersion: instance.loaderVersion }
+              : await installRuntime(
+                  instance,
+                  {
+                    net: this.net,
+                    java: this.java,
+                    output: this.jobs.output,
+                    instances: this.store.state.instances,
+                    manifest: (signal) => this.manifest(false, signal),
+                    loaders: (loader, version, signal) => this.loaders(loader, version, signal),
+                  },
+                  signal,
+                  report,
+                );
+            if (!ready) await this.repairPack?.(instance, signal, report);
             signal.throwIfAborted();
             Object.assign(instance, result, { installed: true });
             await this.portableProfile(instance);
@@ -169,8 +178,12 @@ export class Minecraft {
           const phase = (message: string) => {
             signal.throwIfAborted();
             report(message);
-            this.jobs.output.info(message);
           };
+          this.jobs.output.info(
+            redact(
+              `[${instance.name}] Minecraft ${instance.minecraft}, ${instance.loader} ${instance.loaderVersion || ''}\nGame: ${instance.directory}\nRuntime: ${runtimeDirectory(instance)}`,
+            ),
+          );
           const account = this.store.state.accounts.find(
             (a) => a.id === (instance.accountId || this.store.state.selectedAccount),
           );
@@ -178,7 +191,11 @@ export class Minecraft {
             throw new Error(t('Add and select an account first.', '请先添加并选择账户。'));
           const root = runtimeDirectory(instance);
           await prepareGameLanguage(instance);
-          const version = await Version.parse(root, instance.versionId || instance.minecraft);
+          const version = await resolveGameVersion(
+            root,
+            instance.versionId || instance.minecraft,
+            signal,
+          );
           phase(t('Preparing Java', '准备 Java'));
           const java = await this.java.ensure(
             version.javaVersion?.majorVersion || 8,
@@ -188,8 +205,8 @@ export class Minecraft {
           );
           this.jobs.output.info(
             t(
-              `Using Java ${java.major} (${java.version})`,
-              `使用 Java ${java.major}（${java.version}）`,
+              `[${instance.name}] Using Java ${java.major} (${java.version}): ${java.path}`,
+              `[${instance.name}] 使用 Java ${java.major}（${java.version}）：${java.path}`,
             ),
           );
           phase(t('Preparing account', '准备账户'));
@@ -206,6 +223,9 @@ export class Minecraft {
               '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:5005',
             );
           const { minMemory, maxMemory } = memorySettings(instance);
+          this.jobs.output.info(
+            `[${instance.name}] JVM: ${minMemory}–${maxMemory} MB, GC: ${gc}, main: ${version.mainClass}, account: ${account.kind}`,
+          );
           if (minMemory > maxMemory)
             throw new Error(
               t('Minimum memory exceeds maximum memory.', '最小内存不能大于最大内存。'),
@@ -255,6 +275,12 @@ export class Minecraft {
             extraExecOption: { windowsHide: true, signal },
           });
           this.running.set(instance.id, game);
+          this.jobs.output.info(
+            t(
+              `[${instance.name}] Game process started (PID ${game.pid}).`,
+              `[${instance.name}] 游戏进程已启动（PID ${game.pid}）。`,
+            ),
+          );
           const startedAt = Date.now();
           instance.lastPlayed = new Date(startedAt).toISOString();
           this.changed();
@@ -263,7 +289,7 @@ export class Minecraft {
             let pending = '';
             const print = (line: string) =>
               this.jobs.output.appendLine(
-                redact(token === '0' ? line : line.split(token).join('[redacted]')),
+                `[${instance.name}] ${redact(token === '0' ? line : line.split(token).join('[redacted]'))}`,
               );
             stream.setEncoding('utf8');
             stream.on('data', (data: string) => {

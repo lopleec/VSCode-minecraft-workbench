@@ -115,13 +115,6 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
                         ),
                       )
                       .replace(
-                        'This profile uses launcher-specific patches; create a copy to rebuild its loader.',
-                        L(
-                          'This profile uses launcher-specific patches; create a copy to rebuild its loader.',
-                          '此配置包含原启动器专有补丁，请选择复制导入以重建加载器。',
-                        ),
-                      )
-                      .replace(
                         'The configured Java path is unavailable; global or automatic Java selection will be used.',
                         L(
                           'The configured Java path is unavailable; global or automatic Java selection will be used.',

@@ -178,9 +178,15 @@ test('empty search explicitly uses downloads and full project versions have no c
 
 test('failed modpack registration rolls back the selected instance and removes only the new directory', async () => {
   const vscode = require('vscode');
+  const previousWindow = vscode.window;
+  const previousConfiguration = vscode.workspace.getConfiguration;
   vscode.window = { showInputBox: async () => 'Pack' };
   const { UI } = await import('../src/ui');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mcw-pack-registration-'));
+  vscode.workspace.getConfiguration = () => ({
+    get: (key: string, fallback: unknown) =>
+      key === 'gameDirectory' ? path.join(root, 'game') : fallback,
+  });
   const archive = path.join(root, 'test.mrpack');
   const zip = new AdmZip();
   zip.addFile('modrinth.index.json', Buffer.from('{}'));
@@ -231,6 +237,8 @@ test('failed modpack registration rolls back the selected instance and removes o
       false,
     );
   } finally {
+    vscode.window = previousWindow;
+    vscode.workspace.getConfiguration = previousConfiguration;
     store.dispose();
     await fs.rm(root, { recursive: true, force: true });
   }

@@ -24,6 +24,7 @@ import {
   managedPackPath,
   trackPackFiles,
   setPackFileEnabled,
+  validatePackPath,
 } from './pack-files';
 import {
   FabricModule,
@@ -40,6 +41,8 @@ import {
   compatible,
   contentLoaders,
   contentFile,
+  orderContentVersions,
+  BatchInstallPlan,
 } from './modrinth';
 
 const api = 'https://api.modrinth.com/v2';
@@ -62,20 +65,39 @@ export interface SearchHit {
 }
 export class ContentService {
   private readonly locks = new Set<string>();
-  private readonly cache = new Map<string, { expires: number; value: Promise<unknown> }>();
-  private cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  private readonly cache = new Map<
+    string,
+    { expires: number; value: Promise<unknown>; ready: boolean; isolated: boolean }
+  >();
+  private cached<T>(key: string, load: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    signal?.throwIfAborted();
     const old = this.cache.get(key);
-    if (old && old.expires > Date.now()) return old.value as Promise<T>;
-    const value = load().catch((error) => {
-      this.cache.delete(key);
-      throw error;
-    });
-    this.cache.set(key, { expires: Date.now() + 300000, value });
-    return value;
+    if (old && old.expires > Date.now() && (old.ready || (!signal && !old.isolated)))
+      return old.value as Promise<T>;
+    const entry = {
+      expires: Date.now() + 300000,
+      value: Promise.resolve<unknown>(undefined),
+      ready: false,
+      isolated: !!signal,
+    };
+    entry.value = load().then(
+      (value) => {
+        entry.ready = true;
+        return value;
+      },
+      (error) => {
+        if (this.cache.get(key) === entry) this.cache.delete(key);
+        throw error;
+      },
+    );
+    this.cache.set(key, entry);
+    return entry.value as Promise<T>;
   }
-  project(id: string): Promise<ModProject> {
-    return this.cached(`project:${id}`, () =>
-      this.net.json<ModProject>(`${api}/project/${encodeURIComponent(id)}`),
+  project(id: string, signal?: AbortSignal): Promise<ModProject> {
+    return this.cached(
+      `project:${id}`,
+      () => this.net.json<ModProject>(`${api}/project/${encodeURIComponent(id)}`, { signal }),
+      signal,
     );
   }
   async projects(ids: string[]): Promise<ModProject[]> {
@@ -92,6 +114,8 @@ export class ContentService {
           this.cache.set(`project:${project.id}`, {
             expires: Date.now() + 300000,
             value: Promise.resolve(project),
+            ready: true,
+            isolated: false,
           });
           result.push(project);
         }
@@ -101,9 +125,11 @@ export class ContentService {
     }
     return result;
   }
-  version(id: string): Promise<ModVersion> {
-    return this.cached(`version:${id}`, () =>
-      this.net.json<ModVersion>(`${api}/version/${encodeURIComponent(id)}`),
+  version(id: string, signal?: AbortSignal): Promise<ModVersion> {
+    return this.cached(
+      `version:${id}`,
+      () => this.net.json<ModVersion>(`${api}/version/${encodeURIComponent(id)}`, { signal }),
+      signal,
     );
   }
   constructor(
@@ -123,16 +149,20 @@ export class ContentService {
   private async metadata(version: ModVersion, signal?: AbortSignal): Promise<FabricModule[]> {
     const target = this.jarCache(version);
     if (!target) return [];
-    return this.cached(`metadata:${version.id}`, async () => {
-      const file = contentFile(version);
-      await this.net.download(file.url, target, {
-        signal,
-        hash: file.hashes.sha1,
-        size: file.size,
-        kind: 'modrinth',
-      });
-      return readFabricMetadata(target);
-    });
+    return this.cached(
+      `metadata:${version.id}`,
+      async () => {
+        const file = contentFile(version);
+        await this.net.download(file.url, target, {
+          signal,
+          hash: file.hashes.sha1,
+          size: file.size,
+          kind: 'modrinth',
+        });
+        return readFabricMetadata(target);
+      },
+      signal,
+    );
   }
   async downloadPack(
     file: { url: string; hashes: { sha1: string }; size: number },
@@ -195,7 +225,12 @@ export class ContentService {
       signal: options.signal,
     });
   }
-  async versions(project: string, instance?: ContentTarget, kind: ContentKind | 'modpack' = 'mod') {
+  async versions(
+    project: string,
+    instance?: ContentTarget,
+    kind: ContentKind | 'modpack' = 'mod',
+    signal?: AbortSignal,
+  ) {
     const params = new URLSearchParams();
     if (instance) {
       params.set('game_versions', JSON.stringify([instance.minecraft]));
@@ -203,10 +238,14 @@ export class ContentService {
         params.set('loaders', JSON.stringify(contentLoaders(instance, kind)));
     }
     const key = `versions:${project}:${params}`;
-    return this.cached(key, () =>
-      this.net.json<ModVersion[]>(
-        `${api}/project/${encodeURIComponent(project)}/version?${params}`,
-      ),
+    return this.cached(
+      key,
+      () =>
+        this.net.json<ModVersion[]>(
+          `${api}/project/${encodeURIComponent(project)}/version?${params}`,
+          { signal },
+        ),
+      signal,
     );
   }
   async plan(
@@ -215,8 +254,10 @@ export class ContentService {
     kind: ContentKind,
     includeOptional = false,
     signal?: AbortSignal,
+    additional: ModVersion[] = [],
   ): Promise<InstallPlan> {
     const installed = await this.list(instance);
+    const roots = new Map([version, ...additional].map((v) => [v.project_id, v]));
     const versions = new Map<string, ModVersion>();
     const required = new Set<string>();
     const entryKinds = new Map<string, ContentKind>();
@@ -227,7 +268,7 @@ export class ContentService {
     const useMetadata = !!this.metadataDirectory && ['fabric', 'quilt'].includes(instance.loader);
     if (useMetadata)
       for (const item of installed.filter(
-        (i) => i.enabled && i.kind === 'mod' && i.projectId !== version.project_id,
+        (i) => i.enabled && i.kind === 'mod' && !roots.has(i.projectId || ''),
       )) {
         try {
           existingMetadata.set(
@@ -258,22 +299,25 @@ export class ContentService {
       explicit: string | undefined,
       targetKind: ContentKind,
     ): Promise<ModVersion | undefined> => {
-      if (explicit) return this.version(explicit);
+      if (explicit) return this.version(explicit, signal);
+      if (roots.has(projectId)) return roots.get(projectId);
       if (versions.has(projectId)) return versions.get(projectId);
       const existing = installed.find((i) => i.projectId === projectId);
-      const previous = existing?.versionId ? await this.version(existing.versionId) : undefined;
+      const previous = existing?.versionId
+        ? await this.version(existing.versionId, signal)
+        : undefined;
       if (
         previous &&
         compatible(previous, instance, targetKind) &&
         (!useMetadata || satisfiesConstraints(await this.metadata(previous, signal)))
       )
         return previous;
-      const candidates = await this.versions(projectId, instance, targetKind);
+      const candidates = await this.versions(projectId, instance, targetKind, signal);
       if (!useMetadata)
         return (
           candidates.find((v) => !v.version_type || v.version_type === 'release') || candidates[0]
         );
-      const project = await this.project(projectId);
+      const project = await this.project(projectId, signal);
       const predicates = modules().flatMap((owner) =>
         owner.depends?.[project.slug] ? [owner.depends[project.slug]] : [],
       );
@@ -308,7 +352,7 @@ export class ContentService {
       if (previous) return;
       if (
         instance.side === 'server' &&
-        (await this.project(current.project_id)).server_side === 'unsupported'
+        (await this.project(current.project_id, signal)).server_side === 'unsupported'
       )
         conflicts.add(
           `${current.name}: ${t('Client-only content cannot be installed on a server.', '仅客户端内容不能安装到服务端。')}`,
@@ -331,12 +375,12 @@ export class ContentService {
           continue;
         let dependencyKind = currentKind;
         if (currentKind !== 'mod' && dependency.project_id) {
-          const project = await this.project(dependency.project_id);
+          const project = await this.project(dependency.project_id, signal);
           if (project.project_type !== 'modpack')
             dependencyKind = currentKind === 'plugin' ? 'plugin' : project.project_type;
         }
         const next = dependency.version_id
-          ? await this.version(dependency.version_id)
+          ? await this.version(dependency.version_id, signal)
           : dependency.project_id
             ? await dependencyVersion(dependency.project_id, undefined, dependencyKind)
             : undefined;
@@ -367,12 +411,15 @@ export class ContentService {
               continue;
             let project: ModProject | undefined;
             try {
-              project = await this.project(dependencyId);
+              project = await this.project(dependencyId, signal);
             } catch {
+              signal?.throwIfAborted();
               if (dependencyId.startsWith('fabric-')) {
                 try {
-                  project = await this.project('fabric-api');
-                } catch {}
+                  project = await this.project('fabric-api', signal);
+                } catch {
+                  signal?.throwIfAborted();
+                }
               }
             }
             const next = project
@@ -388,7 +435,7 @@ export class ContentService {
           }
         }
     };
-    await visit(version, false, kind);
+    for (const root of roots.values()) await visit(root, false, kind);
     if (useMetadata) {
       const registry = new Map<string, string>();
       for (const module of modules())
@@ -465,7 +512,7 @@ export class ContentService {
     for (const item of installed.filter(
       (i) => i.enabled && i.versionId && !versions.has(i.projectId || ''),
     ))
-      inspect(await this.version(item.versionId!));
+      inspect(await this.version(item.versionId!, signal));
     return {
       entries: [...versions.values()].map((current) => {
         const old = installed.find(
@@ -544,11 +591,68 @@ export class ContentService {
     report: (text: string) => void,
     options: ContentInstallOptions = {},
   ) {
-    const installed = await this.list(instance);
     const resolved = await this.plan(instance, version, kind, options.includeOptional, signal);
+    await this.applyPlan(instance, resolved, signal, report, version.id, options.filename);
+  }
+  async planBatch(
+    instance: ContentTarget,
+    projects: string[],
+    signal?: AbortSignal,
+  ): Promise<BatchInstallPlan> {
+    if (
+      !Array.isArray(projects) ||
+      !projects.length ||
+      projects.length > 100 ||
+      projects.some((id) => typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,150}$/.test(id))
+    )
+      throw new Error(t('Select between 1 and 100 mods.', '请选择 1 至 100 个模组。'));
+    const versions: ModVersion[] = [];
+    const unavailable: BatchInstallPlan['unavailable'] = [];
+    for (const id of new Set(projects)) {
+      signal?.throwIfAborted();
+      const project = await this.project(id, signal);
+      if (project.project_type !== 'mod') throw new Error('Only mods can be installed in bulk.');
+      const candidates = (await this.versions(id, instance, 'mod', signal)).filter((v) =>
+        compatible(v, instance, 'mod'),
+      );
+      const ordered = orderContentVersions(candidates, instance, 'mod');
+      const selected = ordered.versions[0];
+      if (selected) versions.push(selected);
+      else unavailable.push({ projectId: id, name: project.title });
+    }
+    signal?.throwIfAborted();
+    const plan = versions.length
+      ? await this.plan(instance, versions[0], 'mod', false, signal, versions.slice(1))
+      : { entries: [], optional: [], conflicts: [] };
+    return { versions, unavailable, plan };
+  }
+  async installBatch(
+    instance: ContentTarget,
+    projects: string[],
+    signal: AbortSignal,
+    report: (text: string) => void,
+  ) {
+    const resolved = await this.planBatch(instance, projects, signal);
+    if (resolved.unavailable.length)
+      throw new Error(
+        t('No compatible version', '没有兼容版本') +
+          ': ' +
+          resolved.unavailable.map((item) => item.name).join(', '),
+      );
+    await this.applyPlan(instance, resolved.plan, signal, report);
+  }
+  private async applyPlan(
+    instance: ContentTarget,
+    resolved: InstallPlan,
+    signal: AbortSignal,
+    report: (text: string) => void,
+    reinstall?: string,
+    selectedFilename?: string,
+  ) {
+    const installed = await this.list(instance);
     if (resolved.conflicts.length) throw new Error(resolved.conflicts.join('\n'));
     const plan = resolved.entries.filter(
-      (entry) => entry.action !== 'installed' || entry.version.id === version.id,
+      (entry) => entry.action !== 'installed' || entry.version.id === reinstall,
     );
     const stage = path.join(instance.directory, '.workbench', 'staging', randomUUID());
     await rejectSymlinkParents(instance.directory, stage);
@@ -562,7 +666,7 @@ export class ContentService {
     try {
       for (const item of plan) {
         const current = item.version;
-        const file = contentFile(current, current.id === version.id ? options.filename : undefined);
+        const file = contentFile(current, current.id === reinstall ? selectedFilename : undefined);
         if (!file || !/\.(jar|zip)$/i.test(filename(file.filename)))
           throw new Error('Invalid content file');
         report(current.name);
@@ -665,7 +769,7 @@ export class ContentService {
           prepared.map(({ change, file }) => {
             const remote = contentFile(
               change.current,
-              change.current.id === version.id ? options.filename : undefined,
+              change.current.id === reinstall ? selectedFilename : undefined,
             );
             return {
               path: `${contentFolders[change.kind]}/${file}`,
@@ -882,8 +986,7 @@ export class ContentService {
     for (const file of index.files) {
       signal.throwIfAborted();
       if (file.env?.client === 'unsupported' || file.env?.client === 'optional') continue;
-      if (path.posix.normalize(file.path).startsWith('.') || file.path.startsWith('/'))
-        throw new Error('Reserved modpack path');
+      validatePackPath(file.path);
       const destination = within(instance.directory, file.path);
       await rejectSymlinkParents(instance.directory, destination);
       if (!file.hashes.sha1 || !file.downloads.length)
@@ -919,8 +1022,8 @@ export class ContentService {
     }
     for (const prefix of ['overrides/', 'client-overrides/']) {
       for (const file of zip.getEntries().filter((e) => e.entryName.startsWith(prefix))) {
-        if (path.posix.normalize(file.entryName.slice(prefix.length)).startsWith('.'))
-          throw new Error('Reserved modpack override path');
+        if (file.isDirectory && file.entryName === prefix) continue;
+        validatePackPath(file.entryName.slice(prefix.length), true);
       }
       await extractZip(archive, instance.directory, 0, prefix, signal);
       for (const entry of zip

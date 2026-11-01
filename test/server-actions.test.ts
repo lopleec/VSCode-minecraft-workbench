@@ -38,7 +38,7 @@ test('server upgrades re-evaluate Java requirements and failed version saves res
       _label: string,
       work: (signal: AbortSignal, report: () => void) => Promise<unknown>,
     ) => work(new AbortController().signal, () => {}),
-    output: { error: () => {} },
+    output: { info: () => {}, error: () => {} },
   };
   const service = new Servers(
     store,

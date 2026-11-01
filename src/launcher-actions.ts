@@ -10,7 +10,7 @@ import { config, t, trusted } from './config';
 import { inspectJava } from './java';
 import { Template } from './developer';
 import { describeError } from './errors';
-import { reserveNamedDirectory } from './game-paths';
+import { moveInstance } from './instance-move';
 
 export class LauncherActions {
   constructor(
@@ -53,6 +53,14 @@ export class LauncherActions {
           canSelectMany: false,
         });
         return folders?.[0]?.fsPath;
+      }
+      case 'launcher.pickJava': {
+        const files = await vscode.window.showOpenDialog({
+          canSelectMany: false,
+          openLabel: t('Select Java executable', '选择 Java 可执行文件'),
+        });
+        if (!files?.[0]) return;
+        return (await inspectJava(files[0].fsPath)).path;
       }
       case 'launcher.pickInstanceSource': {
         const source = await vscode.window.showOpenDialog({
@@ -98,34 +106,26 @@ export class LauncherActions {
           title: t('Move instance', '移动实例'),
         });
         if (!folders?.[0]) return false;
-        const source = value.containerDirectory || value.directory;
         const parent = folders[0].fsPath;
-        if (path.resolve(parent) === path.dirname(source)) return false;
-        if (path.resolve(parent) === source || path.resolve(parent).startsWith(source + path.sep))
-          throw new Error('Cannot move an instance inside itself.');
         await trusted();
         return this.ui.content.exclusive(value, async () => {
           this.minecraft.assertIdle(value);
-          const target = await reserveNamedDirectory(parent, value.name);
-          const previous = {
-            directory: value.directory,
-            containerDirectory: value.containerDirectory,
-          };
-          await fs.rmdir(target);
-          await fs.rename(source, target);
-          value.directory = value.containerDirectory
-            ? path.join(target, path.relative(source, value.directory))
-            : target;
-          if (value.containerDirectory) value.containerDirectory = target;
-          try {
-            await this.store.save();
-          } catch (error) {
-            Object.assign(value, previous);
-            await fs.rename(target, source);
-            throw error;
-          }
-          return true;
+          return this.ui.jobs.run(t('Move instance', '移动实例'), (signal, report) =>
+            moveInstance(
+              value,
+              parent,
+              () => this.store.save(),
+              signal,
+              report,
+              this.store.state.instances,
+            ),
+          );
         });
+      }
+      case 'launcher.openWorldDirectory': {
+        const directory = path.join(selected().directory, 'saves');
+        await fs.mkdir(directory, { recursive: true });
+        return vscode.env.openExternal(vscode.Uri.file(directory));
       }
       case 'launcher.saveSetup': {
         const save = async () => {
@@ -327,20 +327,41 @@ export class LauncherActions {
           await this.ui.developer.open(project);
         return project;
       }
+      case 'launcher.importProject': {
+        const project = await this.ui.developer.import(text('directory'));
+        if (params.open === true) await this.ui.developer.open(project);
+        return project;
+      }
+      case 'launcher.projectStatus': {
+        const project = this.store.state.projects.find((p) => p.id === text('id', 150));
+        if (!project) throw new Error('Project not found');
+        return this.ui.developer.status(project);
+      }
+      case 'launcher.projectConfigure': {
+        const project = this.store.state.projects.find((p) => p.id === text('id', 150));
+        if (!project) throw new Error('Project not found');
+        if (!params.value || typeof params.value !== 'object' || Array.isArray(params.value))
+          throw new Error('Invalid project settings');
+        await this.ui.developer.configure(project, params.value as Record<string, unknown>);
+        return true;
+      }
       case 'launcher.projectAction': {
         const project = this.store.state.projects.find((p) => p.id === text('id', 150));
         if (!project) throw new Error('Project not found');
         const action = text('action');
         if (action === 'open') await this.ui.developer.open(project);
         else if (action === 'attach') await this.ui.developer.attach(project);
+        else if (action === 'stop') this.ui.developer.stop(project);
+        else if (action === 'refresh') await this.ui.developer.import(project.directory);
+        else if (action === 'directory')
+          await vscode.env.openExternal(vscode.Uri.file(project.directory));
         else if (action === 'artifacts')
           await vscode.commands.executeCommand(
             'revealFileInOS',
             vscode.Uri.file(path.join(project.directory, 'build', 'libs')),
           );
         else if (action === 'remove') {
-          this.store.state.projects = this.store.state.projects.filter((p) => p.id !== project.id);
-          await this.store.save();
+          await this.ui.developer.remove(project);
         } else if (['build', 'runClient', 'debug', 'sources', 'clean'].includes(action))
           await this.ui.developer.run(
             project,

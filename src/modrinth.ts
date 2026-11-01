@@ -37,6 +37,11 @@ export interface InstallPlan {
   optional: string[];
   conflicts: string[];
 }
+export interface BatchInstallPlan {
+  versions: ModVersion[];
+  unavailable: { projectId: string; name: string }[];
+  plan: InstallPlan;
+}
 export interface ContentInstallOptions {
   includeOptional?: boolean;
   filename?: string;
@@ -49,6 +54,8 @@ export function contentLoaders(target: ContentTarget, kind: ProjectKind): string
           paper: ['paper', 'spigot', 'bukkit'],
           purpur: ['purpur', 'paper', 'spigot', 'bukkit'],
           folia: ['folia'],
+          spigot: ['spigot', 'bukkit'],
+          bukkit: ['bukkit'],
           velocity: ['velocity'],
         } as Record<string, string[]>
       )[target.loader] || []
@@ -66,6 +73,25 @@ export function compatible(
     (!['mod', 'plugin'].includes(kind) ||
       contentLoaders(instance, kind).some((l) => version.loaders.includes(l)))
   );
+}
+export function orderContentVersions(
+  versions: ModVersion[],
+  target: ContentTarget | undefined,
+  kind: ProjectKind,
+) {
+  const ordered = [...versions].sort(
+    (a, b) => (Date.parse(b.date_published || '') || 0) - (Date.parse(a.date_published || '') || 0),
+  );
+  const candidates =
+    target && kind !== 'modpack' ? ordered.filter((v) => compatible(v, target, kind)) : [];
+  const recommended =
+    candidates.find((v) => !v.version_type || v.version_type === 'release') || candidates[0];
+  return {
+    versions: recommended
+      ? [recommended, ...ordered.filter((v) => v.id !== recommended.id)]
+      : ordered,
+    recommendedId: recommended?.id,
+  };
 }
 export function contentFile(version: ModVersion, name?: string) {
   const file = name

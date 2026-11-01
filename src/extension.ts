@@ -18,23 +18,29 @@ import { Consent } from './consent';
 import { Servers } from './servers';
 import { WorkbenchMcp } from './mcp';
 import { ServerActions } from './server-actions';
-import { runtimeDirectory } from './game-paths';
+import { runtimeDirectory, minecraftDirectory } from './game-paths';
 import { Terracotta } from './terracotta';
 import { ExtensionUpdates } from './extension-updates';
 import { CurseForge } from './curseforge';
+import { showOutput } from './output';
+import { extensionVersion } from './build-info';
+import { serverTarget } from './server-settings';
 
 let activeServers: Servers | undefined;
 let activeTerracotta: Terracotta | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const output = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
+  output.info(
+    `Minecraft Workbench ${extensionVersion} | VS Code ${vscode.version} | Node ${process.versions.node} | ${process.platform}/${process.arch}`,
+  );
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   context.subscriptions.push(output, status);
-  const views: View[] = [];
+  const views: { section: Section; provider: View; tree: vscode.TreeView<Item> }[] = [];
   let workbench: Workbench | undefined;
   let mcp: WorkbenchMcp | undefined;
   const refresh = () => {
-    for (const view of views) view.refresh();
+    for (const { provider } of views) provider.refresh();
     updateStatus(status, store);
     if (!consent.accepted) {
       status.text = '$(shield) ' + t('Agreements required', '请先确认协议');
@@ -112,6 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
   const network = new Network({
+    log: (level, message) => output[level](message),
     proxy,
     sources: config('sources', {}),
     concurrency: Math.max(1, Math.min(32, config('downloadConcurrency', 6))),
@@ -122,11 +129,16 @@ export async function activate(context: vscode.ExtensionContext) {
       : undefined,
     connectionsPerFile: config('downloadConnectionsPerFile', 4),
     chunkSize: config('downloadChunkSize', 8) * 1024 ** 2,
-    runtimeRoots: () =>
-      store.state.instances.flatMap((instance) => [
-        runtimeDirectory(instance),
-        ...(instance.resourceDirectories || []),
+    runtimeRoots: () => [
+      ...new Set([
+        minecraftDirectory(),
+        ...store.state.servers.map((server) => server.directory),
+        ...store.state.instances.flatMap((instance) => [
+          runtimeDirectory(instance),
+          ...(instance.resourceDirectories || []),
+        ]),
       ]),
+    ],
   });
   network.blockedReason ??= proxyError;
   if (network.blockedReason)
@@ -142,6 +154,19 @@ export async function activate(context: vscode.ExtensionContext) {
     },
   });
   const jobs = new Jobs(refresh, output);
+  context.subscriptions.push(
+    vscode.tasks.onDidStartTask((event) => {
+      if (event.execution.task.definition.type === 'minecraftWorkbench')
+        jobs.taskStarted(event.execution);
+    }),
+    vscode.tasks.onDidStartTaskProcess((event) =>
+      jobs.taskProcessStarted(event.execution, event.processId),
+    ),
+    vscode.tasks.onDidEndTaskProcess((event) => jobs.taskEnded(event.execution, event.exitCode)),
+    vscode.tasks.onDidEndTask((event) => jobs.taskStopped(event.execution)),
+  );
+  for (const execution of vscode.tasks.taskExecutions)
+    if (execution.task.definition.type === 'minecraftWorkbench') jobs.taskStarted(execution, true);
   const java = new Java(store, network);
   const accounts = new Accounts(store, context.secrets, network, () => consent.accepted);
   const curseforge = new CurseForge(network, context.secrets);
@@ -160,7 +185,7 @@ export async function activate(context: vscode.ExtensionContext) {
     refresh,
     (instance, signal, report) => content.repairPack(instance, signal, report),
   );
-  const developer = new Developer(store, network, java);
+  const developer = new Developer(store, network, java, jobs);
   const servers = new Servers(store, java, jobs, network, minecraft, refresh);
   activeServers = servers;
   context.subscriptions.push(servers);
@@ -213,7 +238,6 @@ export async function activate(context: vscode.ExtensionContext) {
     java: ['Java', 'Java'],
     downloads: ['Tasks', '任务'],
   };
-  const treeViews: { section: Section; tree: vscode.TreeView<Item> }[] = [];
   for (const section of Object.keys(titles) as Section[]) {
     const provider = new View(
       section,
@@ -230,8 +254,7 @@ export async function activate(context: vscode.ExtensionContext) {
       showCollapseAll: section === 'instances' || section === 'content',
     });
     tree.title = t(...titles[section]);
-    treeViews.push({ section, tree });
-    views.push(provider);
+    views.push({ section, provider, tree });
     context.subscriptions.push(provider, tree);
   }
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
@@ -246,9 +269,9 @@ export async function activate(context: vscode.ExtensionContext) {
           : store.state.mode === 'server'
             ? 'servers'
             : 'projects',
-        ...(store.state.mode === 'launcher' ? (['content', 'accounts'] as Section[]) : []),
-        'java',
-        'downloads',
+        ...(store.state.mode !== 'developer' ? (['content'] as Section[]) : []),
+        ...(store.state.mode === 'launcher' ? (['accounts'] as Section[]) : []),
+        ...(config('showRuntimeViews', false) ? (['java', 'downloads'] as Section[]) : []),
       ];
       const selected = await vscode.window.showQuickPick(
         sections.map((section) => ({ label: t(...titles[section]), section })),
@@ -264,6 +287,8 @@ export async function activate(context: vscode.ExtensionContext) {
     mcpCopy: () => mcp!.copyConnection(),
     manageServers: () => workbench!.open('servers'),
     createServer: () => workbench!.open('serverCreate'),
+    importServer: () => workbench!.open('serverImport'),
+    reviewServerEula: () => workbench!.open('server'),
     serverActions: async (item) => {
       if (item?.value && 'engine' in item.value) {
         store.state.selectedServer = item.value.id;
@@ -310,8 +335,8 @@ export async function activate(context: vscode.ExtensionContext) {
     installed: (item) =>
       workbench!.open(
         'installed',
-        item && ['mod', 'resourcepack', 'shader'].includes(item.kind)
-          ? (item.kind as 'mod' | 'resourcepack' | 'shader')
+        item && ['mod', 'plugin', 'resourcepack', 'shader'].includes(item.kind)
+          ? (item.kind as 'mod' | 'plugin' | 'resourcepack' | 'shader')
           : 'mod',
       ),
     inspectInstance: async (item) => {
@@ -321,11 +346,52 @@ export async function activate(context: vscode.ExtensionContext) {
     language: () => ui.language(),
     cloneInstance: (item) => ui.cloneInstance(item),
     exportPack: (item) => ui.exportPack(item),
-    importContent: () => ui.importContent(),
+    importContent: async () => {
+      if (store.state.mode !== 'server') return ui.importContent();
+      if (!servers.selected) return workbench!.open('servers');
+      await new ServerActions(servers, content, jobs).handle('server.action', {
+        action: 'importContent',
+      });
+      refresh();
+    },
     importPack: () => ui.importPack(),
     contentActions: (item) => ui.contentActions(item),
-    checkUpdates: () => ui.checkUpdates(),
-    conflicts: () => ui.conflicts(),
+    checkUpdates: async () => {
+      if (store.state.mode !== 'server') return ui.checkUpdates();
+      const server = servers.selected;
+      if (!server) return workbench!.open('servers');
+      const updates = await jobs.run(t('Check content updates', '检查内容更新'), () =>
+        content.updates(serverTarget(server)),
+      );
+      if (!updates.length)
+        return vscode.window.showInformationMessage(t('No updates available.', '暂无可用更新。'));
+      const selected = await vscode.window.showQuickPick(
+        updates.map((update) => ({
+          label: update.item.name,
+          description: update.version.version_number,
+          update,
+        })),
+        { canPickMany: true, title: t('Select updates', '选择更新') },
+      );
+      for (const item of selected || [])
+        await new ServerActions(servers, content, jobs).handle('server.content', {
+          serverId: server.id,
+          action: 'update',
+          file: item.update.item.file,
+          kind: item.update.item.kind,
+        });
+      refresh();
+    },
+    conflicts: async () => {
+      if (store.state.mode !== 'server') return ui.conflicts();
+      if (!servers.selected) return workbench!.open('servers');
+      const warnings = await content.conflicts(serverTarget(servers.selected));
+      const document = await vscode.workspace.openTextDocument({
+        language: 'plaintext',
+        content: warnings.join('\n') || t('No conflicts found.', '未发现冲突。'),
+      });
+      await vscode.window.showTextDocument(document);
+    },
     backups: (item) => ui.backupsMenu(item),
     createProject: () => ui.createProject(),
     importProject: () => ui.importProject(),
@@ -333,8 +399,8 @@ export async function activate(context: vscode.ExtensionContext) {
     jobActions: (item) => ui.jobActions(item),
     refreshManifest: () => ui.refreshManifest(),
     refresh: () => refresh(),
-    settings: () => ui.settings(),
-    output: () => output.show(),
+    settings: () => workbench!.open('settings'),
+    output: () => showOutput(store, jobs, minecraft, servers),
     openStorage: () =>
       vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(store.root)),
     proxyCredentials: async () => {
@@ -411,7 +477,7 @@ export async function activate(context: vscode.ExtensionContext) {
         void terracotta.configurationChanged().catch((error) => output.error(String(error)));
       if (!event.affectsConfiguration('minecraftWorkbench')) return;
       refresh();
-      for (const { section, tree } of treeViews) tree.title = t(...titles[section]);
+      for (const { section, tree } of views) tree.title = t(...titles[section]);
       if (
         [
           'proxy',

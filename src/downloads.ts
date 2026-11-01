@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import { exists, hashFile, readJson, writeJson } from './files';
+import { exists, hashFile, readJson, writeJson, diagnosticUrl } from './files';
 import { Resource, sourceUrl } from './sources';
 import type { NetworkOptions } from './network';
 import { randomUUID } from 'node:crypto';
@@ -102,6 +102,7 @@ export class Downloads {
         ? path.join(this.options.cacheDirectory, algorithm, options.hash)
         : undefined;
     if ((options.hash || options.size) && (await this.valid(destination, options))) {
+      this.options.log?.('debug', `Reuse verified file: ${destination}`);
       if (cache && !(await this.valid(cache, options)))
         await this.seed(destination, cache, options);
       return;
@@ -175,6 +176,7 @@ export class Downloads {
       }
     }
     options.signal?.throwIfAborted();
+    this.options.log?.('debug', `Use download cache: ${destination}`);
     await fs.mkdir(path.dirname(destination), { recursive: true });
     // Copy-on-write when available; instance edits must never modify the shared cache.
     const temporary = `${destination}.${randomUUID()}.copying`;
@@ -247,6 +249,10 @@ export class Downloads {
     for (let attempt = 0; attempt < attempts; attempt++) {
       options.signal?.throwIfAborted();
       const uri = attempt === attempts - 1 ? url : target;
+      this.options.log?.(
+        'debug',
+        `Download ${diagnosticUrl(uri)} -> ${destination} (${attempt + 1}/${attempts})`,
+      );
       try {
         const segmented =
           (this.options.connectionsPerFile ?? 4) > 1 &&
@@ -257,6 +263,10 @@ export class Downloads {
             if (await this.parallel(uri, destination, options)) return;
           } catch (error) {
             if (options.signal?.aborted) throw error;
+            this.options.log?.(
+              'debug',
+              `Segmented download unavailable; using one connection: ${diagnosticUrl(uri)}`,
+            );
           }
         }
         await this.serial(uri, destination, options);
@@ -271,6 +281,10 @@ export class Downloads {
         return;
       } catch (error) {
         if (options.signal?.aborted || attempt === attempts - 1) throw error;
+        this.options.log?.(
+          'warn',
+          `Retry download (${attempt + 1}/${attempts}): ${diagnosticUrl(uri)}`,
+        );
         await delay(300 * (attempt + 1), undefined, { signal: options.signal });
       }
     }

@@ -1,6 +1,8 @@
 import { h } from './dom';
 import { PageContext, field, input, select, blank, busy } from './page-ui';
 import { statusLabel } from './server-ui';
+import { manualServer } from '../server-types';
+import { renderServerAgreements } from './server-agreements';
 
 export function renderServer(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
@@ -8,7 +10,25 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
   if (!server) {
     main.append(
       blank(L('Select a server', '请选择服务端')),
-      ctx.button(L('Servers', '服务端'), () => ctx.navigate('servers'), 'secondary'),
+      h(
+        'div',
+        { class: 'inline-actions' },
+        ctx.button(L('New server', '新建服务端'), () => ctx.navigate('serverCreate'), 'primary'),
+        ctx.button(
+          L('Import server…', '导入服务端…'),
+          () => ctx.navigate('serverImport'),
+          'secondary',
+        ),
+        ...(ctx.state().servers.length
+          ? [
+              ctx.button(
+                L('Choose server', '选择服务端'),
+                () => ctx.navigate('servers'),
+                'secondary',
+              ),
+            ]
+          : []),
+      ),
     );
     return () => {};
   }
@@ -22,7 +42,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
     'aria-label': L('Server pages', '服务端页面'),
   });
   const body = h('div', { class: 'server-body' });
-  let tab = 'console';
+  let tab = server.engine !== 'velocity' && !server.eulaAccepted ? 'agreements' : 'console';
   let updating = false;
   const title = h('h1', {}, server.name);
   const subtitle = h(
@@ -65,6 +85,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
     restart.hidden = state !== 'running';
     stop.className = 'primary';
     start.disabled = updating || state !== 'stopped';
+    if (current && current.engine !== 'velocity' && !current.eulaAccepted) start.disabled = true;
     stop.disabled = updating || !['starting', 'running'].includes(state);
     restart.disabled = updating || state !== 'running';
     for (const node of body.querySelectorAll<HTMLElement>('[data-idle]')) {
@@ -78,6 +99,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         ['console', L('Console', '控制台')],
         ['settings', L('Settings', '设置')],
         ['backups', L('Backups', '备份')],
+        ['agreements', L('Agreements & licenses', '协议与许可')],
       ].map(([key, title]) =>
         ctx.button(
           title,
@@ -92,6 +114,11 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
     body.replaceChildren();
     if (tab === 'console') consoleTab();
     else if (tab === 'settings') settingsTab();
+    else if (tab === 'agreements')
+      renderServerAgreements(body, ctx, ctx.state().servers.find((s) => s.id === id)!, () => {
+        tab = 'console';
+        renderTab();
+      });
     else backupTab();
     update();
   }
@@ -326,7 +353,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
                 ['install', L('Install / repair', '安装 / 修复')],
                 ['version', L('Change version…', '更改版本…')],
                 ['config', L('Open configuration', '打开配置文件')],
-                ...(current.engine === 'custom'
+                ...(manualServer(current.engine)
                   ? [['importJar', L('Import server JAR…', '导入服务端 JAR…')]]
                   : []),
               ].map(([action, label]) => {

@@ -355,6 +355,45 @@ test('invalid manifests, multiple primary loaders and escaping override paths ar
   }
 });
 
+test('local CurseForge overrides accept mod dotfolders but cannot overwrite launcher metadata', async () => {
+  const f = await fixture();
+  try {
+    f.make({ files: [] });
+    const zip = new AdmZip(f.archive);
+    zip.addFile('overrides/', Buffer.alloc(0));
+    zip.addFile('overrides/.connector/', Buffer.alloc(0));
+    zip.addFile('overrides/.connector/cache.json', Buffer.from('{}'));
+    zip.addFile('overrides/config/.modsettings.json', Buffer.from('{}'));
+    zip.writeZip(f.archive);
+    await f.service.importPack(f.archive, f.instance, new AbortController().signal, () => {});
+    assert.equal(
+      await fs.readFile(path.join(f.instance.directory, '.connector', 'cache.json'), 'utf8'),
+      '{}',
+    );
+    assert.equal(
+      await fs.readFile(path.join(f.instance.directory, 'config', '.modsettings.json'), 'utf8'),
+      '{}',
+    );
+    for (const reserved of [
+      '.workbench/pack-files.json',
+      '.WORKBENCH./pack-files.json',
+      '.runtime/versions/custom.json',
+    ]) {
+      const unsafe = new AdmZip(zip.toBuffer());
+      unsafe.addFile('overrides/' + reserved, Buffer.from('{}'));
+      unsafe.writeZip(f.archive);
+      await assert.rejects(
+        f.service.importPack(f.archive, f.instance, new AbortController().signal, () => {}),
+        /Reserved modpack override path/,
+      );
+    }
+    assert.equal(f.state.calls, 0);
+    assert.equal(f.state.secretReads, 0);
+  } finally {
+    await f.close();
+  }
+});
+
 test('managed pack repair respects disabled files and explicit removal', async () => {
   const f = await fixture();
   try {

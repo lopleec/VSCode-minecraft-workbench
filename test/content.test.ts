@@ -148,6 +148,63 @@ test('modpack paths cannot escape an instance and server-only files are skipped'
   }
 });
 
+test('modpack override root directories are accepted and client overrides take precedence', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-pack-roots-'));
+  const instance = { directory: path.join(root, 'instance'), loader: 'vanilla' } as Instance;
+  const service = new ContentService({
+    download: async () => {
+      throw new Error('Unexpected download');
+    },
+  } as unknown as Network);
+  const archive = path.join(root, 'pack.mrpack');
+  const zip = new AdmZip();
+  zip.addFile(
+    'modrinth.index.json',
+    Buffer.from(
+      JSON.stringify({
+        formatVersion: 1,
+        game: 'minecraft',
+        dependencies: { minecraft: '1.21.1' },
+        files: [],
+      }),
+    ),
+  );
+  for (const prefix of ['overrides/', 'client-overrides/', 'server-overrides/']) {
+    zip.addFile(prefix, Buffer.alloc(0));
+    zip.addFile(prefix + 'config/', Buffer.alloc(0));
+    zip.addFile(prefix + 'config/options.txt', Buffer.from(prefix));
+  }
+  zip.addFile('overrides/.connector/config.json', Buffer.from('{}'));
+  zip.addFile('overrides/config/.cache/data.json', Buffer.from('{}'));
+  try {
+    zip.writeZip(archive);
+    await service.importPack(archive, instance, new AbortController().signal, () => {});
+    assert.equal(
+      await fs.readFile(path.join(instance.directory, 'config', 'options.txt'), 'utf8'),
+      'client-overrides/',
+    );
+    assert.equal(
+      await fs.readFile(path.join(instance.directory, '.connector', 'config.json'), 'utf8'),
+      '{}',
+    );
+    assert.equal(
+      await fs.readFile(path.join(instance.directory, 'config', '.cache', 'data.json'), 'utf8'),
+      '{}',
+    );
+    for (const name of ['.workbench/', '.workbench/pack-files.json']) {
+      const unsafe = new AdmZip(zip.toBuffer());
+      unsafe.addFile('overrides/' + name, Buffer.from(name.endsWith('/') ? '' : '[]'));
+      unsafe.writeZip(archive);
+      await assert.rejects(
+        service.importPack(archive, instance, new AbortController().signal, () => {}),
+        /Reserved modpack override path/,
+      );
+    }
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test('conflict metadata is cached, parallelism is bounded, and offline failures stop the queue', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-conflict-cache-'));
   const instance: Instance = {

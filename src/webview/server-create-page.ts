@@ -4,6 +4,7 @@ import type { ServerProfile, VersionManifest } from '../models';
 import type { ServerBuild } from '../server-catalog';
 import { gameVersionCategory } from '../game-versions';
 import { engines } from './server-ui';
+import { manualServer } from '../server-types';
 
 export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
@@ -37,6 +38,31 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     ['create', L('Create only', '仅创建')],
   ]);
   const info = h('div', { class: 'setup-status', 'aria-live': 'polite' });
+  const eula = h('input', { type: 'checkbox' });
+  const eulaRow = h(
+    'div',
+    {},
+    h(
+      'label',
+      { class: 'check' },
+      eula,
+      L('I have read and agree to the Minecraft EULA.', '我已阅读并同意 Minecraft EULA。'),
+    ),
+    h(
+      'div',
+      { class: 'inline-actions' },
+      ctx.button(
+        'Minecraft EULA ↗',
+        () => ctx.request('consent.link', { document: 'eula' }),
+        'text-button',
+      ),
+      ctx.button(
+        L('Third-party licenses ↗', '第三方许可 ↗'),
+        () => ctx.request('consent.link', { document: 'thirdParty' }),
+        'text-button',
+      ),
+    ),
+  );
   const submit = h(
     'button',
     { class: 'primary', type: 'submit', disabled: true },
@@ -60,9 +86,19 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
         `${engines.find(([id]) => id === engine.value)?.[1] || ''} ${version.value}`.trim();
   };
   const updateSubmit = () => {
-    const custom = engine.value === 'custom';
+    const custom = manualServer(engine.value);
     submit.disabled =
-      creating || !version.value || (!['vanilla', 'custom'].includes(engine.value) && !build.value);
+      creating ||
+      !version.value ||
+      (engine.value !== 'vanilla' && !manualServer(engine.value) && !build.value);
+    eulaRow.hidden = engine.value === 'velocity';
+    if (
+      !manualServer(engine.value) &&
+      engine.value !== 'velocity' &&
+      behavior.value === 'start' &&
+      !eula.checked
+    )
+      submit.disabled = true;
     behavior.disabled = custom;
     submit.textContent =
       custom || behavior.value === 'create'
@@ -71,6 +107,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
           ? L('Create and install', '创建并安装')
           : L('Create and start', '创建并启动');
   };
+  eula.onchange = updateSubmit;
   const displayBuilds = () => {
     const previous = build.value;
     const visible = builds.filter((b) => experimental.checked || b.stable);
@@ -84,7 +121,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
       ),
     );
     build.disabled = !builds.length;
-    if (!builds.length && ['vanilla', 'custom'].includes(engine.value))
+    if (!builds.length && (engine.value === 'vanilla' || manualServer(engine.value)))
       build.append(h('option', { value: '' }, L('Not required', '无需选择')));
     info.textContent =
       builds.length && !visible.length
@@ -92,7 +129,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
             'No stable builds. Enable experimental builds to select one.',
             '暂无稳定构建，可勾选实验版后选择。',
           )
-        : !builds.length && !['vanilla', 'custom'].includes(engine.value)
+        : !builds.length && engine.value !== 'vanilla' && !manualServer(engine.value)
           ? L('No builds for this version.', '此版本暂无可用构建。')
           : '';
     updateSubmit();
@@ -227,6 +264,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
       {},
       h('legend', {}, L('Install', '安装')),
       field(L('After creation', '创建后'), behavior),
+      eulaRow,
       h(
         'p',
         { class: 'field-hint' },
@@ -255,18 +293,26 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
           build: build.value,
           parent: parent.value,
         },
-        install: engine.value !== 'custom' && behavior.value === 'install',
-        start: engine.value !== 'custom' && behavior.value === 'start',
       });
+      if (eula.checked && engine.value !== 'velocity')
+        await ctx.request('server.acceptEula', { serverId: server.id, accepted: true });
       await ctx.refresh();
       if (!ctx.current()) return;
       await ctx.request('server.action', { serverId: server.id, action: 'select' });
       await ctx.navigate('server');
+      if (!manualServer(engine.value) && behavior.value !== 'create')
+        await ctx.request('server.action', {
+          serverId: server.id,
+          action: behavior.value === 'start' ? 'start' : 'install',
+        });
     })
       .catch(async (error) => {
         await ctx.refresh();
         // A created server remains available after a download failure.
-        if (!ctx.current()) return;
+        if (!ctx.current()) {
+          ctx.error(error);
+          return;
+        }
         if (ctx.state().servers.some((s) => !existingIds.has(s.id))) await ctx.navigate('server');
         ctx.error(error);
       })

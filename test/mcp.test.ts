@@ -75,7 +75,7 @@ test('MCP uses authenticated loopback, interoperates with the official client an
       calls.push(method);
       return { method, params };
     },
-    { warn: () => {} } as never,
+    { warn: () => {}, error: () => {} } as never,
   );
   const client = new Client({ name: 'test', version: '1.0.0' });
   const pending: ClientRequest[] = [];

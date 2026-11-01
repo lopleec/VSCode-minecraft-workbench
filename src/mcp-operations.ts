@@ -21,6 +21,21 @@ const kind = choice(['mod', 'plugin', 'modpack', 'resourcepack', 'shader']);
 const target = { ...instanceId, ...serverId, kind };
 export const mcpOperations: McpOperation[] = [
   {
+    name: 'instance_move',
+    method: 'launcher.moveInstance',
+    description:
+      'Open a native destination picker and move the entire stopped, managed instance. Supports cross-volume moves. Shared external runtimes stay in place.',
+    properties: instanceId,
+    required: ['instanceId'],
+  },
+  {
+    name: 'world_open_directory',
+    method: 'launcher.openWorldDirectory',
+    description: 'Open the instance saves directory in the system file manager.',
+    properties: instanceId,
+    required: ['instanceId'],
+  },
+  {
     name: 'terracotta_status',
     method: 'terracotta.status',
     description: 'Read cached Terracotta Beta status. Does not enable, download or start it.',
@@ -111,7 +126,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'workbench_state',
     method: 'ready',
     description:
-      'List instances, servers, accounts (without tokens), projects, Java runtimes, selected mode and background tasks.',
+      'List instances, servers, accounts (without tokens), projects, Java runtimes, selected UI mode and background tasks. Launcher, Developer and Server tools share this connection and remain available regardless of UI mode. Use returned IDs to select the exact target.',
     readOnly: true,
   },
   {
@@ -300,6 +315,31 @@ export const mcpOperations: McpOperation[] = [
     required: ['versionId'],
   },
   {
+    name: 'content_batch_plan',
+    method: 'batchPlan',
+    description:
+      'Match selected mods to the target Minecraft version and loader, resolve shared dependencies and report conflicts. Does not install files.',
+    properties: {
+      ...instanceId,
+      ...serverId,
+      projects: { type: 'array', items: id, minItems: 1, maxItems: 100 },
+    },
+    required: ['projects'],
+    readOnly: true,
+  },
+  {
+    name: 'content_batch_install',
+    method: 'batchInstall',
+    description:
+      'Install compatible mods and shared dependencies as one transaction. Requires every selected mod to be compatible and the target stopped.',
+    properties: {
+      ...instanceId,
+      ...serverId,
+      projects: { type: 'array', items: id, minItems: 1, maxItems: 100 },
+    },
+    required: ['projects'],
+  },
+  {
     name: 'content_installed',
     method: 'installedMetadata',
     description: 'List installed files with enable state, metadata and icons.',
@@ -310,7 +350,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'content_change',
     method: 'content.change',
     description:
-      'Enable, disable or remove client content (removal prompts in VS Code). For servers use server_content.',
+      'Enable, disable or remove content on the explicit instanceId or serverId, regardless of UI mode. Removal prompts in VS Code. Server updates/conflicts are also available through server_content.',
     properties: {
       ...target,
       action: choice(['toggle', 'remove']),
@@ -387,6 +427,23 @@ export const mcpOperations: McpOperation[] = [
     required: ['action'],
   },
   {
+    name: 'project_import',
+    method: 'launcher.importProject',
+    description:
+      'Register or refresh an existing Fabric, Forge or NeoForge Gradle project by directory. Available in every UI mode. Files stay in place. Does not open a new window unless open=true.',
+    properties: { directory: str('Absolute Gradle project directory'), open: bool },
+    required: ['directory'],
+  },
+  {
+    name: 'project_status',
+    method: 'launcher.projectStatus',
+    description:
+      'Read a project’s preparation/running/idle state, active Gradle task names and actions, cached JDK requirement and effective debug port. Does not build or download files.',
+    properties: { id },
+    required: ['id'],
+    readOnly: true,
+  },
+  {
     name: 'project_templates',
     method: 'launcher.projectTemplates',
     description: 'List official Fabric, Forge or NeoForge development templates.',
@@ -415,10 +472,29 @@ export const mcpOperations: McpOperation[] = [
     required: ['loader', 'template', 'name', 'modId', 'packageName', 'parent'],
   },
   {
+    name: 'project_configure',
+    method: 'launcher.projectConfigure',
+    description:
+      'Set a project-specific Java executable, Gradle arguments and debug port. Empty Java and port 0 use extension defaults. Stop its Gradle task first.',
+    properties: {
+      id,
+      value: {
+        type: 'object',
+        properties: {
+          java: str('Java executable path, or empty for default'),
+          debugPort: { type: 'integer', minimum: 0, maximum: 65535 },
+          gradleArgs: { type: 'array', items: str('One Gradle option') },
+        },
+        required: ['java', 'gradleArgs'],
+      },
+    },
+    required: ['id', 'value'],
+  },
+  {
     name: 'project_action',
     method: 'launcher.projectAction',
     description:
-      'Open/build/clean/runClient/debug/attach/generate sources/reveal artifacts/remove a project registration. Gradle actions use VS Code Tasks.',
+      'Open/build/clean/runClient/debug/attach/stop/generate sources/reveal artifacts or directory/reload metadata/remove a project registration. Missing JDKs are prepared automatically. Gradle actions use VS Code Tasks.',
     properties: {
       id,
       action: choice([
@@ -428,6 +504,9 @@ export const mcpOperations: McpOperation[] = [
         'runClient',
         'debug',
         'attach',
+        'stop',
+        'refresh',
+        'directory',
         'sources',
         'artifacts',
         'remove',
@@ -439,13 +518,15 @@ export const mcpOperations: McpOperation[] = [
     name: 'server_catalog',
     method: 'server.catalog',
     description:
-      'Get versions for Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge, Velocity or custom JAR.',
+      'Get versions for Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge, NeoForge or Velocity. Spigot/Bukkit/custom JARs require a local executable JAR.',
     properties: {
       engine: choice([
         'vanilla',
         'paper',
         'purpur',
         'folia',
+        'spigot',
+        'bukkit',
         'fabric',
         'quilt',
         'forge',
@@ -464,6 +545,37 @@ export const mcpOperations: McpOperation[] = [
     properties: { engine: str('Server engine'), version: str('Version from server_catalog') },
     required: ['engine', 'version'],
     readOnly: true,
+  },
+  {
+    name: 'server_inspect',
+    method: 'server.inspect',
+    description:
+      'Inspect an existing server directory for executable JARs or Forge/NeoForge argument files. Does not modify or run files.',
+    properties: { directory: str('Absolute server directory') },
+    required: ['directory'],
+    readOnly: true,
+  },
+  {
+    name: 'server_import',
+    method: 'server.import',
+    description:
+      'Register an existing server in place without reinstalling. EULA acceptance is never imported and must be confirmed manually in VS Code before starting.',
+    properties: {
+      value: {
+        type: 'object',
+        properties: {
+          directory: str('Absolute server directory'),
+          name: str('Server name'),
+          engine: str('Detected server engine or override'),
+          minecraft: str('Minecraft version'),
+          jar: str(
+            'Filename from server_inspect; omit for detected argument file or preferred JAR',
+          ),
+        },
+        required: ['directory'],
+      },
+    },
+    required: ['value'],
   },
   {
     name: 'server_create',
@@ -487,6 +599,25 @@ export const mcpOperations: McpOperation[] = [
       start: bool,
     },
     required: ['value'],
+  },
+  {
+    name: 'server_import_jar',
+    method: 'server.importJar',
+    description:
+      'Import a local executable server JAR into a stopped Spigot/Bukkit/custom server. Validates the JAR and keeps a backup of the previous server.jar. Does not accept the EULA or start the server.',
+    properties: { ...serverId, path: str('Absolute local executable server JAR path') },
+    required: ['serverId', 'path'],
+  },
+  {
+    name: 'server_import_content',
+    method: 'server.importContent',
+    description:
+      'Import local mod/plugin JARs into a stopped server. The destination folder follows its server software; filename collisions are rejected. Available in every UI mode.',
+    properties: {
+      ...serverId,
+      paths: { type: 'array', items: str('Absolute local JAR path'), minItems: 1, maxItems: 100 },
+    },
+    required: ['serverId', 'paths'],
   },
   {
     name: 'server_action',
@@ -648,6 +779,8 @@ export const mcpOperations: McpOperation[] = [
         'manageProjects',
         'manageServers',
         'createServer',
+        'importServer',
+        'reviewServerEula',
         'serverActions',
         'startServer',
         'stopServer',

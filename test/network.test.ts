@@ -15,6 +15,7 @@ test('origin-scoped credentials cover metadata and parallel downloads without le
   const large = Buffer.alloc(17 * 1024 ** 2, 9),
     small = Buffer.from('redirected content');
   const seen: { method?: string; range?: string; key?: string }[] = [];
+  const diagnostics: string[] = [];
   let foreignKey: string | undefined;
   const foreign = createServer((req, res) => {
     foreignKey = req.headers['x-api-key'] as string | undefined;
@@ -33,7 +34,7 @@ test('origin-scoped credentials cover metadata and parallel downloads without le
       res.end();
       return;
     }
-    if (req.url === '/json') {
+    if (req.url?.split('?')[0] === '/json') {
       res.end('{"ok":true}');
       return;
     }
@@ -55,9 +56,13 @@ test('origin-scoped credentials cover metadata and parallel downloads without le
     concurrency: 3,
     retries: 0,
     originHeaders: { [origin]: { 'x-api-key': 'fixture-private-key' } },
+    log: (_level, message) => diagnostics.push(message),
   });
   try {
-    assert.deepEqual(await net.json(origin + '/json'), { ok: true });
+    assert.deepEqual(
+      await net.json(origin + '/json?access_token=private-query&signature=private-signature'),
+      { ok: true },
+    );
     await net.download(origin + '/large', path.join(root, 'large'), {
       hash: createHash('sha256').update(large).digest('hex'),
       algorithm: 'sha256',
@@ -70,6 +75,11 @@ test('origin-scoped credentials cover metadata and parallel downloads without le
     assert.ok(seen.some((request) => request.range));
     assert.ok(seen.every((request) => request.key === 'fixture-private-key'));
     assert.equal(foreignKey, undefined);
+    assert.ok(diagnostics.some((line) => line.includes('HTTP 200')));
+    assert.ok(diagnostics.some((line) => line.includes('Download ')));
+    assert.ok(!diagnostics.join('\n').includes('private-query'));
+    assert.ok(!diagnostics.join('\n').includes('private-signature'));
+    assert.ok(!diagnostics.join('\n').includes('fixture-private-key'));
   } finally {
     await net.close();
     await Promise.all([

@@ -4,6 +4,7 @@ import * as tls from 'node:tls';
 import * as dns from 'node:dns/promises';
 import { Downloads, DownloadOptions, userAgent } from './downloads';
 import { Resource, sourceUrl } from './sources';
+import { diagnosticUrl } from './files';
 
 export interface NetworkOptions {
   proxy: string;
@@ -16,6 +17,7 @@ export interface NetworkOptions {
   chunkSize?: number;
   runtimeRoots?: () => string[];
   originHeaders?: Record<string, Record<string, string>>;
+  log?: (level: 'debug' | 'warn', message: string) => void;
 }
 interface JsonOptions {
   method?: 'GET' | 'POST';
@@ -146,6 +148,8 @@ export class Network {
         ? url
         : sourceUrl(url, this.options.sources, options.kind);
     const execute = async (uri: string) => {
+      const started = Date.now();
+      this.options.log?.('debug', `${options.method || 'GET'} ${diagnosticUrl(uri)}`);
       const response = await request(uri, {
         dispatcher: options.redirects === false ? this.directDispatcher : this.dispatcher,
         method: options.method || 'GET',
@@ -161,13 +165,20 @@ export class Network {
         bodyTimeout: (this.options.timeout || 30000) * 2,
       });
       const body = await response.body.text();
+      this.options.log?.(
+        'debug',
+        `HTTP ${response.statusCode} ${diagnosticUrl(uri)} (${Date.now() - started}ms)`,
+      );
       if (response.statusCode >= 400) throw new HttpError(response.statusCode, body);
       return { text: body, headers: response.headers, status: response.statusCode };
     };
     try {
       return await execute(target);
     } catch (error) {
-      if (target !== url && !options.signal?.aborted) return execute(url);
+      if (target !== url && !options.signal?.aborted) {
+        this.options.log?.('warn', `Mirror failed; using origin: ${diagnosticUrl(url)}`);
+        return execute(url);
+      }
       throw error;
     }
   }

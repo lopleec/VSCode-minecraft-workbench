@@ -90,6 +90,7 @@ export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
         { class: 'agreement-links' },
         link('eula', L('Read Minecraft EULA ↗', '阅读 Minecraft EULA ↗')),
         link('guidelines', L('Usage guidelines ↗', '使用指南 ↗')),
+        link('microsoftServices', L('Microsoft Services Agreement ↗', 'Microsoft 服务协议 ↗')),
       ),
     ),
     h(

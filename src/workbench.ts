@@ -9,15 +9,9 @@ import { config, t } from './config';
 import { minecraftDirectory, instancesDirectory } from './game-paths';
 import { Item } from './views';
 import { Instance } from './models';
-import { ProjectKind, SearchOrder, compatible } from './modrinth';
-import {
-  Bootstrap,
-  ViewRequest,
-  WorkbenchPage,
-  InstalledEntry,
-  workbenchPages,
-} from './webview/protocol';
-import { describeError } from './errors';
+import { ProjectKind, SearchOrder, compatible, orderContentVersions } from './modrinth';
+import { Bootstrap, ViewRequest, WorkbenchPage, InstalledEntry } from './webview/protocol';
+import { describeError, diagnosticError } from './errors';
 import { LauncherActions } from './launcher-actions';
 import { memorySettings } from './memory';
 import { Consent } from './consent';
@@ -26,10 +20,12 @@ import { Servers } from './servers';
 import { ServerActions } from './server-actions';
 import { serverTarget } from './server-settings';
 import { serverEngines } from './server-catalog';
+import { serverContent } from './server-types';
 import { settingsAction } from './settings-actions';
 import { mcpOperations } from './mcp-operations';
 import { Terracotta } from './terracotta';
 import { extensionId } from './build-info';
+import { defaultPage, pageMode, resolvePage } from './navigation';
 
 const kinds: ProjectKind[] = ['mod', 'plugin', 'modpack', 'resourcepack', 'shader'];
 export class Workbench implements vscode.Disposable {
@@ -49,19 +45,16 @@ export class Workbench implements vscode.Disposable {
   ) {}
   async open(page: string = 'discover', kind: ProjectKind = 'mod') {
     if (!this.consent.accepted) page = 'agreements';
-    const mode = ['servers', 'serverCreate', 'server'].includes(page)
-      ? 'server'
-      : page === 'projects'
-        ? 'developer'
-        : ['instances', 'instance', 'create', 'version', 'import'].includes(page)
-          ? 'launcher'
-          : undefined;
+    const mode = pageMode(page);
     if (mode && this.store.state.mode !== mode) {
       this.store.state.mode = mode;
       await this.store.save();
     }
-    if ((workbenchPages as readonly string[]).includes(page)) this.page = page as WorkbenchPage;
+    this.page = resolvePage(page, this.store.state.mode, this.terracotta?.snapshot().enabled);
     if (kinds.includes(kind)) this.kind = kind;
+    if (this.store.state.mode === 'server')
+      this.kind =
+        serverEngines.find((e) => e.id === this.servers.selected?.engine)?.content || 'plugin';
     if (!this.panel) {
       const panel = vscode.window.createWebviewPanel(
         'minecraftWorkbench.browser',
@@ -103,7 +96,7 @@ export class Workbench implements vscode.Disposable {
     return {
       consent: this.consent.snapshot(),
       locale: t('en', 'zh-cn') as Bootstrap['locale'],
-      page: this.page,
+      page: resolvePage(this.page, this.store.state.mode, this.terracotta?.snapshot().enabled),
       kind: this.kind,
       instances: this.store.state.instances,
       selectedInstance: this.store.state.selectedInstance,
@@ -182,15 +175,40 @@ export class Workbench implements vscode.Disposable {
     const request = raw as ViewRequest;
     if (!Number.isSafeInteger(request.id) || typeof request.method !== 'string') return;
     try {
-      const data = await this.handle(
-        request.method,
-        request.params && typeof request.params === 'object' ? request.params : {},
-      );
+      const params =
+        request.params && typeof request.params === 'object' && !Array.isArray(request.params)
+          ? request.params
+          : {};
+      const data =
+        request.method === 'server.acceptEula'
+          ? await this.acceptServerEula(params)
+          : await this.handle(request.method, params);
       await this.panel?.webview.postMessage({ id: request.id, data });
     } catch (error) {
+      this.ui.jobs.output.error(`${request.method}: ${diagnosticError(error)}`);
       this.refresh();
       await this.panel?.webview.postMessage({ id: request.id, error: describeError(error) });
     }
+  }
+  private async acceptServerEula(params: Record<string, unknown>) {
+    if (!this.consent.accepted || params.accepted !== true)
+      throw new Error(t('Read and accept the agreements first.', '请先阅读并确认协议。'));
+    const server = this.store.state.servers.find((entry) => entry.id === params.serverId);
+    if (!server) throw new Error('Server not found');
+    return this.servers.exclusive(server, async () => {
+      const previous = { accepted: server.eulaAccepted, at: server.eulaAcceptedAt };
+      server.eulaAccepted = true;
+      server.eulaAcceptedAt = new Date().toISOString();
+      try {
+        await this.store.save();
+      } catch (error) {
+        server.eulaAccepted = previous.accepted;
+        server.eulaAcceptedAt = previous.at;
+        throw error;
+      }
+      this.refresh();
+      return true;
+    });
   }
   async handle(method: string, params: Record<string, unknown>): Promise<unknown> {
     if (!this.consent.allowsRequest(method, params))
@@ -285,6 +303,7 @@ export class Workbench implements vscode.Disposable {
       if (!['launcher', 'developer', 'server'].includes(String(params.mode)))
         throw new Error('Unknown mode');
       this.store.state.mode = params.mode as Bootstrap['mode'];
+      this.page = defaultPage(this.store.state.mode);
       await this.store.save();
       return this.snapshot();
     }
@@ -307,7 +326,7 @@ export class Workbench implements vscode.Disposable {
     }
     if (method === 'consent.accept') {
       await this.consent.accept(params);
-      this.page = 'instances';
+      this.page = defaultPage(this.store.state.mode);
       this.refresh();
       return this.snapshot();
     }
@@ -322,16 +341,41 @@ export class Workbench implements vscode.Disposable {
         vscode.Uri.parse(legal.links[key as keyof typeof legal.links]),
       );
     }
-    const kind = kinds.includes(params.kind as ProjectKind) ? (params.kind as ProjectKind) : 'mod';
+    if (params.instanceId !== undefined && params.serverId !== undefined)
+      throw new Error(
+        t(
+          'Specify either an instance ID or a server ID, not both.',
+          '实例 ID 和服务端 ID 只能指定一个。',
+        ),
+      );
     const instance = this.instance(params);
     const server =
       params.serverId !== undefined
         ? this.store.state.servers.find((s) => s.id === params.serverId)
-        : this.store.state.mode === 'server'
+        : params.instanceId === undefined && this.store.state.mode === 'server'
           ? this.servers.selected
           : undefined;
     if (params.serverId !== undefined && !server) throw new Error('Server not found');
-    const target = server ? serverTarget(server) : instance;
+    const target = server
+      ? serverTarget(server)
+      : params.instanceId !== undefined || this.store.state.mode !== 'developer'
+        ? instance
+        : undefined;
+    const kind = kinds.includes(params.kind as ProjectKind)
+      ? (params.kind as ProjectKind)
+      : (server && serverContent(server.engine)) || 'mod';
+    if (
+      !target &&
+      this.store.state.mode === 'developer' &&
+      ['install', 'toggle', 'remove'].includes(method) &&
+      kind !== 'modpack'
+    )
+      throw new Error(
+        t(
+          'Specify an instance or server ID for content changes in Developer Mode.',
+          '在开发模式中修改内容时，请指定实例或服务端 ID。',
+        ),
+      );
     const id = (name: string) => {
       const value = params[name];
       if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,150}$/.test(value))
@@ -339,6 +383,30 @@ export class Workbench implements vscode.Disposable {
       return value;
     };
     switch (method) {
+      case 'batchPlan':
+      case 'batchInstall': {
+        if (!target) throw new Error(t('Select an instance first.', '请先选择实例。'));
+        if (
+          kind !== 'mod' ||
+          (server && serverEngines.find((e) => e.id === server.engine)?.content !== 'mod')
+        )
+          throw new Error('Select a modded instance or server first.');
+        const projects = params.projects as string[];
+        if (method === 'batchPlan') return this.content.planBatch(target, projects);
+        const install = () =>
+          this.content.exclusive(target, () => {
+            if (!server) this.minecraft.assertIdle(instance!);
+            return this.ui.jobs.run(
+              t('Install selected mods', '安装所选模组'),
+              (signal, report) => this.content.installBatch(target, projects, signal, report),
+              () => this.handle('batchInstall', params),
+            );
+          });
+        if (server) await this.servers.exclusive(server, install);
+        else await install();
+        this.refresh();
+        return true;
+      }
       case 'search': {
         this.searchAbort?.abort();
         this.searchAbort = new AbortController();
@@ -368,15 +436,20 @@ export class Workbench implements vscode.Disposable {
             (!query || `${v.name} ${v.version_number}`.toLowerCase().includes(query)) &&
             (!params.game || v.game_versions.includes(String(params.game))) &&
             (!params.loader || v.loaders.includes(String(params.loader))) &&
-            (params.compatible !== true || !target || compatible(v, target, kind)) &&
+            (kind === 'modpack' ||
+              params.compatible !== true ||
+              !target ||
+              compatible(v, target, kind)) &&
             (channel !== 'release' || !v.version_type || v.version_type === 'release') &&
             (channel !== 'beta' || v.version_type !== 'alpha'),
         );
         const offset = Math.max(0, Number(params.offset) || 0);
+        const ordered = orderContentVersions(selected, target, kind);
         return {
-          versions: selected
+          versions: ordered.versions
             .slice(offset, offset + 30)
             .map((v) => ({ ...v, changelog: undefined })),
+          recommendedId: ordered.recommendedId,
           total: selected.length,
           games,
           loaders,
@@ -535,12 +608,13 @@ export class Workbench implements vscode.Disposable {
           importInstance: () => this.ui.importInstance(),
           updates: () => this.ui.checkUpdates(),
           conflicts: () => this.ui.conflicts(),
-          settings: () => this.ui.settings(),
+          settings: () => this.open('settings'),
+          nativeSettings: () => this.ui.settings(),
           language: () => this.ui.language(),
           addAccount: () => this.ui.addAccount(),
           detectJava: () => this.ui.detectJava(),
           downloadJava: () => this.ui.downloadJava(),
-          output: async () => this.ui.jobs.output.show(true),
+          output: async () => vscode.commands.executeCommand('minecraftWorkbench.output'),
           importProject: () => this.ui.importProject(),
         };
         const action = actions[String(params.action)];
