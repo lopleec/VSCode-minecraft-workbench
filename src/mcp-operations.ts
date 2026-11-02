@@ -21,6 +21,35 @@ const kind = choice(['mod', 'plugin', 'modpack', 'resourcepack', 'shader']);
 const target = { ...instanceId, ...serverId, kind };
 export const mcpOperations: McpOperation[] = [
   {
+    name: 'workbench_export_logs',
+    method: 'action',
+    description:
+      'Open the native Save dialog to export sanitized launcher diagnostics. No credentials or logs are returned to the AI.',
+    properties: { action: { type: 'string', const: 'exportLogs' } },
+    required: ['action'],
+  },
+  {
+    name: 'content_install_compatible',
+    method: 'quickInstall',
+    description:
+      'Install the latest compatible project version and required dependencies for the explicit target. Respects the release channel. Not for modpacks.',
+    properties: { ...target, projectId: id },
+    required: ['projectId'],
+  },
+  {
+    name: 'content_manage_selected',
+    method: 'manageContent',
+    description:
+      'Enable, disable or remove selected installed files. Exact filenames and a stopped target are required. Removal asks for native user confirmation.',
+    properties: {
+      ...target,
+      action: choice(['enable', 'disable', 'remove']),
+      files: { type: 'array', items: str('Exact installed filename'), minItems: 1, maxItems: 2000 },
+    },
+    required: ['action', 'files', 'kind'],
+    destructive: true,
+  },
+  {
     name: 'instance_move',
     method: 'launcher.moveInstance',
     description:

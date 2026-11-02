@@ -11,7 +11,7 @@ import notice from './terracotta-notice.json';
 
 const consentKey = 'minecraftWorkbench.terracotta.agreement';
 const componentKey = 'minecraftWorkbench.terracotta.component';
-const release = 'v0.4.2';
+const release = notice.release;
 interface Component {
   executable: string;
   installer?: string;
@@ -37,6 +37,7 @@ export interface TerracottaStatus {
   connected: boolean;
   state: string;
   version?: string;
+  componentVersion?: string;
   room?: string;
   address?: string;
   error?: string;
@@ -98,6 +99,7 @@ export class Terracotta implements vscode.Disposable {
       connected: !!this.endpoint,
       state: this.remote.state,
       version: this.version,
+      componentVersion: this.component?.version,
       room: this.remote.room,
       address: this.address(),
       error: this.error,
@@ -160,7 +162,7 @@ export class Terracotta implements vscode.Disposable {
     if (!this.enabled) await this.disconnect();
     this.changed();
   }
-  async download(signal: AbortSignal, report: (message: string) => void) {
+  async download(signal: AbortSignal, report: (message: string, english?: string) => void) {
     this.guard();
     const controller = new AbortController();
     this.downloads.add(controller);
@@ -170,7 +172,10 @@ export class Terracotta implements vscode.Disposable {
       this.downloads.delete(controller);
     }
   }
-  private async prepareComponent(signal: AbortSignal, report: (message: string) => void) {
+  private async prepareComponent(
+    signal: AbortSignal,
+    report: (message: string, english?: string) => void,
+  ) {
     const os = (
       { win32: 'windows', darwin: 'macos', linux: 'linux', freebsd: 'freebsd' } as Record<
         string,

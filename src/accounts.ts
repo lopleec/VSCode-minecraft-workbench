@@ -51,7 +51,7 @@ export class Accounts implements vscode.Disposable {
     this.store.state.selectedAccount = id;
     await this.store.save();
   }
-  async login(signal: AbortSignal, report: (message: string) => void) {
+  async login(signal: AbortSignal, report: (message: string, english?: string) => void) {
     const clientId = this.clientId();
     const device = await this.net.json<{
       device_code: string;
@@ -70,6 +70,7 @@ export class Accounts implements vscode.Disposable {
         `Enter code ${device.user_code} (copied to clipboard)`,
         `输入验证码 ${device.user_code}（已复制）`,
       ),
+      'Microsoft sign-in: waiting for device authorization',
     );
     await vscode.env.openExternal(vscode.Uri.parse(device.verification_uri));
     const deadline = Date.now() + device.expires_in * 1000;

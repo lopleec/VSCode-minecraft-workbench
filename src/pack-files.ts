@@ -148,7 +148,7 @@ export async function repairPackFiles(
   instance: Instance,
   net: Network,
   signal: AbortSignal,
-  report: (text: string) => void,
+  report: (text: string, english?: string) => void,
   curseforge?: (files: PackFile[]) => Promise<void>,
 ) {
   await rejectSymlinkParents(instance.directory, index(instance));
@@ -157,7 +157,10 @@ export async function repairPackFiles(
   for (const file of files) {
     const target = await packDestination(instance, file);
     if (await validPackFile(target, file, signal)) continue;
-    report(t(`Repair pack file: ${file.path}`, `修复整合包文件：${file.path}`));
+    report(
+      t(`Repair pack file: ${file.path}`, `修复整合包文件：${file.path}`),
+      `Repair pack file: ${file.path}`,
+    );
     if (file.source === 'curseforge') {
       pending.push(file);
       continue;

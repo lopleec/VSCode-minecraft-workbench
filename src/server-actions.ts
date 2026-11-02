@@ -81,7 +81,7 @@ export class ServerActions {
     if (method === 'server.import') {
       if (!params.value || typeof params.value !== 'object' || Array.isArray(params.value))
         throw new Error('Invalid server settings');
-      return this.jobs.run(t('Import server', '导入服务端'), (signal) =>
+      return this.jobs.run(['Import server', '导入服务端'], (signal) =>
         importServer(this.servers.store, params.value as Record<string, unknown>, signal),
       );
     }
@@ -158,7 +158,7 @@ export class ServerActions {
     if (method === 'server.backup')
       return this.servers.exclusive(server, () =>
         this.jobs.run(
-          t('Back up server worlds', '备份服务端存档'),
+          ['Back up server worlds', '备份服务端存档'],
           async () => {
             const properties = await this.servers.properties(server);
             return this.servers.backups.create(server, properties['level-name'] || 'world');
@@ -179,7 +179,7 @@ export class ServerActions {
         return false;
       return this.servers.exclusive(server, () =>
         this.jobs.run(
-          t('Restore server worlds', '恢复服务端存档'),
+          ['Restore server worlds', '恢复服务端存档'],
           async () => {
             const properties = await this.servers.properties(server);
             await this.servers.backups.restore(
@@ -219,7 +219,7 @@ export class ServerActions {
             );
             if (!next) return false;
             await this.jobs.run(
-              t(`Update ${item.name}`, `更新 ${item.name}`),
+              [`Update ${item.name}`, `更新 ${item.name}`],
               (signal, report) =>
                 this.content.install(target, next.version, item.kind, signal, report),
               () => this.handle(method, params),

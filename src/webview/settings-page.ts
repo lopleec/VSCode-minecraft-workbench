@@ -16,6 +16,7 @@ interface Setting {
 
 export async function renderSettings(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
+  main.classList.add('settings-page');
   main.append(heading(L('Settings', '设置')));
   const search = h('input', {
     type: 'search',

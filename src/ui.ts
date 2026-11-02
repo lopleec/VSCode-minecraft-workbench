@@ -8,7 +8,7 @@ import { Store } from './store';
 import { Minecraft } from './minecraft';
 import { Accounts } from './accounts';
 import { Java, inspectJava } from './java';
-import { Jobs } from './jobs';
+import { Jobs, type JobTitle } from './jobs';
 import { ContentService } from './content';
 import { Developer } from './developer';
 import { Backups } from './backups';
@@ -142,8 +142,8 @@ export class UI {
   }
   async operation<T>(
     instance: Instance,
-    label: string,
-    work: (signal: AbortSignal, report: (message: string) => void) => Promise<T>,
+    label: JobTitle,
+    work: (signal: AbortSignal, report: (message: string, english?: string) => void) => Promise<T>,
   ): Promise<T> {
     const execute = (): Promise<T> => {
       this.idle(instance);
@@ -205,7 +205,7 @@ export class UI {
     }
     if (!address?.trim()) return false;
     const resolved = await this.jobs.run(
-      t('Find authentication server', '识别认证服务器'),
+      ['Find authentication server', '识别认证服务器'],
       (signal) => this.accounts.authlib.discover(address, signal),
     );
     const proceed = t('Continue sign-in', '继续登录');
@@ -242,7 +242,7 @@ export class UI {
     });
     if (password === undefined) return false;
     await this.jobs.run(
-      t('External sign-in', '外置登录'),
+      ['External sign-in', '外置登录'],
       (signal) =>
         this.accounts.authlib.login(
           resolved.url,
@@ -274,7 +274,7 @@ export class UI {
     this.idle(instance);
     if (instance.backupBeforeLaunch ?? config('backupBeforeLaunch', false)) {
       if (await exists(path.join(instance.directory, 'saves')))
-        await this.operation(instance, t('Back up worlds', '备份存档'), async () => {
+        await this.operation(instance, ['Back up worlds', '备份存档'], async () => {
           await this.backups.create(instance);
           await this.backups.prune(instance, config('backupRetention', 0));
         });
@@ -345,7 +345,7 @@ export class UI {
       )
     ).value;
     const parent = minecraftDirectory();
-    await this.operation(instance, t('Duplicate instance', '复制实例'), (signal) =>
+    await this.operation(instance, ['Duplicate instance', '复制实例'], (signal) =>
       new InstanceFiles(this.store, this.content).clone(instance, parent, name, worlds, signal),
     );
   }
@@ -357,7 +357,7 @@ export class UI {
       filters: { [kind === 'mod' ? 'Java mods' : 'ZIP packs']: [kind === 'mod' ? 'jar' : 'zip'] },
     });
     if (!files?.length) return;
-    await this.operation(instance, t('Import local content', '导入本地内容'), () =>
+    await this.operation(instance, ['Import local content', '导入本地内容'], () =>
       new InstanceFiles(this.store, this.content).importLocal(
         instance,
         kind,
@@ -373,7 +373,7 @@ export class UI {
       filters: { 'Modrinth modpack': ['mrpack'] },
     });
     if (!destination) return;
-    await this.operation(instance, t('Export modpack', '导出整合包'), (signal) =>
+    await this.operation(instance, ['Export modpack', '导出整合包'], (signal) =>
       new InstanceFiles(this.store, this.content).exportPack(instance, destination.fsPath, signal),
     );
   }
@@ -455,7 +455,7 @@ export class UI {
     await this.accounts.remove(await this.account(item));
   }
   async detectJava() {
-    await this.jobs.run(t('Detect Java', '检测 Java'), () => this.java.detect());
+    await this.jobs.run(['Detect Java', '检测 Java'], () => this.java.detect());
   }
   async addJava() {
     const picked = await vscode.window.showOpenDialog({
@@ -577,7 +577,7 @@ export class UI {
   async checkUpdates() {
     const instance = await this.instance();
     this.idle(instance);
-    const updates = await this.jobs.run(t('Check content updates', '检查内容更新'), () =>
+    const updates = await this.jobs.run(['Check content updates', '检查内容更新'], () =>
       this.content.updates(instance),
     );
     if (!updates.length) {
@@ -596,7 +596,7 @@ export class UI {
       { canPickMany: true, title: t('Select updates', '选择更新') },
     );
     if (!selected) return;
-    await this.operation(instance, t('Update content', '更新内容'), async (signal, report) => {
+    await this.operation(instance, ['Update content', '更新内容'], async (signal, report) => {
       for (const entry of selected)
         await this.content.install(
           instance,
@@ -609,7 +609,7 @@ export class UI {
   }
   async conflicts() {
     const instance = await this.instance();
-    const conflicts = await this.jobs.run(t('Check mod conflicts', '检查模组冲突'), () =>
+    const conflicts = await this.jobs.run(['Check mod conflicts', '检查模组冲突'], () =>
       this.content.conflicts(instance),
     );
     if (!conflicts.length) {
@@ -665,7 +665,7 @@ export class UI {
       filters: { 'Prism / MultiMC instance': ['zip'] },
     });
     if (destination)
-      await this.operation(instance, t('Export instance', '导出实例'), (signal) =>
+      await this.operation(instance, ['Export instance', '导出实例'], (signal) =>
         new InstanceFiles(this.store, this.content).exportNative(
           instance,
           destination.fsPath,
@@ -684,7 +684,7 @@ export class UI {
       filters: { 'World ZIP': ['zip'] },
     });
     if (!source?.[0]) return;
-    await this.operation(instance, t('Import worlds', '导入世界存档'), (signal) =>
+    await this.operation(instance, ['Import worlds', '导入世界存档'], (signal) =>
       importWorlds(instance, source[0].fsPath, signal),
     );
   }
@@ -703,13 +703,13 @@ export class UI {
       filters: { 'Java Edition world': ['zip'] },
     });
     if (destination)
-      await this.operation(instance, t('Export world', '导出世界存档'), (signal) =>
+      await this.operation(instance, ['Export world', '导出世界存档'], (signal) =>
         exportWorld(instance, world.label, destination.fsPath, signal),
       );
   }
 
   async refreshManifest() {
-    await this.jobs.run(t('Update Minecraft manifest', '更新 Minecraft 版本清单'), () =>
+    await this.jobs.run(['Update Minecraft manifest', '更新 Minecraft 版本清单'], () =>
       this.minecraft.manifest(true),
     );
   }

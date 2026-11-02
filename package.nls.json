@@ -175,5 +175,10 @@
   "label.terracotta.enabled": "Enable Terracotta (Beta)",
   "label.terracotta.executable": "Terracotta executable",
   "label.terracotta.publicNodes": "Terracotta public nodes",
-  "label.curseforge.enabled": "Enable CurseForge downloads (Beta)"
+  "label.curseforge.enabled": "Enable CurseForge downloads (Beta)",
+  "label.contentLayout": "Content layout",
+  "setting.contentLayout": "Display project details beside the content list or in a single pane. Auto uses the available editor width.",
+  "enum.contentLayout.auto": "Automatic",
+  "enum.contentLayout.split": "Side by side",
+  "enum.contentLayout.single": "Single pane"
 }

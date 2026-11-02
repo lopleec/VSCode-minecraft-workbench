@@ -20,7 +20,7 @@ async function copyDirectory(
   source: string,
   target: string,
   signal: AbortSignal,
-  report: (message: string) => void,
+  report: (message: string, english?: string) => void,
   sourceRoot = source,
   targetRoot = target,
 ) {
@@ -65,7 +65,7 @@ export async function moveInstance(
   parent: string,
   persist: () => Promise<void>,
   signal: AbortSignal,
-  report: (message: string) => void,
+  report: (message: string, english?: string) => void,
   instances: Instance[] = [],
 ) {
   if (instance.linked)
@@ -166,6 +166,7 @@ export async function moveInstance(
           `Instance moved. Remove the remaining source files manually: ${source}`,
           `实例已移动，请手动清理原目录中剩余的文件：${source}`,
         ),
+        `Instance moved. Remove the remaining source files manually: ${source}`,
       );
     }
   }

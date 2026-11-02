@@ -104,11 +104,11 @@ export async function prepareLegacyAssets(
 
 export function launchPrecheck(
   signal: AbortSignal,
-  report: (phase: string) => void,
+  report: (phase: string, chinese?: string) => void,
 ): LaunchPrecheck {
   return async (resource, version, options) => {
     signal.throwIfAborted();
-    report(t('Checking game files', '校验游戏文件'));
+    report('Checking game files', '校验游戏文件');
     const files = version.libraries.map((library) => ({
       path: resource.getLibraryByPath(library.download.path),
       sha1: library.download.sha1,
@@ -135,12 +135,12 @@ export function launchPrecheck(
           ),
         );
     }
-    report(t('Preparing native libraries', '准备本地库'));
+    report('Preparing native libraries', '准备本地库');
     await prepareNatives(resource, version, options, signal);
     signal.throwIfAborted();
-    report(t('Preparing assets', '准备资源文件'));
+    report('Preparing assets', '准备资源文件');
     await prepareLegacyAssets(resource, version, signal);
     signal.throwIfAborted();
-    report(t('Starting Java process', '启动 Java 进程'));
+    report('Starting Java process', '启动 Java 进程');
   };
 }

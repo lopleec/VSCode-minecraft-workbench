@@ -45,7 +45,7 @@ export async function installRuntime(
   instance: Instance,
   services: RuntimeServices,
   signal: AbortSignal,
-  report: (message: string) => void,
+  report: (message: string, english?: string) => void,
 ): Promise<{ versionId: string; loaderVersion?: string }> {
   const root = runtimeDirectory(instance);
   const folder = new MinecraftFolder(root);
@@ -79,7 +79,10 @@ export async function installRuntime(
       )
         continue;
       if (!(await isRuntimeReady(peer, signal))) continue;
-      report(t('Using installed game files and loader', '复用已安装的游戏文件和加载器'));
+      report(
+        t('Using installed game files and loader', '复用已安装的游戏文件和加载器'),
+        'Using installed game files and loader',
+      );
       const natives = path.join(instance.directory, '.workbench', 'natives');
       await rejectSymlinkParents(instance.directory, natives);
       await fs.rm(natives, { recursive: true, force: true });
@@ -150,7 +153,7 @@ export async function installRuntime(
     download,
     checksum: (file, algorithm) => hashFile(file, algorithm, signal),
     runJava: async (command) => {
-      report(t('Running Forge processors', '运行 Forge 处理器'));
+      report(t('Running Forge processors', '运行 Forge 处理器'), 'Running Forge processors');
       const execution = exec(command.executable, command.args, {
         cwd: command.cwd,
         env: { ...process.env, ...command.env },
@@ -175,7 +178,10 @@ export async function installRuntime(
 
   let manifest: Promise<VersionManifest> | undefined;
   const official = async (id: string) => {
-    report(t(`Checking version profile: ${id}`, `检查版本配置：${id}`));
+    report(
+      t(`Checking version profile: ${id}`, `检查版本配置：${id}`),
+      `Checking version profile: ${id}`,
+    );
     const entry = (await (manifest ??= services.manifest(signal))).versions.find(
       (v) => v.id === id,
     );
@@ -196,13 +202,17 @@ export async function installRuntime(
   const clientFiles = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
     report(
       t(`Checking client and libraries: ${resolved.id}`, `检查客户端和运行库：${resolved.id}`),
+      `Checking client and libraries: ${resolved.id}`,
     );
     const jar = resolveMinecraftJarInstallFile(resolved);
     if (jar) await installFiles([jar]);
     await installFiles(resolveLibraryInstallFiles(resolved.libraries, folder));
   };
   const assets = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
-    report(t('Checking asset index and game assets', '检查资源索引和游戏资源'));
+    report(
+      t('Checking asset index and game assets', '检查资源索引和游戏资源'),
+      'Checking asset index and game assets',
+    );
     await installFiles(resolveAssetMetadataInstallFiles(resolved, folder));
     await installFiles(await resolveAssetObjectInstallFiles(resolved, folder));
   };
@@ -265,7 +275,7 @@ export async function installRuntime(
         ? 'https://maven.neoforged.net/releases/net/neoforged/neoforge'
         : 'https://maven.minecraftforge.net/net/minecraftforge/forge';
       const name = neo ? 'neoforge' : 'forge';
-      report(t('Installing mod loader', '安装模组加载器'));
+      report(t('Installing mod loader', '安装模组加载器'), 'Installing mod loader');
       const installerFile: InstallFile = {
         path: path.join(root, 'installers', `${name}-${artifact}-installer.jar`),
         urls: [`${base}/${artifact}/${name}-${artifact}-installer.jar`],

@@ -133,10 +133,12 @@ export function redact(text: string): string {
   return text
     .replace(/(Bearer\s+)[^\s"']+/gi, '$1[redacted]')
     .replace(
-      /((?:access_token|refresh_token|identityToken|RpsTicket|x-api-key|api-key|api_key)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
+      /((?:access_?token|refresh_?token|client_?token|identityToken|RpsTicket|password|proxyPassword|clientSecret|x-api-key|api-key|api_key)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
       '$1[redacted]',
     )
     .replace(/(--accessToken\s+)\S+/g, '$1[redacted]')
+    .replace(/((?:--accessToken|--clientToken)["']?\s*,\s*["'])[^"']+/gi, '$1[redacted]')
+    .replace(/(Basic\s+)[A-Za-z0-9+/=]+/g, '$1[redacted]')
     .replace(/((?:https?|socks(?:5h?)?):\/\/)[^/\s@?#"'<>]+@/gi, '$1[redacted]@');
 }
 export function diagnosticUrl(value: string): string {

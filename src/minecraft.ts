@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { ChildProcess } from 'node:child_process';
-import { launch } from '@xmcl/core';
+import { ChildProcess, spawn } from 'node:child_process';
+import { launch, type LaunchOption } from '@xmcl/core';
 import { Store } from './store';
 import { Network, HttpError } from './network';
 import { Java, preferredJava } from './java';
@@ -21,6 +21,7 @@ import { installRuntime } from './runtime-install';
 import { RuntimeQueue } from './runtime-queue';
 import { resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
+import { gameJavaExecutable } from './game-java';
 
 export class Minecraft {
   readonly running = new Map<string, ChildProcess>();
@@ -37,8 +38,11 @@ export class Minecraft {
     private readonly repairPack?: (
       instance: Instance,
       signal: AbortSignal,
-      report: (text: string) => void,
+      report: (text: string, english?: string) => void,
     ) => Promise<void>,
+    private readonly spawnGame: NonNullable<LaunchOption['spawn']> = (command, args, options) =>
+      spawn(command, args || [], options || {}),
+    private readonly contentBusy: (instance: Instance) => boolean = () => false,
   ) {}
   async manifest(force = false, signal?: AbortSignal): Promise<VersionManifest> {
     signal?.throwIfAborted();
@@ -119,11 +123,14 @@ export class Minecraft {
     try {
       await this.jobs.run(
         instance.installed
-          ? t(`Repair ${instance.name}`, `修复 ${instance.name}`)
-          : t(`Install ${instance.name}`, `安装 ${instance.name}`),
+          ? [`Repair ${instance.name}`, `修复 ${instance.name}`]
+          : [`Install ${instance.name}`, `安装 ${instance.name}`],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([jobSignal, controller.signal]);
-          report(t('Preparing shared game files', '准备共享游戏文件'));
+          report(
+            t('Preparing shared game files', '准备共享游戏文件'),
+            'Preparing shared game files',
+          );
           await this.runtimeQueue.run(runtimeDirectory(instance), signal, async () => {
             const ready =
               !instance.installed &&
@@ -171,12 +178,13 @@ export class Minecraft {
     this.changed();
     try {
       await this.jobs.run(
-        t(`Start ${instance.name}`, `启动 ${instance.name}`),
+        [`Start ${instance.name}`, `启动 ${instance.name}`],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([jobSignal, controller.signal]);
-          const phase = (message: string) => {
+          const phase = (message: string, chinese = message) => {
             signal.throwIfAborted();
-            report(message);
+            this.jobs.output.info(`[${instance.name}] ${message}`);
+            report(t(message, chinese), message);
           };
           this.jobs.output.info(
             redact(
@@ -195,7 +203,7 @@ export class Minecraft {
             instance.versionId || instance.minecraft,
             signal,
           );
-          phase(t('Preparing Java', '准备 Java'));
+          phase('Preparing Java', '准备 Java');
           const java = await this.java.ensure(
             version.javaVersion?.majorVersion || 8,
             signal,
@@ -203,12 +211,9 @@ export class Minecraft {
             preferredJava(instance.java),
           );
           this.jobs.output.info(
-            t(
-              `[${instance.name}] Using Java ${java.major} (${java.version}): ${java.path}`,
-              `[${instance.name}] 使用 Java ${java.major}（${java.version}）：${java.path}`,
-            ),
+            `[${instance.name}] Using Java ${java.major} (${java.version}): ${java.path}`,
           );
-          phase(t('Preparing account', '准备账户'));
+          phase('Preparing account', '准备账户');
           const token = await waitFor(this.accounts.token(account), signal);
           const gc = instance.gc || config<string>('gc', 'default');
           const args = [
@@ -239,7 +244,16 @@ export class Minecraft {
           );
           const address = serverOverride?.trim() || instance.server?.trim();
           const portMatch = address?.match(/^(.*):(\d+)$/);
+          const executable = await gameJavaExecutable(java.path);
+          this.jobs.output.info(`[${instance.name}] Java executable: ${executable}`);
           const game = await launch({
+            spawn: (command, args, options) => {
+              const invocation = JSON.stringify([command, ...(args || [])]);
+              this.jobs.output.info(
+                `[${instance.name}] Command: ${redact(token === '0' ? invocation : invocation.split(token).join('[redacted]'))}`,
+              );
+              return this.spawnGame(command, args, options);
+            },
             gamePath: instance.directory,
             resourcePath: root,
             nativeRoot: path.join(
@@ -250,7 +264,7 @@ export class Minecraft {
             ),
             prechecks: [launchPrecheck(signal, phase)],
             version,
-            javaPath: java.path,
+            javaPath: executable,
             gameProfile: { id: account.profileId || account.id, name: account.name },
             accessToken: token,
             userType: account.kind === 'offline' ? 'legacy' : 'mojang',
@@ -271,14 +285,12 @@ export class Minecraft {
             extraMCArgs: instance.gameArgs || config('gameArgs', []),
             launcherName: 'Minecraft Workbench',
             launcherBrand: 'minecraft-workbench',
-            extraExecOption: { windowsHide: true, signal },
+            // windowsHide also hides LWJGL game windows; javaw.exe avoids a separate console.
+            extraExecOption: { windowsHide: false, signal },
           });
           this.running.set(instance.id, game);
           this.jobs.output.info(
-            t(
-              `[${instance.name}] Game process started (PID ${game.pid}).`,
-              `[${instance.name}] 游戏进程已启动（PID ${game.pid}）。`,
-            ),
+            `[${instance.name}] Game process started (PID ${game.pid}). Window hiding: disabled.`,
           );
           const startedAt = Date.now();
           instance.lastPlayed = new Date(startedAt).toISOString();
@@ -299,7 +311,7 @@ export class Minecraft {
                 pending = pending.slice(newline + 1);
               }
               if (pending.length > 1024 ** 2) {
-                this.jobs.output.appendLine(t('[Long log line omitted]', '[已省略超长日志行]'));
+                this.jobs.output.appendLine('[Long log line omitted]');
                 pending = '';
               }
             });
@@ -312,14 +324,16 @@ export class Minecraft {
             this.running.delete(instance.id);
             this.changed();
           });
-          game.once('exit', (code) => {
+          game.once('exit', (code, signal) => {
             this.running.delete(instance.id);
             instance.playtimeSeconds =
               (instance.playtimeSeconds || 0) +
               Math.max(0, Math.round((Date.now() - startedAt) / 1000));
             void this.store.save().catch((error) => this.jobs.output.error(redact(String(error))));
             this.changed();
-            this.jobs.output.info(`${instance.name}: exit ${code}`);
+            this.jobs.output.info(
+              `[${instance.name}] Game process exited; code: ${code ?? 'none'}, signal: ${signal || 'none'}, elapsed: ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
+            );
             if (code && code !== 0)
               void vscode.window.showWarningMessage(
                 t(
@@ -353,6 +367,8 @@ export class Minecraft {
         (i) => i !== instance && path.resolve(i.directory) === path.resolve(instance.directory),
       ),
     ];
+    if (aliases.some(this.contentBusy))
+      throw new Error(t('Content operation already in progress.', '内容操作正在进行。'));
     if (
       aliases.some(
         (i) => this.running.has(i.id) || this.installing.has(i.id) || this.starting.has(i.id),

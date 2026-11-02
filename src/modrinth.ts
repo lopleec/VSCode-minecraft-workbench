@@ -42,6 +42,31 @@ export interface BatchInstallPlan {
   unavailable: { projectId: string; name: string }[];
   plan: InstallPlan;
 }
+export function modrinthProjects(text: string): string[] {
+  const projects = text
+    .split(/[\s,;]+/)
+    .filter(Boolean)
+    .map((value) => {
+      let id = value;
+      if (/^https?:/i.test(value)) {
+        const url = new URL(value);
+        const parts = url.pathname.split('/').filter(Boolean);
+        if (
+          !['modrinth.com', 'www.modrinth.com'].includes(url.hostname) ||
+          !['mod', 'project'].includes(parts[0])
+        )
+          throw new Error('Use Modrinth mod links or project IDs.');
+        id = parts[1] || '';
+      }
+      if (!/^[A-Za-z0-9_-]{1,150}$/.test(id))
+        throw new Error('Use Modrinth mod links or project IDs.');
+      return id;
+    });
+  const unique = [...new Set(projects)];
+  if (!unique.length || unique.length > 100)
+    throw new Error('Enter between 1 and 100 Modrinth projects.');
+  return unique;
+}
 export interface ContentInstallOptions {
   includeOptional?: boolean;
   filename?: string;

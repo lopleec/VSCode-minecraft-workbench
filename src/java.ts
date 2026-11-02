@@ -116,7 +116,7 @@ export class Java {
   async ensure(
     major: number,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
     preferred?: string,
   ): Promise<JavaRuntime> {
     signal.throwIfAborted();
@@ -159,7 +159,7 @@ export class Java {
   async download(
     major: number,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ): Promise<void> {
     const pending = this.downloads.get(major);
     if (pending) {
@@ -183,7 +183,7 @@ export class Java {
   private async downloadRuntime(
     major: number,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     const platform = (
       { darwin: 'mac', win32: 'windows', linux: 'linux' } as Record<string, string>

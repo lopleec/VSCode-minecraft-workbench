@@ -42,6 +42,7 @@ export interface Preferences {
   icons: boolean;
   density: string;
   optional: boolean;
+  layout: 'auto' | 'split' | 'single';
 }
 export interface Bootstrap {
   consent: ConsentStatus;

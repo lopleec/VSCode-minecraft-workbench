@@ -88,9 +88,12 @@ export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
     'primary',
   );
   const download = ctx.button(
-    L('Download official component', '下载官方组件'),
-    () => run('terracotta.download'),
-    'secondary',
+    L('Download & set up', '下载安装'),
+    async () => {
+      if ((await run('terracotta.download')) && ctx.state().terracotta?.installer)
+        await run('terracotta.installer');
+    },
+    'primary',
   );
   const choose = ctx.button(
     L('Choose executable…', '选择可执行文件…'),
@@ -163,19 +166,34 @@ export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
   body.append(
     heading(L('Terracotta multiplayer (Beta)', '陶瓦联机（Beta）')),
     h('p', {}, notice.copyright),
-    settings,
+    h(
+      'div',
+      { class: 'inline-actions page-actions' },
+      settings,
+      h(
+        'a',
+        {
+          href: `${notice.source}/releases/tag/${notice.release}`,
+          target: '_blank',
+          rel: 'noreferrer',
+        },
+        L('Official downloads ↗', '官方下载 ↗'),
+      ),
+    ),
     terms,
     controls,
   );
   async function run(method: string, params: Record<string, unknown> = {}) {
-    if (busy) return;
+    if (busy) return false;
     busy = true;
     update();
     try {
       await ctx.request(method, params);
       await ctx.refresh();
+      return true;
     } catch (e) {
       ctx.error(e);
+      return false;
     } finally {
       busy = false;
       update();
@@ -191,15 +209,18 @@ export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
     settings.textContent = enabled
       ? L('Beta settings', 'Beta 设置')
       : L('Enable in Settings to use Terracotta Beta', '在设置中开启陶瓦联机 Beta 后使用');
-    status.textContent = current?.version
-      ? `Terracotta ${current.version} · ${stateName(current.state)}`
-      : L(
-          'The official component runs separately from VS Code.',
-          '官方联机组件独立于 VS Code 运行。',
-        );
+    status.textContent =
+      current?.version || current?.componentVersion
+        ? `Terracotta ${current.version || current.componentVersion} · ${stateName(current.state)}`
+        : L(
+            'The official component runs separately from VS Code.',
+            '官方联机组件独立于 VS Code 运行。',
+          );
     error.textContent = current?.error || '';
     connect.disabled = busy || connected;
     download.disabled = busy || connected;
+    connect.className = current?.componentVersion || current?.version ? 'primary' : 'secondary';
+    download.className = current?.componentVersion || current?.version ? 'secondary' : 'primary';
     choose.disabled = busy || connected;
     installer.disabled = busy;
     installer.hidden = !current?.installer;

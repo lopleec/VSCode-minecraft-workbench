@@ -175,5 +175,10 @@
   "label.terracotta.enabled": "启用陶瓦联机（Beta）",
   "label.terracotta.executable": "陶瓦联机可执行文件",
   "label.terracotta.publicNodes": "陶瓦联机公共节点",
-  "label.curseforge.enabled": "启用 CurseForge 下载（Beta）"
+  "label.curseforge.enabled": "启用 CurseForge 下载（Beta）",
+  "label.contentLayout": "内容布局",
+  "setting.contentLayout": "项目详情可与内容列表左右分栏，或使用单栏。自动布局根据编辑器可用宽度切换。",
+  "enum.contentLayout.auto": "自动",
+  "enum.contentLayout.split": "左右分栏",
+  "enum.contentLayout.single": "单栏"
 }

@@ -3,32 +3,9 @@ import { PageContext, field, input, select, heading, blank, busy } from './page-
 import type { WorkbenchPage } from './protocol';
 import { renderTerracotta } from './terracotta-page';
 import { renderSettings } from './settings-page';
-import { managementPagesFor } from '../navigation';
 import { authenticationPresets } from '../auth-presets';
 
 export function renderManagement(main: HTMLElement, page: WorkbenchPage, ctx: PageContext) {
-  const L = ctx.text;
-  const labels: Record<string, string> = {
-    accounts: L('Accounts', '账户'),
-    java: 'Java',
-    downloads: L('Tasks', '任务'),
-    backups: L('World backups', '存档备份'),
-    multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）'),
-    settings: L('Settings', '设置'),
-  };
-  main.append(
-    h(
-      'nav',
-      { class: 'segments management-tabs', 'aria-label': L('Management pages', '管理页面') },
-      ...managementPagesFor(ctx.state().mode, ctx.state().terracotta?.enabled).map((value) =>
-        ctx.button(
-          labels[value],
-          () => ctx.navigate(value),
-          value === page ? 'segment active' : 'segment',
-        ),
-      ),
-    ),
-  );
   const body = h('div', { class: 'management-body' });
   main.append(body);
   if (page === 'accounts') return accounts(body, ctx);

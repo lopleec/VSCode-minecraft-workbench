@@ -235,7 +235,7 @@ export class ExtensionUpdates {
       return;
     }
     const release = await this.jobs.run(
-      t('Check for extension updates', '检查插件更新'),
+      ['Check for extension updates', '检查插件更新'],
       async (jobSignal) => {
         const requestSignal = AbortSignal.any([signal, jobSignal]);
         const release = extensionRelease(
@@ -307,10 +307,10 @@ export class ExtensionUpdates {
     });
     try {
       await this.jobs.run(
-        t(
+        [
           `Update Minecraft Workbench to ${release.version}`,
           `将 Minecraft Workbench 更新至 ${release.version}`,
-        ),
+        ],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([featureSignal, jobSignal]);
           const stage = await fs.mkdtemp(path.join(os.tmpdir(), 'minecraft-workbench-update-'));

@@ -26,16 +26,22 @@ import { showOutput } from './output';
 import { extensionVersion } from './build-info';
 import { serverTarget } from './server-settings';
 import { Sidebar, sidebarTitles } from './sidebar';
+import { Diagnostics } from './diagnostics';
+import { settingsAction } from './settings-actions';
 
 let activeServers: Servers | undefined;
 let activeTerracotta: Terracotta | undefined;
+let activeDiagnostics: Diagnostics | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   const sidebar = new Sidebar();
-  const output = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
-  context.subscriptions.push(sidebar, output);
+  const nativeOutput = vscode.window.createOutputChannel('Minecraft Workbench', { log: true });
+  const diagnostics = new Diagnostics(context.logUri?.fsPath);
+  activeDiagnostics = diagnostics;
+  const output = diagnostics.channel(nativeOutput);
+  context.subscriptions.push(sidebar, nativeOutput, diagnostics);
   try {
-    return await initialize(context, sidebar, output);
+    return await initialize(context, sidebar, output, diagnostics);
   } catch (error) {
     output.error(String(error));
     sidebar.fail(
@@ -52,6 +58,7 @@ async function initialize(
   context: vscode.ExtensionContext,
   sidebar: Sidebar,
   output: vscode.LogOutputChannel,
+  diagnostics: Diagnostics,
 ) {
   output.info(
     `Minecraft Workbench ${extensionVersion} | VS Code ${vscode.version} | Node ${process.versions.node} | ${process.platform}/${process.arch}`,
@@ -209,6 +216,8 @@ async function initialize(
     jobs,
     refresh,
     (instance, signal, report) => content.repairPack(instance, signal, report),
+    undefined,
+    (instance) => content.isBusy(instance),
   );
   const developer = new Developer(store, network, java, jobs);
   const servers = new Servers(store, java, jobs, network, minecraft, refresh);
@@ -258,6 +267,31 @@ async function initialize(
       new View(section, store, minecraft, content, jobs, () => consent.accepted, servers, updates),
   );
   const commands: Record<string, (item?: Item) => Promise<unknown> | unknown> = {
+    exportLogs: async () => {
+      const { accounts, selectedAccount: _selectedAccount, ...state } = store.state;
+      const settings = (await settingsAction('settings.read', {})) as Record<
+        string,
+        { value: unknown }
+      >;
+      await diagnostics.export({
+        state,
+        accounts: accounts.map((account) => ({
+          kind: account.kind,
+          accountName: account.name,
+          profileId: account.profileId,
+          authServer: account.authServer,
+        })),
+        settings: Object.fromEntries(
+          Object.entries(settings).map(([key, value]) => [key, value.value]),
+        ),
+        tasks: jobs.items.map(({ id, label, status, detail }) => ({ id, label, status, detail })),
+        activeGameProcesses: [...minecraft.running].map(([instanceId, process]) => ({
+          instanceId,
+          pid: process.pid,
+        })),
+        activeServers: [...servers.running.keys()],
+      });
+    },
     agreements: () => workbench!.open('agreements'),
     checkExtensionUpdates: () => updates.check(),
     curseforgeKey: () => curseforge.configure(),
@@ -360,7 +394,7 @@ async function initialize(
       if (store.state.mode !== 'server') return ui.checkUpdates();
       const server = servers.selected;
       if (!server) return workbench!.open('servers');
-      const updates = await jobs.run(t('Check content updates', '检查内容更新'), () =>
+      const updates = await jobs.run(['Check content updates', '检查内容更新'], () =>
         content.updates(serverTarget(server)),
       );
       if (!updates.length)
@@ -534,4 +568,7 @@ export async function deactivate() {
   activeTerracotta = undefined;
   await activeServers?.close();
   activeServers = undefined;
+  activeDiagnostics?.record('info', 'Extension deactivated');
+  await activeDiagnostics?.flush();
+  activeDiagnostics = undefined;
 }

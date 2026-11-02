@@ -517,9 +517,12 @@ export class Developer {
     const controller = new AbortController();
     this.preparing.set(project.id, controller);
     try {
-      const prepare = async (signal: AbortSignal, report: (message: string) => void) => {
+      const prepare = async (
+        signal: AbortSignal,
+        report: (message: string, english?: string) => void,
+      ) => {
         signal = AbortSignal.any([signal, controller.signal]);
-        report(t('Preparing JDK', '准备 JDK'));
+        report(t('Preparing JDK', '准备 JDK'), 'Preparing JDK');
         const required = await this.requiredJava(project, signal);
         signal.throwIfAborted();
         const preferred = preferredJava(project.java);
@@ -542,7 +545,7 @@ export class Developer {
         return runtime;
       };
       const runtime = this.jobs
-        ? await this.jobs.run(t(`Prepare ${project.name}`, `准备 ${project.name}`), prepare)
+        ? await this.jobs.run([`Prepare ${project.name}`, `准备 ${project.name}`], prepare)
         : await prepare(new AbortController().signal, () => {});
       controller.signal.throwIfAborted();
       this.jobs?.output.info(

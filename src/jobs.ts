@@ -11,6 +11,7 @@ export interface Job {
   controller: AbortController;
   retry: () => Promise<unknown>;
 }
+export type JobTitle = string | readonly [english: string, chinese: string];
 export class Jobs implements vscode.Disposable {
   readonly items: Job[] = [];
   private readonly retries = new Map<string, Promise<unknown>>();
@@ -23,28 +24,30 @@ export class Jobs implements vscode.Disposable {
     readonly output: vscode.LogOutputChannel,
   ) {}
   async run<T>(
-    label: string,
-    work: (signal: AbortSignal, report: (message: string) => void) => Promise<T>,
+    title: JobTitle,
+    work: (signal: AbortSignal, report: (message: string, english?: string) => void) => Promise<T>,
     retry?: () => Promise<unknown>,
   ): Promise<T> {
+    const label = typeof title === 'string' ? title : t(...title);
+    const logLabel = typeof title === 'string' ? title : title[0];
     const job: Job = {
       id: randomUUID(),
       label,
       status: 'running',
       controller: new AbortController(),
-      retry: retry || (() => this.run(label, work)),
+      retry: retry || (() => this.run(title, work)),
     };
     this.items.unshift(job);
     this.trim();
     this.changed();
     const started = Date.now();
-    const prefix = `[${job.id.slice(0, 8)}] ${label}`;
-    this.output.info(`${prefix}: ${t('Started', '开始')}`);
+    const prefix = `[${job.id.slice(0, 8)}] ${logLabel}`;
+    this.output.info(`${prefix}: Started`);
     return vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: label, cancellable: true },
       async (progress, token) => {
         const cancel = token.onCancellationRequested(() =>
-          job.controller.abort(new Error(t('Cancelled', '已取消'))),
+          job.controller.abort(new Error('Cancelled')),
         );
         let lastUpdate = 0;
         let lastLog = 0;
@@ -58,10 +61,10 @@ export class Jobs implements vscode.Disposable {
           }
         };
         try {
-          const result = await work(job.controller.signal, (message) => {
+          const result = await work(job.controller.signal, (message, english = message) => {
             message = redact(message);
             job.detail = message;
-            lastMessage = message;
+            lastMessage = redact(english);
             if (!/^[\d.,\s/%]+(?:MB|MiB|GB|GiB)?$/.test(message) || Date.now() - lastLog >= 2000)
               log();
             if (Date.now() - lastUpdate > 400) {
@@ -73,9 +76,7 @@ export class Jobs implements vscode.Disposable {
           job.status = 'done';
           job.detail = undefined;
           log();
-          this.output.info(
-            `${prefix}: ${t('Completed', '完成')} (${((Date.now() - started) / 1000).toFixed(1)}s)`,
-          );
+          this.output.info(`${prefix}: Completed (${((Date.now() - started) / 1000).toFixed(1)}s)`);
           return result;
         } catch (error) {
           job.status =
@@ -116,9 +117,14 @@ export class Jobs implements vscode.Disposable {
     this.nativeTasks.set(execution, { job, started: Date.now(), processStarted: alreadyRunning });
     this.items.unshift(job);
     this.trim();
-    this.output.info(
-      `[${job.id.slice(0, 8)}] ${job.label}: ${t('Started; output in task terminal', '开始，完整输出位于任务终端')}`,
-    );
+    this.output.info(`[${job.id.slice(0, 8)}] ${job.label}: Started; output in task terminal`);
+    const executionOptions = execution.task.execution;
+    if (executionOptions instanceof vscode.ProcessExecution)
+      this.output.info(
+        redact(
+          `[${job.id.slice(0, 8)}] Command: ${JSON.stringify([executionOptions.process, ...executionOptions.args])}\nWorking directory: ${executionOptions.options?.cwd || '(workspace)'}`,
+        ),
+      );
     this.changed();
   }
   taskProcessStarted(execution: vscode.TaskExecution, pid: number) {
@@ -142,7 +148,7 @@ export class Jobs implements vscode.Disposable {
           ? 'done'
           : 'failed';
     job.detail = t(`Exit code: ${exitCode ?? '—'}`, `退出代码：${exitCode ?? '—'}`);
-    const message = `[${job.id.slice(0, 8)}] ${job.label}: ${job.detail} (${((Date.now() - started) / 1000).toFixed(1)}s)`;
+    const message = `[${job.id.slice(0, 8)}] ${job.label}: Exit code: ${exitCode ?? 'unknown'} (${((Date.now() - started) / 1000).toFixed(1)}s)`;
     if (job.status === 'failed') this.output.error(message);
     else this.output.info(message);
     this.trim();

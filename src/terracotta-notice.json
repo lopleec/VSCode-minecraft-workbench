@@ -1,6 +1,7 @@
 {
   "version": "2026-10-30.2",
   "source": "https://github.com/burningtnt/Terracotta",
+  "release": "v0.4.2",
   "license": "https://github.com/burningtnt/Terracotta/blob/master/LICENSE",
   "readme": "https://github.com/burningtnt/Terracotta#readme",
   "copyright": "Terracotta © Burning_TNT and contributors · AGPL-3.0-or-later with exception",

@@ -58,8 +58,8 @@ The confirmation stores only the notice version, time and two choices locally in
 ## Launcher Mode
 
 1. Open **Instances → New instance**. Choose a name, game version, loader and parent directory.
-2. Add an offline account in **Manage → Accounts**, or configure Microsoft sign-in below.
-3. Detect, add or download Java from **More → Java settings**, or **Manage → Java**.
+2. Add an offline account in **Tools → Accounts**, or configure Microsoft sign-in below.
+3. Detect, add or download Java from **More → Java settings**, or **Tools → Java**.
 4. Choose **Install / Repair**, then **Launch**. You can also save an instance first and install it later.
 
 ![Instance installation form with April Fools versions](docs/images/install-dark.png)
@@ -99,7 +99,7 @@ The **Installed** tab supports filtering, local imports, toggling files, removal
 
 Use **Instances → Import modpack** or **Installed → Import modpack…** to import Modrinth `.mrpack` files locally or download packs from Discover. Imports create a new instance and apply common/client overrides, skipping server-only and optional client files. Export includes enabled content and configuration, with download references for recognized files and overrides for local files. Worlds, logs, server lists and account metadata are excluded. **CurseForge exported ZIPs** (`manifest.json` + overrides) are also supported. With online access off, use bundled files or select local JAR/ZIP files; reference-only manifests do not contain the mods, and offline import cannot verify their CurseForge file IDs.
 
-Select mods in **Discover → Mods**, then choose **Install selected**. Versions are matched to the selected Minecraft version and loader, with stable releases preferred. Review required dependencies and conflicts before installing; incompatible projects can be excluded. Required dependencies shared by several selected mods are installed once.
+Use **Install** on a **Discover → Mods** result to install the matching version and required dependencies. For multiple mods, choose **Batch install…** and paste Modrinth links or IDs, or turn on **Select multiple**, select results and choose **Install selected**. Checkboxes are hidden until selection mode is enabled. Versions are matched to the selected Minecraft version and loader, with stable releases preferred. Review required dependencies and conflicts before installing; incompatible projects can be excluded. Required dependencies shared by several selected mods are installed once. **Installed → Select multiple** supports selecting filtered files and enabling, disabling or removing them together. Choose **Auto layout**, **Side by side** or **Single pane** in the content toolbar, or set `minecraftWorkbench.contentLayout`.
 
 ### CurseForge downloads (Beta)
 
@@ -140,7 +140,7 @@ Before entering credentials, confirm the full resolved authentication API addres
 
 **No Microsoft Client ID is bundled.** Leave it empty to use offline accounts. Offline identities do not authenticate to servers that require Microsoft/Minecraft authentication.
 
-For Microsoft sign-in, enter your own public-client application ID in **Manage → Accounts** or `minecraftWorkbench.microsoftClientId`. It must support device code flow, personal Microsoft accounts, Xbox sign-in and Minecraft Services access. An application ID alone does not guarantee Minecraft Services approval. No client secret is needed or collected.
+For Microsoft sign-in, enter your own public-client application ID in **Tools → Accounts** or `minecraftWorkbench.microsoftClientId`. It must support device code flow, personal Microsoft accounts, Xbox sign-in and Minecraft Services access. An application ID alone does not guarantee Minecraft Services approval. No client secret is needed or collected.
 
 Sign-in uses Microsoft's device login page. Refresh and Minecraft access tokens are stored in **VS Code SecretStorage**, refreshed before expiry and before launch. A failed refresh requires signing in again. Removing an account deletes its saved credentials. Account names and UUIDs are local metadata. The extension collects no telemetry.
 
@@ -148,7 +148,7 @@ Sign-in uses Microsoft's device login page. Refresh and Minecraft access tokens 
 
 This optional feature is **off by default**. Enable `minecraftWorkbench.terracotta.enabled` in Settings, then open **More → Terracotta (Beta)**. Read the upstream license and multiplayer notice and confirm both checkboxes before downloading or running the component. Notice language can be switched independently of the extension language.
 
-1. Download the official Terracotta component, or choose an existing official executable. Downloads use a pinned supported release and its published SHA-256 digest. On macOS, open the official installer to set up its background component before connecting.
+1. Select **Download & set up** to download the verified official Terracotta component, or choose an existing official executable. The page also provides an **Official downloads** link. Downloads use a pinned supported release and its published SHA-256 digest. On macOS, setup opens the official installer; complete it before connecting.
 2. Connect the component. A host opens a Minecraft world to LAN and selects **Create room**; a guest enters the Terracotta room code and selects **Join room**.
 3. Guests can copy the game address or launch the selected instance into the joined room. The temporary address does not replace the instance's saved server setting.
 4. Leave the room when finished. Disabling the setting or revoking confirmation disconnects rooms opened through this extension. Custom public nodes can be configured with `minecraftWorkbench.terracotta.publicNodes`.
@@ -209,7 +209,7 @@ Expand **Project settings** for a project-specific Java executable, Gradle optio
 
 ## Settings, downloads and storage
 
-Open **Minecraft Workbench: Settings** for settings in the extension language, with a link to VS Code Settings. **Change Language**, the sidebar language item and the **EN / 中** button switch language immediately. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, Tasks, Output and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens extension settings.
+Open **Minecraft Workbench: Settings** for settings in the extension language, with a link to VS Code Settings. **Change Language** and the sidebar language item switch language immediately. Editor pages use **Tools** for accounts, Java, tasks and settings; the target selector appears only on pages that use it. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, Tasks, Output and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens extension settings.
 
 ```json
 {
@@ -231,7 +231,7 @@ Open **Minecraft Workbench: Settings** for settings in the extension language, w
 - **Download recovery:** `.part` files and HTTP Range validators allow resuming when the server supports it. A server ignoring ranges restarts the file. Published Minecraft/Modrinth hashes and JDK SHA-256 checks verify downloads.
 - **Directories:** storage, game, server and project locations are configurable. New instance metadata follows Prism/MultiMC; `.workbench` holds only auxiliary content indexes, history and backups. Older instances may keep their existing `.runtime` directory.
 - **Process downloads:** these settings cover extension-managed downloads. Gradle and server bootstrappers/installers can make additional downloads under their own configuration.
-- **Diagnostics:** **More → Tasks** shows background work and Gradle tasks, with cancellation and retry. **More → Output** offers Workbench logs and the current mode’s game log, server output or Gradle terminal. Workbench logs include stages, elapsed time and nested errors; set the output channel log level to Debug for download/cache diagnostics. Request diagnostics omit headers, bodies and URL query strings. Use **Open Game Log** for the full game log. Extension output redacts authentication tokens and proxy credentials. Review external game/mod logs before sharing them.
+- **Diagnostics:** **More → Tasks** shows background work and Gradle tasks, with cancellation and retry. **More → Output** offers Workbench logs and the current mode’s game log, server output or Gradle terminal. Workbench logs include stages, elapsed time and nested errors; set the output channel log level to Debug for download/cache diagnostics. Request diagnostics omit headers, bodies and URL query strings. **More → Export launcher logs…** (also in **Tools**) lets you choose **Sanitized** (default) or **Original**, then saves a ZIP with an English environment/configuration report and detailed launcher traces, including launch commands, Java selection, downloads, PIDs and exits. Sanitized exports mask home directories and player identifiers; original exports retain them. Both exclude sign-in tokens and passwords and do not read SecretStorage. Collection includes debug traces regardless of the output channel display level. Original game/tool output keeps its language; VS Code task terminal text is unavailable through the stable API. Use **Open Game Log** for the full game log. Extension output redacts authentication tokens and proxy credentials. Review external game/mod logs before sharing them.
 
 ## Development and validation
 
@@ -324,8 +324,8 @@ GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击�
 ### 启动模式
 
 1. 打开 **实例 → 新建实例**，填写名称，选择游戏版本、加载器和父目录。
-2. 在 **管理 → 账户** 添加离线账户，或按下文配置 Microsoft 登录。
-3. 在 **更多 → Java 设置** 或 **管理 → Java** 检测、添加 Java 或下载 Eclipse Temurin JDK。
+2. 在 **工具 → 账户** 添加离线账户，或按下文配置 Microsoft 登录。
+3. 在 **更多 → Java 设置** 或 **工具 → Java** 检测、添加 Java 或下载 Eclipse Temurin JDK。
 4. 选择 **安装 / 修复**，完成后启动。也可先保存实例，稍后安装。
 
 版本列表包含 Mojang 清单中的正式版、快照与预发布版、愚人节版本、旧 Beta 和旧 Alpha。支持对应游戏版本可用的 Vanilla、Fabric、Quilt、Forge、NeoForge，以及 Loader 测试版本。创建后可以更改游戏版本、更新或重装 Loader，失败后可修复重试。
@@ -362,7 +362,7 @@ Fabric / Quilt 会读取 `fabric.mod.json`、内嵌模块、版本范围和声�
 
 可从 **实例 → 导入整合包** 或 **已安装 → 导入整合包…** 导入本地 `.mrpack`，也可从 Modrinth 安装，新建实例并应用公共及客户端覆盖文件，跳过仅服务端和客户端可选文件。导出包含已启用内容与配置：已识别文件使用下载引用，本地文件作为覆盖文件。排除存档、日志、服务器列表和账户元数据。同时支持 **CurseForge 导出的 ZIP**（`manifest.json` 与覆盖文件）。在线功能关闭时使用包内文件或选择本地 JAR/ZIP；只有引用的清单不包含实际模组，离线导入无法校验 CurseForge 文件 ID。
 
-在 **发现 → 模组** 中勾选多个项目，点击 **安装所选**。自动匹配当前实例的游戏版本和 Loader，优先正式版；确认前显示必需依赖与冲突，可排除没有兼容版本的项目。多个模组共用的前置只安装一次。
+在 **发现 → 模组** 的列表行直接点击 **安装**，自动匹配版本并安装必需前置。批量安装可点击工具栏的 **批量安装…**，粘贴 Modrinth 链接或 ID，也可点击 **多选安装** 后勾选项目，点击 **安装所选**；默认隐藏复选框，退出多选会清空选择。自动匹配当前实例的游戏版本和 Loader，优先正式版；确认前显示必需依赖与冲突，可排除没有兼容版本的项目。多个模组共用的前置只安装一次。**已安装 → 批量管理** 支持选择筛选结果，批量启用、禁用和删除文件。内容工具栏可切换 **自动布局**、**左右分栏**、**单栏**，也可设置 `minecraftWorkbench.contentLayout`。
 
 ### CurseForge 下载（Beta）
 
@@ -378,7 +378,7 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 ![浅色主题下的中文实例设置](docs/images/settings-zh-light.png)
 
-通过侧栏 **语言**、命令面板 **切换语言** 或 **EN / 中** 按钮即时切换。语言可独立于 VS Code 设置。
+通过侧栏 **语言** 或命令面板 **切换语言** 即时切换；也可在插件设置中选择语言。语言可独立于 VS Code 设置。
 
 修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除实例会将整个游戏目录移至系统废纸篓（系统支持时）。
 
@@ -386,7 +386,7 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 **插件不内置 Microsoft Client ID**；留空时使用离线账户。离线身份无法通过要求 Microsoft / Minecraft 验证的服务器认证。
 
-正版登录需在 **管理 → 账户** 或 `minecraftWorkbench.microsoftClientId` 中填写自己的公共客户端应用 ID。应用必须支持设备代码流程、个人 Microsoft 账户、Xbox 登录并获得 Minecraft Services 访问许可；仅创建应用 ID 不保证获得 Minecraft Services 许可。不需要也不会收集客户端密钥。
+正版登录需在 **工具 → 账户** 或 `minecraftWorkbench.microsoftClientId` 中填写自己的公共客户端应用 ID。应用必须支持设备代码流程、个人 Microsoft 账户、Xbox 登录并获得 Minecraft Services 访问许可；仅创建应用 ID 不保证获得 Minecraft Services 许可。不需要也不会收集客户端密钥。
 
 通过 Microsoft 设备登录页面授权。刷新令牌和 Minecraft 访问令牌存于 **VS Code SecretStorage**，到期前及启动前自动刷新；刷新失败需重新登录。移除账户会删除保存的凭据，账户名和 UUID 作为本地元数据保存。插件不收集遥测。
 
@@ -442,7 +442,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 
 ### 网络、目录与诊断
 
-工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、输出和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字打开插件设置页，其中保留 VS Code 原生设置入口。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
+编辑器使用 **工具** 菜单进入账户、Java、任务及设置，实例选择只出现在需要目标的页面。工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、输出和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字打开插件设置页，其中保留 VS Code 原生设置入口。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
 
 全局选项位于 **Minecraft Workbench：设置** 页面，也可从该页打开 VS Code 原生设置。
 
@@ -464,7 +464,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 - **代理：** 支持 HTTP、HTTPS、SOCKS5、SOCKS5h；SOCKS5 本地解析域名，SOCKS5h 由代理解析。留空时沿用 VS Code `http.proxy`。使用 **工作台 → 设置 → 代理凭据** 将凭据存入 SecretStorage。修改网络、存储配置后需重载窗口。
 - **断点与校验：** 保留 `.part`，在服务器支持时使用 HTTP Range 和校验器续传；服务器忽略范围则重新下载。校验 Minecraft / Modrinth 公布的哈希及 JDK SHA-256。
 - **目录：** 存储、游戏、服务端和项目目录可配置。新实例采用 Prism/MultiMC 格式；`.workbench` 只保存辅助索引、历史和备份。旧实例保留原有 `.runtime`。
-- **日志：** **更多 → 任务** 管理后台操作和 Gradle 任务；**更多 → 输出** 提供工作台日志及当前模式的游戏日志、服务端输出或 Gradle 终端。日志包含阶段、耗时与错误原因链；Debug 级别提供下载和缓存诊断，请求诊断不记录认证头、请求体或 URL 查询参数。分享外部日志前仍需检查内容。
+- **日志：** **更多 → 任务** 管理后台操作和 Gradle 任务；**更多 → 输出** 提供工作台日志及当前模式的游戏日志、服务端输出或 Gradle 终端。日志包含阶段、耗时与错误原因链；Debug 级别提供下载和缓存诊断，请求诊断不记录认证头、请求体或 URL 查询参数。**更多 → 导出启动器日志…**（编辑器中也可从 **工具** 进入）先选择 **脱敏版（默认）** 或 **原始版**，再保存 ZIP，包含英文环境和配置报告、启动命令、Java 选择、下载过程、PID 和退出信息。脱敏版隐藏用户目录及玩家身份信息，原始版保留这些信息；两者均排除登录令牌和密码，不读取 SecretStorage。诊断文件始终收集 Debug 细节，不依赖输出窗口的显示级别；游戏及外部工具原始输出保留原语言。VS Code 稳定 API 无法读取任务终端全文。分享外部日志前仍需检查内容。
 
 ### 下载复用与并发
 
@@ -540,7 +540,7 @@ npm run package
 
 此可选功能**默认关闭**。在设置中开启 `minecraftWorkbench.terracotta.enabled` 后，从 **更多 → 陶瓦联机（Beta）** 进入。下载和运行组件前需阅读上游许可及联机须知，分别勾选确认；须知语言可以单独切换，不更改扩展语言。
 
-1. 下载官方组件，或选择已有的官方可执行文件。下载固定支持版本并校验官方 SHA-256；macOS 需先打开官方安装包，配置其后台组件，再连接。
+1. 点击 **下载安装** 获取并校验官方组件，或选择已有的官方可执行文件；页面也提供 **官方下载** 链接。下载固定支持版本并校验官方 SHA-256；macOS 需先打开官方安装包，配置其后台组件，再连接。
 2. 连接组件。房主将 Minecraft 世界开放到局域网后点击**创建房间**；访客填写陶瓦房间码并**加入房间**。
 3. 访客可复制游戏地址，或直接启动所选实例进入房间；临时地址不会覆盖实例原有的服务器设置。
 4. 结束后退出房间。关闭设置或撤回确认会断开本扩展创建的连接。可通过 `minecraftWorkbench.terracotta.publicNodes` 指定额外公共节点。

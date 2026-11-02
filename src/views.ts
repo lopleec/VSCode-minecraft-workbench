@@ -110,6 +110,13 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               : undefined,
           ),
           new Item(t('Output', '输出'), 'action', undefined, 'output', 'output'),
+          new Item(
+            t('Export launcher logs…', '导出启动器日志…'),
+            'action',
+            undefined,
+            'export',
+            'exportLogs',
+          ),
           ...(state.mode === 'launcher' && config('terracotta.enabled', false)
             ? [
                 new Item(

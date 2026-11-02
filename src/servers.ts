@@ -90,6 +90,7 @@ export class Servers implements vscode.Disposable {
     if (lines.length > 1000) lines.splice(0, lines.length - 1000);
     this.logs.set(server.id, lines);
     this.output(server).appendLine(text);
+    this.jobs.output.debug?.(`[Server ${server.id}] ${text}`);
   }
   assertIdle(server: ServerProfile) {
     if (this.busy.has(server.id) || this.running.has(server.id))
@@ -209,7 +210,7 @@ export class Servers implements vscode.Disposable {
   private async prepareJava(
     server: ServerProfile,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     const metadata = server.requiredJava
       ? undefined
@@ -252,7 +253,7 @@ export class Servers implements vscode.Disposable {
   private async installCore(
     server: ServerProfile,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     if (manualServer(server.engine)) {
       const jar =
@@ -299,7 +300,10 @@ export class Servers implements vscode.Disposable {
             '--download-server',
             `--install-dir="${server.directory}"`,
           ];
-        report(t('Installing server dependencies…', '安装服务端依赖…'));
+        report(
+          t('Installing server dependencies…', '安装服务端依赖…'),
+          'Installing server dependencies…',
+        );
         const installing = exec(java.path, args, {
           cwd: server.directory,
           signal,
@@ -359,7 +363,7 @@ export class Servers implements vscode.Disposable {
   async install(server: ServerProfile): Promise<JavaRuntime> {
     return this.exclusive(server, () =>
       this.jobs.run(
-        t(`Install ${server.name}`, `安装 ${server.name}`),
+        [`Install ${server.name}`, `安装 ${server.name}`],
         (signal, report) => this.installCore(server, signal, report),
         () => this.install(server),
       ),
@@ -401,7 +405,7 @@ export class Servers implements vscode.Disposable {
           ),
         );
       const java = await this.jobs.run(
-        t(`Prepare ${server.name}`, `准备 ${server.name}`),
+        [`Prepare ${server.name}`, `准备 ${server.name}`],
         async (signal, report) =>
           server.installed
             ? this.prepareJava(server, signal, report)
@@ -422,7 +426,11 @@ export class Servers implements vscode.Disposable {
         await rejectSymlinkParents(server.directory, eula);
         await fs.writeFile(eula, 'eula=true\n', 'utf8');
       }
-      const child = this.spawnProcess(java.path, [...serverJvm(server), ...server.launchArgs], {
+      const args = [...serverJvm(server), ...server.launchArgs];
+      this.jobs.output.info(
+        redact(`[${server.name}] Command: ${JSON.stringify([java.path, ...args])}`),
+      );
+      const child = this.spawnProcess(java.path, args, {
         cwd: server.directory,
         stdio: 'pipe',
         windowsHide: true,

@@ -588,7 +588,7 @@ export class ContentService {
     version: ModVersion,
     kind: ContentKind,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
     options: ContentInstallOptions = {},
   ) {
     const resolved = await this.plan(instance, version, kind, options.includeOptional, signal);
@@ -630,7 +630,7 @@ export class ContentService {
     instance: ContentTarget,
     projects: string[],
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     const resolved = await this.planBatch(instance, projects, signal);
     if (resolved.unavailable.length)
@@ -645,7 +645,7 @@ export class ContentService {
     instance: ContentTarget,
     resolved: InstallPlan,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
     reinstall?: string,
     selectedFilename?: string,
   ) {
@@ -937,7 +937,7 @@ export class ContentService {
     archive: string,
     instance: Instance,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     if ((await fs.stat(archive)).size > 512 * 1024 ** 2)
       throw new Error('Modpack exceeds 512 MB. Import its extracted instance folder instead.');
@@ -1048,7 +1048,11 @@ export class ContentService {
     }
     await savePackFiles(instance, records);
   }
-  async repairPack(instance: Instance, signal: AbortSignal, report: (text: string) => void) {
+  async repairPack(
+    instance: Instance,
+    signal: AbortSignal,
+    report: (text: string, english?: string) => void,
+  ) {
     await repairPackFiles(
       instance,
       this.net,

@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -856,6 +856,18 @@
         "title": "导入服务端",
         "category": "Minecraft Workbench",
         "icon": "$(folder-opened)"
+      },
+      {
+        "command": "minecraftWorkbench.exportLogs",
+        "title": "Export Launcher Logs",
+        "category": "Minecraft Workbench",
+        "icon": "$(export)"
+      },
+      {
+        "command": "minecraftWorkbench.exportLogs.zh",
+        "title": "导出启动器日志",
+        "category": "Minecraft Workbench",
+        "icon": "$(export)"
       }
     ],
     "viewsContainers": {
@@ -1912,6 +1924,14 @@
         {
           "command": "minecraftWorkbench.importServer.zh",
           "when": "minecraftWorkbench.language == zh-cn"
+        },
+        {
+          "command": "minecraftWorkbench.exportLogs",
+          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.exportLogs.zh",
+          "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         }
       ]
     },
@@ -2166,6 +2186,21 @@
             "enumItemLabels": [
               "%enum.contentDensity.comfortable%",
               "%enum.contentDensity.compact%"
+            ]
+          },
+          "minecraftWorkbench.contentLayout": {
+            "type": "string",
+            "default": "auto",
+            "enum": [
+              "auto",
+              "split",
+              "single"
+            ],
+            "markdownDescription": "%setting.contentLayout%",
+            "enumItemLabels": [
+              "%enum.contentLayout.auto%",
+              "%enum.contentLayout.split%",
+              "%enum.contentLayout.single%"
             ]
           }
         }

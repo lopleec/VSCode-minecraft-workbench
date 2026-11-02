@@ -33,6 +33,7 @@ export class Workbench implements vscode.Disposable {
   private page: WorkbenchPage = 'discover';
   private kind: ProjectKind = 'mod';
   private searchAbort?: AbortController;
+  private requestId = 0;
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly store: Store,
@@ -130,6 +131,7 @@ export class Workbench implements vscode.Disposable {
         icons: config('showProjectIcons', true),
         density: config('contentDensity', 'comfortable'),
         optional: config('installOptionalDependencies', false),
+        layout: config('contentLayout', 'auto'),
       },
       defaults: {
         minMemory: memory.minMemory,
@@ -211,6 +213,30 @@ export class Workbench implements vscode.Disposable {
     });
   }
   async handle(method: string, params: Record<string, unknown>): Promise<unknown> {
+    const started = Date.now();
+    const request = ++this.requestId;
+    const context = Object.fromEntries(
+      ['instanceId', 'serverId', 'projectId', 'versionId', 'kind', 'action']
+        .filter((key) => params[key] !== undefined)
+        .map((key) => [key, String(params[key]).slice(0, 150)]),
+    );
+    this.ui.jobs?.output?.debug?.(
+      `[Request ${request}] ${method.slice(0, 100)} started ${JSON.stringify(context)}`,
+    );
+    try {
+      const result = await this.dispatch(method, params);
+      this.ui.jobs?.output?.debug?.(
+        `[Request ${request}] ${method.slice(0, 100)} completed (${Date.now() - started} ms)`,
+      );
+      return result;
+    } catch (error) {
+      this.ui.jobs?.output?.error?.(
+        `[Request ${request}] ${method.slice(0, 100)} failed (${Date.now() - started} ms): ${diagnosticError(error)}`,
+      );
+      throw error;
+    }
+  }
+  private async dispatch(method: string, params: Record<string, unknown>): Promise<unknown> {
     if (!this.consent.allowsRequest(method, params))
       throw new Error(
         t(
@@ -241,9 +267,8 @@ export class Workbench implements vscode.Disposable {
       feature.requireAvailable();
       try {
         if (method === 'terracotta.download')
-          return await this.ui.jobs.run(
-            t('Download Terracotta', '下载陶瓦联机'),
-            (signal, report) => feature.download(signal, report),
+          return await this.ui.jobs.run(['Download Terracotta', '下载陶瓦联机'], (signal, report) =>
+            feature.download(signal, report),
           );
         if (method === 'terracotta.installer')
           return await vscode.env.openExternal(vscode.Uri.file(await feature.installer()));
@@ -261,7 +286,7 @@ export class Workbench implements vscode.Disposable {
           return true;
         }
         if (method === 'terracotta.connect')
-          await this.ui.jobs.run(t('Connect Terracotta', '连接陶瓦'), (signal) =>
+          await this.ui.jobs.run(['Connect Terracotta', '连接陶瓦'], (signal) =>
             feature.connect(signal),
           );
         else if (method === 'terracotta.host')
@@ -367,7 +392,7 @@ export class Workbench implements vscode.Disposable {
     if (
       !target &&
       this.store.state.mode !== 'launcher' &&
-      ['install', 'toggle', 'remove'].includes(method) &&
+      ['install', 'quickInstall', 'manageContent', 'toggle', 'remove'].includes(method) &&
       kind !== 'modpack'
     )
       throw new Error(
@@ -383,6 +408,109 @@ export class Workbench implements vscode.Disposable {
       return value;
     };
     switch (method) {
+      case 'quickInstall': {
+        if (!target)
+          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+        if (kind === 'modpack') throw new Error('Choose a modpack version first.');
+        const channel = config<string>('contentReleaseChannel', 'release');
+        const candidates = (await this.content.versions(id('projectId'), target, kind)).filter(
+          (version) =>
+            compatible(version, target, kind) &&
+            (channel === 'all' ||
+              (channel === 'beta' && version.version_type !== 'alpha') ||
+              !version.version_type ||
+              version.version_type === 'release'),
+        );
+        const version = orderContentVersions(candidates, target, kind).versions[0];
+        if (!version)
+          throw new Error(
+            t(
+              'No compatible version found for this game and loader.',
+              '没有与当前游戏版本和加载器兼容的版本。',
+            ),
+          );
+        return this.handle('install', {
+          ...params,
+          versionId: version.id,
+          optional: config('installOptionalDependencies', false),
+        });
+      }
+      case 'manageContent': {
+        if (!target)
+          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+        const action = String(params.action);
+        const files = params.files;
+        if (
+          !['enable', 'disable', 'remove'].includes(action) ||
+          !Array.isArray(files) ||
+          !files.length ||
+          files.length > 2000 ||
+          files.some((file) => typeof file !== 'string')
+        )
+          throw new Error('Invalid bulk content request');
+        if (kind === 'modpack' || (server && serverContent(server.engine) !== kind))
+          throw new Error('Unsupported content type');
+        const wanted = [...new Set(files as string[])];
+        const entries = await this.content.list(target, kind);
+        const byFile = new Map(entries.map((entry) => [entry.file, entry]));
+        const selected = wanted.map((file) => {
+          const entry = byFile.get(file);
+          if (!entry)
+            throw new Error(
+              t(
+                'Content changed. Refresh the file list and try again.',
+                '内容已变化，请刷新文件列表后重试。',
+              ),
+            );
+          return entry;
+        });
+        if (server) this.servers.assertIdle(server);
+        else this.minecraft.assertIdle(instance!);
+        if (action === 'remove') {
+          const yes = t('Remove', '删除');
+          if (
+            (await vscode.window.showWarningMessage(
+              t(
+                `Remove ${selected.length} selected files?`,
+                `删除所选的 ${selected.length} 个文件？`,
+              ),
+              { modal: true, detail: wanted.join('\n') },
+              yes,
+            )) !== yes
+          )
+            return { cancelled: true, changed: 0, failed: [] };
+        }
+        const work = () => {
+          if (!server) this.minecraft.assertIdle(instance!);
+          return this.content.exclusive(target, () =>
+            this.ui.jobs.run(
+              ['Manage selected content', '管理所选内容'],
+              async (signal, report) => {
+                let changed = 0;
+                const failed: { file: string; message: string }[] = [];
+                for (const entry of selected) {
+                  signal.throwIfAborted();
+                  report(`${changed + failed.length + 1} / ${selected.length}: ${entry.file}`);
+                  try {
+                    if (action === 'remove') await this.content.remove(target, entry);
+                    else if (entry.enabled !== (action === 'enable'))
+                      await this.content.toggle(target, entry);
+                    changed++;
+                  } catch (error) {
+                    failed.push({ file: entry.file, message: describeError(error) });
+                  }
+                }
+                return { changed, failed };
+              },
+            ),
+          );
+        };
+        try {
+          return server ? await this.servers.exclusive(server, work) : await work();
+        } finally {
+          this.refresh();
+        }
+      }
       case 'batchPlan':
       case 'batchInstall': {
         if (!target) throw new Error(t('Select an instance first.', '请先选择实例。'));
@@ -393,15 +521,16 @@ export class Workbench implements vscode.Disposable {
           throw new Error('Select a modded instance or server first.');
         const projects = params.projects as string[];
         if (method === 'batchPlan') return this.content.planBatch(target, projects);
-        const install = () =>
-          this.content.exclusive(target, () => {
-            if (!server) this.minecraft.assertIdle(instance!);
+        const install = () => {
+          if (!server) this.minecraft.assertIdle(instance!);
+          return this.content.exclusive(target, () => {
             return this.ui.jobs.run(
-              t('Install selected mods', '安装所选模组'),
+              ['Install selected mods', '安装所选模组'],
               (signal, report) => this.content.installBatch(target, projects, signal, report),
               () => this.handle('batchInstall', params),
             );
           });
+        };
         if (server) await this.servers.exclusive(server, install);
         else await install();
         this.refresh();
@@ -485,7 +614,7 @@ export class Workbench implements vscode.Disposable {
           await this.servers.exclusive(server, () =>
             this.content.exclusive(target!, () =>
               this.ui.jobs.run(
-                t(`Install ${version.name}`, `安装 ${version.name}`),
+                [`Install ${version.name}`, `安装 ${version.name}`],
                 (signal, report) =>
                   this.content.install(target!, version, kind as 'mod' | 'plugin', signal, report, {
                     includeOptional: params.optional === true,
@@ -615,6 +744,7 @@ export class Workbench implements vscode.Disposable {
           detectJava: () => this.ui.detectJava(),
           downloadJava: () => this.ui.downloadJava(),
           output: async () => vscode.commands.executeCommand('minecraftWorkbench.output'),
+          exportLogs: async () => vscode.commands.executeCommand('minecraftWorkbench.exportLogs'),
           importProject: () => this.ui.importProject(),
         };
         const action = actions[String(params.action)];

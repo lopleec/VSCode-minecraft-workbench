@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.1 — 2026-11-02
+
+### Added
+
+- Export detailed launcher diagnostics with an English report; choose sanitized or original logs.
+- Install compatible content from discovery results; paste Modrinth links for batch installation and manage installed files in bulk. Multi-select is off by default.
+- Choose automatic, split or single-pane content layouts. Add a Terracotta download link and guided component setup.
+
+### Fixed
+
+- Stop hiding Windows game windows for all client loaders, including older Vanilla, Fabric, Quilt and Forge installations; prefer the selected Java installation's `javaw.exe`.
+- Keep settings content below its search toolbar, simplify editor navigation and remove the header language shortcut.
+
+### 新增
+
+- 导出详细启动器诊断，包含英文报告，可选脱敏版或原始版。
+- 在发现列表直接安装兼容版本；粘贴 Modrinth 链接批量安装，批量管理已安装文件，多选默认关闭。
+- 内容页支持自动、左右分栏及单栏布局；陶瓦联机增加下载链接与组件安装入口。
+
+### 修复
+
+- 统一修复 Windows 客户端窗口被隐藏的问题，覆盖旧版原版、Fabric、Quilt、Forge 等加载器；优先使用所选 Java 目录内的 `javaw.exe`。
+- 修复设置内容穿过搜索工具栏，简化编辑器导航并移除顶部语言快捷按钮。
+
 ## 0.5.0 — 2026-11-01
 
 ### Added

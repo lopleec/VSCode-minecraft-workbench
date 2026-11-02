@@ -6,12 +6,12 @@ import { serverContent } from '../server-types';
 import { renderAgreements } from './agreements-page';
 import { renderInstances, renderSetup } from './setup-page';
 import { renderImport } from './import-page';
-import { renderBatchInstall } from './batch-install';
+import { renderBatchInstall, renderBatchInput } from './batch-install';
 import { renderManagement } from './manage-pages';
 import { renderProjects } from './projects-page';
 import { renderServerImport } from './server-import-page';
 import { requestParameters } from './protocol';
-import { managementPages, defaultPage, resolvePage } from '../navigation';
+import { managementPages, managementPagesFor, defaultPage, resolvePage } from '../navigation';
 import { field, select, type PageContext } from './page-ui';
 import type {
   Bootstrap,
@@ -59,6 +59,12 @@ let order = 'downloads';
 let onlyCompatible = true;
 let hits: BrowserHit[] = [];
 const selectedMods = new Set<string>();
+const selectedFiles = new Set<string>();
+let selectingMods = false;
+let selectingFiles = false;
+const installingProjects = new Set<string>();
+const installedProjects = new Set<string>();
+let managingContent = false;
 let selectionTarget = '';
 let totalHits = 0;
 let installed: InstalledEntry[] = [];
@@ -93,6 +99,10 @@ const currentTarget = () =>
   boot.mode === 'server'
     ? boot.servers.find((s) => s.id === boot.selectedServer)
     : currentInstance();
+const targetRunning = () =>
+  boot.mode === 'server'
+    ? (boot.serverStatus[boot.selectedServer || ''] || 'stopped') !== 'stopped'
+    : (boot.instanceStatus[boot.selectedInstance || ''] || 'stopped') !== 'stopped';
 function find(id: string) {
   return document.getElementById(id)!;
 }
@@ -235,6 +245,7 @@ async function action(name: string) {
 function shell() {
   document.documentElement.lang = boot.locale === 'zh-cn' ? 'zh-CN' : 'en';
   document.body.dataset.density = boot.preferences.density;
+  document.body.dataset.contentLayout = boot.preferences.layout || 'auto';
   const isServer = boot.mode === 'server';
   const instance = currentInstance();
   const server = boot.servers.find((s) => s.id === boot.selectedServer);
@@ -244,19 +255,14 @@ function shell() {
         ['server', L('Console & settings', '控制台与设置')],
         ['discover', L('Discover', '发现')],
         ['installed', L('Installed', '已安装')],
-        ['java', L('Manage', '管理')],
       ]
     : boot.mode === 'developer'
-      ? [
-          ['projects', L('Projects', '项目')],
-          ['java', L('Manage', '管理')],
-        ]
+      ? [['projects', L('Projects', '项目')]]
       : [
           ['instances', L('Instances', '实例')],
           ['discover', L('Discover', '发现')],
           ['installed', L('Installed', '已安装')],
           ['instance', L('Instance settings', '实例设置')],
-          ['accounts', L('Manage', '管理')],
         ];
   const modePicker = dropdown(
     L('Mode', '模式'),
@@ -283,7 +289,8 @@ function shell() {
     'mode-picker',
   );
   const picker =
-    boot.mode === 'developer'
+    boot.mode === 'developer' ||
+    !['discover', 'installed', 'instance', 'server', 'backups'].includes(page)
       ? undefined
       : dropdown(
           isServer ? L('Active server', '当前服务端') : L('Active instance', '当前实例'),
@@ -310,6 +317,7 @@ function shell() {
           },
           'instance-picker',
         );
+  if (picker && (isServer ? server : instance)) picker.options[0].disabled = true;
   root.replaceChildren(
     h(
       'header',
@@ -340,26 +348,59 @@ function shell() {
             ),
           ),
         ),
-      ),
-      h(
-        'div',
-        { class: 'header-actions' },
-        picker,
-        button(
-          boot.locale === 'en' ? 'EN' : '中',
-          () => action('language'),
-          'toolbar-button language',
-        ),
-        button(
-          L('Settings', '设置'),
-          () => {
-            page = 'settings';
+        dropdown(
+          L('Tools', '工具'),
+          managementPages.includes(page) ? page : '',
+          [
+            ['', L('Tools', '工具')],
+            ...managementPagesFor(boot.mode, boot.terracotta?.enabled).map(
+              (value) =>
+                [
+                  value,
+                  (
+                    {
+                      accounts: L('Accounts', '账户'),
+                      java: 'Java',
+                      downloads: L('Tasks', '任务'),
+                      backups: L('World backups', '存档备份'),
+                      multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）'),
+                      settings: L('Settings', '设置'),
+                    } as Record<string, string>
+                  )[value],
+                ] as [string, string],
+            ),
+            ['@output', L('Output', '输出')],
+            ['@exportLogs', L('Export launcher logs…', '导出启动器日志…')],
+          ],
+          async (value) => {
+            if (!value) return;
+            if (value.startsWith('@')) {
+              await call('action', { action: value.slice(1) });
+              (find('tools-picker') as HTMLSelectElement).value = managementPages.includes(page)
+                ? page
+                : '';
+              return;
+            }
+            page = value as WorkbenchPage;
+            detail = undefined;
+            plan = undefined;
             persist();
             render();
           },
-          'toolbar-button',
+          'tools-picker',
         ),
       ),
+      picker &&
+        h(
+          'div',
+          { class: 'header-actions' },
+          h(
+            'label',
+            { for: 'instance-picker', class: 'target-label' },
+            isServer ? L('Server', '服务端') : L('Instance', '实例'),
+          ),
+          picker,
+        ),
     ),
     h('div', { id: 'notice', role: 'status', 'aria-live': 'polite', class: 'notice' }),
     h('main', { id: 'main' }),
@@ -419,6 +460,7 @@ function categories() {
   );
 }
 function render() {
+  clearTimeout(debounce);
   if (boot) page = resolvePage(page, boot.mode, boot.terracotta?.enabled);
   generation++;
   versionGeneration++;
@@ -458,6 +500,16 @@ function render() {
       serverContent(boot.servers.find((s) => s.id === boot.selectedServer)?.engine || '') ||
       'plugin';
   if (boot.mode !== 'server' && kind === 'plugin') kind = 'mod';
+  if (page === 'installed' && kind === 'modpack') kind = 'mod';
+  const targetKey = `${boot.mode}:${currentTarget()?.id}:${kind}`;
+  if (selectionTarget !== targetKey) {
+    selectedMods.clear();
+    selectedFiles.clear();
+    installedProjects.clear();
+    selectingMods = false;
+    selectingFiles = false;
+    selectionTarget = targetKey;
+  }
   shell();
   if (
     [
@@ -474,7 +526,7 @@ function render() {
     ].includes(page)
   ) {
     const main = find('main');
-    main.className = 'management-page';
+    main.className = page === 'settings' ? 'management-page settings-host' : 'management-page';
     const sequence = generation;
     const ctx: PageContext = {
       state: () => boot,
@@ -532,7 +584,6 @@ function render() {
     );
     return;
   }
-  if (page === 'installed' && kind === 'modpack') kind = 'mod';
   find('main').append(
     categories(),
     h(
@@ -561,11 +612,6 @@ function render() {
   if (detail) renderDetail();
 }
 function renderToolbar() {
-  const targetKey = `${boot.mode}:${currentTarget()?.id}:${kind}`;
-  if (selectionTarget !== targetKey) {
-    selectedMods.clear();
-    selectionTarget = targetKey;
-  }
   const search = h('input', {
     type: 'search',
     class: 'search-input',
@@ -624,10 +670,9 @@ function renderToolbar() {
           !currentTarget(),
         ),
         h('span', { class: 'muted', id: 'result-count' }),
+        layoutPicker(),
       ),
-      ...(kind === 'mod' && currentTarget()
-        ? [h('div', { class: 'inline-actions batch-actions', id: 'batch-actions' })]
-        : []),
+      h('div', { class: 'inline-actions batch-actions', id: 'batch-actions' }),
     );
   else
     find('browser-toolbar').replaceChildren(
@@ -648,70 +693,165 @@ function renderToolbar() {
           { class: 'inline-actions' },
           button(L('Check updates', '检查更新'), () => action('updates'), 'secondary'),
           button(L('Check conflicts', '检查冲突'), () => action('conflicts'), 'secondary'),
+          layoutPicker(),
         ),
       ),
+      h('div', { class: 'inline-actions batch-actions', id: 'installed-batch-actions' }),
     );
   renderBatchActions();
+}
+function layoutPicker() {
+  return dropdown(
+    L('Content layout', '内容布局'),
+    boot.preferences.layout || 'auto',
+    [
+      ['auto', L('Auto layout', '自动布局')],
+      ['split', L('Side by side', '左右分栏')],
+      ['single', L('Single pane', '单栏')],
+    ],
+    async (value) => {
+      await call('settings.update', { key: 'contentLayout', value, scope: 'effective' });
+      boot = await call<Bootstrap>('ready');
+      render();
+    },
+  );
 }
 function renderBatchActions() {
   const bar = document.getElementById('batch-actions');
   if (!bar) return;
+  bar.hidden = kind !== 'mod';
+  if (kind !== 'mod') return;
   bar.replaceChildren(
     button(
-      L('Select page', '选择当前页'),
+      L('Batch install…', '批量安装…'),
+      () => openBatch(),
+      'secondary',
+      !currentTarget() || targetRunning(),
+    ),
+    button(
+      selectingMods ? L('Done', '完成多选') : L('Select multiple', '多选安装'),
       () => {
-        for (const hit of hits) {
-          if (selectedMods.size >= 100) break;
-          selectedMods.add(hit.project_id);
-        }
+        selectingMods = !selectingMods;
+        if (!selectingMods) selectedMods.clear();
         syncModSelection();
       },
-      'text-button',
-      !hits.length,
+      'secondary',
+      !currentTarget() || targetRunning(),
     ),
-    ...(selectedMods.size > 0
+    ...(selectingMods
       ? [
           button(
-            L(`Install selected (${selectedMods.size})`, `安装所选（${selectedMods.size}）`),
+            L('Select page', '选择当前页'),
             () => {
-              detail = undefined;
-              plan = undefined;
-              planGeneration++;
-              find('layout').classList.add('has-detail');
-              void renderBatchInstall(find('detail'), [...selectedMods.keys()], {
-                text: L,
-                request: call,
-                button,
-                error: showError,
-                close: () => {
-                  find('layout').classList.remove('has-detail');
-                  find('detail').replaceChildren();
-                },
-                complete: () => {
-                  selectedMods.clear();
-                  notice(L('Mods installed.', '模组已安装。'));
-                  page = 'installed';
-                  render();
-                },
-              });
-            },
-            'primary',
-          ),
-          button(
-            L('Clear selection', '清除选择'),
-            () => {
-              selectedMods.clear();
+              for (const hit of hits) {
+                if (selectedMods.size >= 100) break;
+                selectedMods.add(hit.project_id);
+              }
               syncModSelection();
             },
             'text-button',
+            !hits.length,
           ),
+          ...(selectedMods.size > 0
+            ? [
+                button(
+                  L(`Install selected (${selectedMods.size})`, `安装所选（${selectedMods.size}）`),
+                  () => {
+                    openBatch([...selectedMods]);
+                  },
+                  'primary',
+                  !currentTarget() || targetRunning(),
+                ),
+                button(
+                  L('Clear selection', '清除选择'),
+                  () => {
+                    selectedMods.clear();
+                    syncModSelection();
+                  },
+                  'text-button',
+                ),
+              ]
+            : []),
         ]
       : []),
   );
 }
+function openBatch(projects?: string[]) {
+  detail = undefined;
+  plan = undefined;
+  planGeneration++;
+  find('layout').classList.add('has-detail');
+  const panel = find('detail');
+  const close = () => {
+    find('layout').classList.remove('has-detail');
+    panel.replaceChildren();
+  };
+  const review = (values: string[]) =>
+    void renderBatchInstall(panel, values, {
+      text: L,
+      request: call,
+      button,
+      error: showError,
+      close,
+      complete: () => {
+        selectedMods.clear();
+        page = 'installed';
+        render();
+        notice(L('Mods installed.', '模组已安装。'));
+      },
+    });
+  if (projects) review(projects);
+  else renderBatchInput(panel, { text: L, button, close, review });
+}
+
+function installButton(projectId: string) {
+  if (!currentTarget())
+    return button(
+      L('Select target', '选择安装目标'),
+      () => {
+        page = boot.mode === 'server' ? 'servers' : 'instances';
+        render();
+      },
+      'secondary row-action',
+    );
+  const targetKey = selectionTarget;
+  const key = `${targetKey}:${projectId}`;
+  const installed = installedProjects.has(projectId);
+  const busy = installingProjects.has(key);
+  const control = button(
+    installed
+      ? L('Installed', '已安装')
+      : busy
+        ? L('Installing…', '安装中…')
+        : L('Install', '安装'),
+    async () => {
+      installingProjects.add(key);
+      control.disabled = true;
+      control.textContent = L('Installing…', '安装中…');
+      try {
+        await call('quickInstall', { projectId });
+        if (selectionTarget === targetKey) {
+          installedProjects.add(projectId);
+          control.textContent = L('Installed', '已安装');
+        }
+      } finally {
+        installingProjects.delete(key);
+        if (!installedProjects.has(projectId)) {
+          control.textContent = L('Install', '安装');
+          control.disabled = targetRunning();
+        }
+      }
+    },
+    'primary row-action',
+    installed || busy || targetRunning(),
+  );
+  return control;
+}
 function syncModSelection() {
-  for (const input of document.querySelectorAll<HTMLInputElement>('input[data-mod]'))
+  for (const input of document.querySelectorAll<HTMLInputElement>('input[data-mod]')) {
     input.checked = selectedMods.has(input.dataset.mod!);
+    input.hidden = !selectingMods;
+  }
   renderBatchActions();
   const panel = document.getElementById('detail');
   if (!detail && panel) {
@@ -733,13 +873,20 @@ async function loadSearch(append: boolean) {
     );
   }
   try {
-    const data = await call<SearchPage>('search', {
-      query,
-      order,
-      compatible: onlyCompatible,
-      offset: append ? hits.length : 0,
-    });
+    const [data, local] = await Promise.all([
+      call<SearchPage>('search', {
+        query,
+        order,
+        compatible: onlyCompatible,
+        offset: append ? hits.length : 0,
+      }),
+      currentTarget() && kind !== 'modpack'
+        ? call<InstalledEntry[]>('installed').catch(() => [])
+        : Promise.resolve([]),
+    ]);
     if (sequence !== generation || page !== 'discover') return;
+    installedProjects.clear();
+    for (const item of local) if (item.projectId) installedProjects.add(item.projectId);
     hits = append ? [...hits, ...data.hits] : data.hits;
     totalHits = data.total_hits;
     find('result-count').textContent = L(
@@ -770,6 +917,7 @@ async function loadSearch(append: boolean) {
             currentTarget() &&
             h('input', {
               type: 'checkbox',
+              hidden: !selectingMods,
               checked: selectedMods.has(hit.project_id),
               'data-mod': hit.project_id,
               'aria-label': L(`Select ${hit.title}`, `选择 ${hit.title}`),
@@ -798,10 +946,15 @@ async function loadSearch(append: boolean) {
               hit.author && h('span', {}, hit.author),
             ),
           ),
-          button(
-            L('Versions', '版本'),
-            () => openProject(hit.project_id, 'versions'),
-            'secondary row-action',
+          h(
+            'div',
+            { class: 'installed-actions row-actions' },
+            kind !== 'modpack' && installButton(hit.project_id),
+            button(
+              L('Versions', '版本'),
+              () => openProject(hit.project_id, 'versions'),
+              'secondary row-action',
+            ),
           ),
         ),
       );
@@ -836,10 +989,15 @@ async function loadInstalled() {
     installedLoading = false;
     find('results').replaceChildren(
       empty(
-        L('Select an instance', '选择实例'),
-        L('Choose an instance above to manage its files.', '在上方选择实例以管理文件。'),
-        () => action('createInstance'),
-        L('New instance', '新建实例'),
+        boot.mode === 'server'
+          ? L('Select a server', '选择服务端')
+          : L('Select an instance', '选择实例'),
+        L('Choose a target above to manage its files.', '在上方选择目标以管理文件。'),
+        () => {
+          page = boot.mode === 'server' ? 'servers' : 'instances';
+          render();
+        },
+        boot.mode === 'server' ? L('Servers', '服务端') : L('Instances', '实例'),
       ),
     );
     return;
@@ -872,10 +1030,9 @@ async function loadInstalled() {
               icon: metadata.icon,
             });
         }
-        const results = find('results');
-        const scroll = results.scrollTop;
+        const scroll = find('list-scroll').scrollTop;
         renderInstalled();
-        results.scrollTop = scroll;
+        find('list-scroll').scrollTop = scroll;
       })
       .catch(() => {});
   } catch (error) {
@@ -899,6 +1056,9 @@ function renderInstalled() {
   const filtered = installed.filter((entry) =>
     `${entry.name} ${entry.title || ''} ${entry.file}`.toLowerCase().includes(query.toLowerCase()),
   );
+  for (const file of selectedFiles)
+    if (!installed.some((entry) => entry.file === file)) selectedFiles.delete(file);
+  renderInstalledBatch(filtered);
   find('result-count').textContent = L(`${filtered.length} files`, `${filtered.length} 个文件`);
   const results = find('results');
   results.replaceChildren();
@@ -922,6 +1082,19 @@ function renderInstalled() {
       h(
         'article',
         { class: `project-row ${entry.enabled ? '' : 'disabled-content'}` },
+        h('input', {
+          type: 'checkbox',
+          hidden: !selectingFiles,
+          checked: selectedFiles.has(entry.file),
+          'data-installed': entry.file,
+          disabled: managingContent || targetRunning(),
+          'aria-label': L(`Select ${entry.name}`, `选择 ${entry.name}`),
+          onchange: (event: Event) => {
+            if ((event.target as HTMLInputElement).checked) selectedFiles.add(entry.file);
+            else selectedFiles.delete(entry.file);
+            renderInstalledBatch(filtered);
+          },
+        }),
         icon(entry.icon, entry.title || entry.name),
         h(
           'div',
@@ -958,6 +1131,7 @@ function renderInstalled() {
                 await loadInstalled();
               },
               'secondary',
+              managingContent || targetRunning(),
             ),
           button(
             entry.enabled ? L('Disable', '禁用') : L('Enable', '启用'),
@@ -966,6 +1140,7 @@ function renderInstalled() {
               await loadInstalled();
             },
             'secondary',
+            managingContent || targetRunning(),
           ),
           button(
             L('Remove', '删除'),
@@ -974,10 +1149,92 @@ function renderInstalled() {
               await loadInstalled();
             },
             'text-button danger',
+            managingContent || targetRunning(),
           ),
         ),
       ),
     );
+}
+function renderInstalledBatch(filtered: InstalledEntry[]) {
+  const bar = document.getElementById('installed-batch-actions');
+  if (!bar) return;
+  const sync = () => {
+    for (const node of document.querySelectorAll<HTMLInputElement>('input[data-installed]'))
+      node.checked = selectedFiles.has(node.dataset.installed!);
+    renderInstalledBatch(filtered);
+  };
+  const operate = async (operation: 'enable' | 'disable' | 'remove') => {
+    const contextKey = selectionTarget;
+    managingContent = true;
+    renderInstalled();
+    try {
+      const result = await call<{
+        cancelled?: boolean;
+        changed: number;
+        failed: { file: string; message: string }[];
+      }>('manageContent', { action: operation, files: [...selectedFiles] });
+      if (!result.cancelled && page === 'installed' && contextKey === selectionTarget) {
+        selectedFiles.clear();
+        notice(L(`${result.changed} file(s) processed.`, `已处理 ${result.changed} 个文件。`));
+        if (result.failed.length)
+          showError(new Error(result.failed.map((f) => `${f.file}: ${f.message}`).join('\n')));
+      }
+    } finally {
+      managingContent = false;
+      if (page === 'installed' && contextKey === selectionTarget) await loadInstalled();
+    }
+  };
+  bar.replaceChildren(
+    button(
+      selectingFiles ? L('Done', '完成多选') : L('Select multiple', '批量管理'),
+      () => {
+        selectingFiles = !selectingFiles;
+        if (!selectingFiles) selectedFiles.clear();
+        renderInstalled();
+      },
+      'secondary',
+      managingContent || targetRunning() || !filtered.length,
+    ),
+    ...(selectingFiles
+      ? [
+          button(
+            L('Select filtered', '选择筛选结果'),
+            () => {
+              for (const item of filtered) selectedFiles.add(item.file);
+              sync();
+            },
+            'text-button',
+            managingContent || !filtered.length,
+          ),
+          button(
+            L('Clear', '清除选择'),
+            () => {
+              selectedFiles.clear();
+              sync();
+            },
+            'text-button',
+            managingContent || !selectedFiles.size,
+          ),
+          h(
+            'span',
+            { class: 'muted' },
+            L(`${selectedFiles.size} selected`, `已选择 ${selectedFiles.size} 个`),
+          ),
+          ...(['enable', 'disable', 'remove'] as const).map((operation) =>
+            button(
+              {
+                enable: L('Enable', '启用'),
+                disable: L('Disable', '禁用'),
+                remove: L('Remove…', '删除…'),
+              }[operation],
+              () => operate(operation),
+              operation === 'remove' ? 'text-button danger' : 'secondary',
+              managingContent || targetRunning() || !selectedFiles.size,
+            ),
+          ),
+        ]
+      : []),
+  );
 }
 function empty(title: string, body: string, retry?: () => unknown, label = L('Retry', '重试')) {
   return h(
@@ -1914,10 +2171,14 @@ window.addEventListener('message', (event: MessageEvent) => {
   }
   if (message.event === 'state' && boot) {
     const next = message.data as Bootstrap;
+    const previous = boot;
     const runningChanged =
       ['instance', 'backups', 'version'].includes(page) &&
       JSON.stringify(next.instanceStatus) !== JSON.stringify(boot.instanceStatus);
     const changed =
+      (['discover', 'installed'].includes(page) &&
+        (JSON.stringify(next.instanceStatus) !== JSON.stringify(boot.instanceStatus) ||
+          JSON.stringify(next.serverStatus) !== JSON.stringify(boot.serverStatus))) ||
       runningChanged ||
       next.consent.accepted !== boot.consent.accepted ||
       next.consent.version !== boot.consent.version ||
@@ -1943,8 +2204,15 @@ window.addEventListener('message', (event: MessageEvent) => {
     boot = next;
     updateJobs();
     if (changed) {
-      detail = undefined;
-      plan = undefined;
+      if (
+        next.mode !== previous.mode ||
+        next.selectedInstance !== previous.selectedInstance ||
+        next.selectedServer !== previous.selectedServer ||
+        !next.consent.accepted
+      ) {
+        detail = undefined;
+        plan = undefined;
+      }
       render();
     } else {
       updateManaged?.();

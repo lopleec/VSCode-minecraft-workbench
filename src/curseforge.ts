@@ -225,7 +225,7 @@ export class CurseForge {
     records: PackFile[],
     net: Network | undefined,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     const manual: PackFile[] = [];
     for (const record of records) {
@@ -270,7 +270,7 @@ export class CurseForge {
     instance: Instance,
     files: PackFile[],
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     if (!this.enabled) return this.restore(instance, files, undefined, signal, report);
     return this.client(signal, async (net, signal) => {
@@ -294,7 +294,7 @@ export class CurseForge {
     archive: string,
     instance: Instance,
     signal: AbortSignal,
-    report: (text: string) => void,
+    report: (text: string, english?: string) => void,
   ) {
     const manifest = curseforgeManifest(archive);
     const automatic = this.enabled;

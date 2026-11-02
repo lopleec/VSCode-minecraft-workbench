@@ -73,13 +73,13 @@ export class LauncherActions {
         return source?.[0]?.fsPath;
       }
       case 'launcher.scanInstances':
-        return this.ui.jobs.run(t('Find existing instances', '查找现有实例'), (signal) =>
+        return this.ui.jobs.run(['Find existing instances', '查找现有实例'], (signal) =>
           this.ui.imports.inspect(text('source'), signal),
         );
       case 'launcher.importInstance': {
         const mode = text('mode');
         if (mode !== 'link' && mode !== 'copy') throw new Error('Invalid import mode.');
-        return this.ui.jobs.run(t('Import instance', '导入实例'), (signal) =>
+        return this.ui.jobs.run(['Import instance', '导入实例'], (signal) =>
           this.ui.imports.commit(
             text('key'),
             mode,
@@ -110,7 +110,7 @@ export class LauncherActions {
         await trusted();
         return this.ui.content.exclusive(value, async () => {
           this.minecraft.assertIdle(value);
-          return this.ui.jobs.run(t('Move instance', '移动实例'), (signal, report) =>
+          return this.ui.jobs.run(['Move instance', '移动实例'], (signal, report) =>
             moveInstance(
               value,
               parent,
@@ -167,7 +167,7 @@ export class LauncherActions {
         return true;
       }
       case 'launcher.signIn':
-        await this.ui.jobs.run(t('Microsoft sign-in', 'Microsoft 登录'), (signal, report) =>
+        await this.ui.jobs.run(['Microsoft sign-in', 'Microsoft 登录'], (signal, report) =>
           this.ui.accounts.login(signal, report),
         );
         return true;
@@ -264,7 +264,7 @@ export class LauncherActions {
             vscode.Uri.file(this.ui.backups.directory(value)),
           );
         } else if (action === 'create')
-          await this.ui.operation(value, t('Back up worlds', '备份存档'), () =>
+          await this.ui.operation(value, ['Back up worlds', '备份存档'], () =>
             this.ui.backups.create(value),
           );
         else if (action === 'restore') {
@@ -282,7 +282,7 @@ export class LauncherActions {
               restore,
             )) === restore
           )
-            await this.ui.operation(value, t('Restore worlds', '恢复存档'), () =>
+            await this.ui.operation(value, ['Restore worlds', '恢复存档'], () =>
               this.ui.backups.restore(value, id),
             );
         } else throw new Error('Unknown backup action');
@@ -311,7 +311,7 @@ export class LauncherActions {
         else throw new Error('Invalid project loader');
         const template = templates.find((t) => t.name === text('template', 200));
         if (!template) throw new Error('Template not found');
-        const project = await this.ui.jobs.run(t('Create mod project', '创建模组项目'), (signal) =>
+        const project = await this.ui.jobs.run(['Create mod project', '创建模组项目'], (signal) =>
           this.ui.developer.create(
             template,
             {
