@@ -3,6 +3,7 @@ import type { ServerProfile } from '../models';
 import type { PageContext } from './page-ui';
 import legal from '../legal.json';
 import { select, field } from './page-ui';
+import { toTraditional } from '../traditional';
 
 export function renderServerAgreements(
   body: HTMLElement,
@@ -16,11 +17,16 @@ export function renderServerAgreements(
   function render() {
     container.replaceChildren();
     const locale = preference === 'auto' ? ctx.state().locale : preference;
-    const L = (en: string, zh: string) => (locale === 'zh-cn' ? zh : en);
+    const chinese = locale !== 'en';
+    const L = (en: string, zh: string) =>
+      !chinese ? en : locale === 'zh-tw' ? toTraditional(zh) : zh;
+    const dictionary = (value: { en: string; zh: string }) =>
+      !chinese ? value.en : locale === 'zh-tw' ? toTraditional(value.zh) : value.zh;
     const language = select('serverAgreementLanguage', preference, [
       ['auto', L('Follow extension language', '跟随插件语言')],
       ['en', 'English'],
       ['zh-cn', '简体中文'],
+      ['zh-tw', '繁體中文'],
     ]);
     language.onchange = () => {
       preference = language.value;
@@ -34,7 +40,7 @@ export function renderServerAgreements(
         server.engine === 'velocity' ? L('Software licenses', '软件许可') : 'Minecraft EULA',
       ),
     );
-    container.append(h('p', {}, L(legal.disclaimer.en, legal.disclaimer.zh)));
+    container.append(h('p', {}, dictionary(legal.disclaimer)));
     container.append(
       h(
         'div',

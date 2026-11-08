@@ -47,8 +47,8 @@
     "check:package": "node scripts/check-package.mjs",
     "test:host": "node scripts/test-host.mjs",
     "licenses": "node scripts/licenses.mjs",
-    "format": "prettier --write src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json",
-    "format:check": "prettier --check src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json",
+    "format": "prettier --write src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json package.nls.zh-tw.json",
+    "format:check": "prettier --check src test scripts .vscode esbuild.mjs tsconfig.json package.json package.nls.json package.nls.zh-cn.json package.nls.zh-tw.json",
     "legal": "node scripts/legal.mjs",
     "test:compat": "node scripts/test-host.mjs --compat"
   },
@@ -102,6 +102,12 @@
         "icon": "$(arrow-swap)"
       },
       {
+        "command": "minecraftWorkbench.mode.tw",
+        "title": "切換模式",
+        "category": "Minecraft Workbench",
+        "icon": "$(arrow-swap)"
+      },
+      {
         "command": "minecraftWorkbench.createInstance",
         "title": "New Instance",
         "category": "Minecraft Workbench",
@@ -110,6 +116,12 @@
       {
         "command": "minecraftWorkbench.createInstance.zh",
         "title": "新建实例",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
+        "command": "minecraftWorkbench.createInstance.tw",
+        "title": "新建實例",
         "category": "Minecraft Workbench",
         "icon": "$(add)"
       },
@@ -126,6 +138,12 @@
         "icon": "$(check)"
       },
       {
+        "command": "minecraftWorkbench.selectInstance.tw",
+        "title": "選擇實例",
+        "category": "Minecraft Workbench",
+        "icon": "$(check)"
+      },
+      {
         "command": "minecraftWorkbench.launch",
         "title": "Launch Minecraft",
         "category": "Minecraft Workbench",
@@ -138,6 +156,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "minecraftWorkbench.launch.tw",
+        "title": "啟動 Minecraft",
+        "category": "Minecraft Workbench",
+        "icon": "$(play)"
+      },
+      {
         "command": "minecraftWorkbench.stop",
         "title": "Stop Minecraft",
         "category": "Minecraft Workbench",
@@ -145,6 +169,12 @@
       },
       {
         "command": "minecraftWorkbench.stop.zh",
+        "title": "停止 Minecraft",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "minecraftWorkbench.stop.tw",
         "title": "停止 Minecraft",
         "category": "Minecraft Workbench",
         "icon": "$(debug-stop)"
@@ -162,6 +192,12 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "minecraftWorkbench.install.tw",
+        "title": "安裝 / 修復實例",
+        "category": "Minecraft Workbench",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "minecraftWorkbench.configureInstance",
         "title": "Configure Instance",
         "category": "Minecraft Workbench",
@@ -170,6 +206,12 @@
       {
         "command": "minecraftWorkbench.configureInstance.zh",
         "title": "配置实例",
+        "category": "Minecraft Workbench",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "minecraftWorkbench.configureInstance.tw",
+        "title": "設定實例",
         "category": "Minecraft Workbench",
         "icon": "$(settings-gear)"
       },
@@ -186,6 +228,12 @@
         "icon": "$(trash)"
       },
       {
+        "command": "minecraftWorkbench.deleteInstance.tw",
+        "title": "刪除實例",
+        "category": "Minecraft Workbench",
+        "icon": "$(trash)"
+      },
+      {
         "command": "minecraftWorkbench.openInstance",
         "title": "Open Game Directory",
         "category": "Minecraft Workbench",
@@ -194,6 +242,12 @@
       {
         "command": "minecraftWorkbench.openInstance.zh",
         "title": "打开游戏目录",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "minecraftWorkbench.openInstance.tw",
+        "title": "開啟遊戲目錄",
         "category": "Minecraft Workbench",
         "icon": "$(folder-opened)"
       },
@@ -210,6 +264,12 @@
         "icon": "$(output)"
       },
       {
+        "command": "minecraftWorkbench.gameLog.tw",
+        "title": "開啟遊戲日誌",
+        "category": "Minecraft Workbench",
+        "icon": "$(output)"
+      },
+      {
         "command": "minecraftWorkbench.exportInstance",
         "title": "Export Instance ZIP",
         "category": "Minecraft Workbench",
@@ -218,6 +278,12 @@
       {
         "command": "minecraftWorkbench.exportInstance.zh",
         "title": "导出实例 ZIP",
+        "category": "Minecraft Workbench",
+        "icon": "$(export)"
+      },
+      {
+        "command": "minecraftWorkbench.exportInstance.tw",
+        "title": "匯出實例 ZIP",
         "category": "Minecraft Workbench",
         "icon": "$(export)"
       },
@@ -234,6 +300,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "minecraftWorkbench.addAccount.tw",
+        "title": "新增帳戶",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
         "command": "minecraftWorkbench.selectAccount",
         "title": "Select Account",
         "category": "Minecraft Workbench",
@@ -242,6 +314,12 @@
       {
         "command": "minecraftWorkbench.selectAccount.zh",
         "title": "选择账户",
+        "category": "Minecraft Workbench",
+        "icon": "$(check)"
+      },
+      {
+        "command": "minecraftWorkbench.selectAccount.tw",
+        "title": "選擇帳戶",
         "category": "Minecraft Workbench",
         "icon": "$(check)"
       },
@@ -258,6 +336,12 @@
         "icon": "$(trash)"
       },
       {
+        "command": "minecraftWorkbench.removeAccount.tw",
+        "title": "移除帳戶",
+        "category": "Minecraft Workbench",
+        "icon": "$(trash)"
+      },
+      {
         "command": "minecraftWorkbench.detectJava",
         "title": "Detect Local Java",
         "category": "Minecraft Workbench",
@@ -266,6 +350,12 @@
       {
         "command": "minecraftWorkbench.detectJava.zh",
         "title": "检测本地 Java",
+        "category": "Minecraft Workbench",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "minecraftWorkbench.detectJava.tw",
+        "title": "檢測本機 Java",
         "category": "Minecraft Workbench",
         "icon": "$(refresh)"
       },
@@ -282,6 +372,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "minecraftWorkbench.addJava.tw",
+        "title": "新增 Java 執行檔",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
         "command": "minecraftWorkbench.downloadJava",
         "title": "Download JDK",
         "category": "Minecraft Workbench",
@@ -294,6 +390,12 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "minecraftWorkbench.downloadJava.tw",
+        "title": "下載 JDK",
+        "category": "Minecraft Workbench",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "minecraftWorkbench.javaActions",
         "title": "Manage Java",
         "category": "Minecraft Workbench",
@@ -301,6 +403,12 @@
       },
       {
         "command": "minecraftWorkbench.javaActions.zh",
+        "title": "管理 Java",
+        "category": "Minecraft Workbench",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "minecraftWorkbench.javaActions.tw",
         "title": "管理 Java",
         "category": "Minecraft Workbench",
         "icon": "$(symbol-method)"
@@ -318,6 +426,12 @@
         "icon": "$(search)"
       },
       {
+        "command": "minecraftWorkbench.search.tw",
+        "title": "搜尋 Modrinth",
+        "category": "Minecraft Workbench",
+        "icon": "$(search)"
+      },
+      {
         "command": "minecraftWorkbench.importInstance",
         "title": "Import Instance",
         "category": "Minecraft Workbench",
@@ -326,6 +440,12 @@
       {
         "command": "minecraftWorkbench.importInstance.zh",
         "title": "导入实例",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-open)"
+      },
+      {
+        "command": "minecraftWorkbench.importInstance.tw",
+        "title": "匯入實例",
         "category": "Minecraft Workbench",
         "icon": "$(folder-open)"
       },
@@ -342,6 +462,12 @@
         "icon": "$(package)"
       },
       {
+        "command": "minecraftWorkbench.importPack.tw",
+        "title": "匯入整合包",
+        "category": "Minecraft Workbench",
+        "icon": "$(package)"
+      },
+      {
         "command": "minecraftWorkbench.contentActions",
         "title": "Manage Content",
         "category": "Minecraft Workbench",
@@ -350,6 +476,12 @@
       {
         "command": "minecraftWorkbench.contentActions.zh",
         "title": "管理内容",
+        "category": "Minecraft Workbench",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "minecraftWorkbench.contentActions.tw",
+        "title": "管理內容",
         "category": "Minecraft Workbench",
         "icon": "$(extensions)"
       },
@@ -366,6 +498,12 @@
         "icon": "$(sync)"
       },
       {
+        "command": "minecraftWorkbench.checkUpdates.tw",
+        "title": "檢查內容更新",
+        "category": "Minecraft Workbench",
+        "icon": "$(sync)"
+      },
+      {
         "command": "minecraftWorkbench.conflicts",
         "title": "Check Mod Conflicts",
         "category": "Minecraft Workbench",
@@ -374,6 +512,12 @@
       {
         "command": "minecraftWorkbench.conflicts.zh",
         "title": "检查模组冲突",
+        "category": "Minecraft Workbench",
+        "icon": "$(warning)"
+      },
+      {
+        "command": "minecraftWorkbench.conflicts.tw",
+        "title": "檢查模組衝突",
         "category": "Minecraft Workbench",
         "icon": "$(warning)"
       },
@@ -390,6 +534,12 @@
         "icon": "$(history)"
       },
       {
+        "command": "minecraftWorkbench.backups.tw",
+        "title": "存檔備份",
+        "category": "Minecraft Workbench",
+        "icon": "$(history)"
+      },
+      {
         "command": "minecraftWorkbench.createProject",
         "title": "New Mod Project",
         "category": "Minecraft Workbench",
@@ -398,6 +548,12 @@
       {
         "command": "minecraftWorkbench.createProject.zh",
         "title": "新建模组项目",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
+        "command": "minecraftWorkbench.createProject.tw",
+        "title": "新建模組專案",
         "category": "Minecraft Workbench",
         "icon": "$(add)"
       },
@@ -414,6 +570,12 @@
         "icon": "$(folder-opened)"
       },
       {
+        "command": "minecraftWorkbench.importProject.tw",
+        "title": "匯入 Gradle 專案",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
+      },
+      {
         "command": "minecraftWorkbench.projectActions",
         "title": "Project Actions",
         "category": "Minecraft Workbench",
@@ -422,6 +584,12 @@
       {
         "command": "minecraftWorkbench.projectActions.zh",
         "title": "项目操作",
+        "category": "Minecraft Workbench",
+        "icon": "$(code)"
+      },
+      {
+        "command": "minecraftWorkbench.projectActions.tw",
+        "title": "專案操作",
         "category": "Minecraft Workbench",
         "icon": "$(code)"
       },
@@ -438,6 +606,12 @@
         "icon": "$(tasklist)"
       },
       {
+        "command": "minecraftWorkbench.jobActions.tw",
+        "title": "管理任務",
+        "category": "Minecraft Workbench",
+        "icon": "$(tasklist)"
+      },
+      {
         "command": "minecraftWorkbench.refreshManifest",
         "title": "Update Version Manifest",
         "category": "Minecraft Workbench",
@@ -446,6 +620,12 @@
       {
         "command": "minecraftWorkbench.refreshManifest.zh",
         "title": "更新版本清单",
+        "category": "Minecraft Workbench",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "minecraftWorkbench.refreshManifest.tw",
+        "title": "更新版本清單",
         "category": "Minecraft Workbench",
         "icon": "$(refresh)"
       },
@@ -462,6 +642,12 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "minecraftWorkbench.refresh.tw",
+        "title": "重新整理檢視",
+        "category": "Minecraft Workbench",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "minecraftWorkbench.settings",
         "title": "Settings",
         "category": "Minecraft Workbench",
@@ -470,6 +656,12 @@
       {
         "command": "minecraftWorkbench.settings.zh",
         "title": "设置",
+        "category": "Minecraft Workbench",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "minecraftWorkbench.settings.tw",
+        "title": "設定",
         "category": "Minecraft Workbench",
         "icon": "$(settings-gear)"
       },
@@ -486,6 +678,12 @@
         "icon": "$(output)"
       },
       {
+        "command": "minecraftWorkbench.output.tw",
+        "title": "顯示輸出",
+        "category": "Minecraft Workbench",
+        "icon": "$(output)"
+      },
+      {
         "command": "minecraftWorkbench.openStorage",
         "title": "Open Storage Directory",
         "category": "Minecraft Workbench",
@@ -494,6 +692,12 @@
       {
         "command": "minecraftWorkbench.openStorage.zh",
         "title": "打开存储目录",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "minecraftWorkbench.openStorage.tw",
+        "title": "開啟儲存目錄",
         "category": "Minecraft Workbench",
         "icon": "$(folder-opened)"
       },
@@ -510,6 +714,12 @@
         "icon": "$(key)"
       },
       {
+        "command": "minecraftWorkbench.proxyCredentials.tw",
+        "title": "設定代理憑據",
+        "category": "Minecraft Workbench",
+        "icon": "$(key)"
+      },
+      {
         "command": "minecraftWorkbench.help",
         "title": "Documentation",
         "category": "Minecraft Workbench",
@@ -518,6 +728,12 @@
       {
         "command": "minecraftWorkbench.help.zh",
         "title": "使用文档",
+        "category": "Minecraft Workbench",
+        "icon": "$(book)"
+      },
+      {
+        "command": "minecraftWorkbench.help.tw",
+        "title": "使用說明",
         "category": "Minecraft Workbench",
         "icon": "$(book)"
       },
@@ -534,6 +750,12 @@
         "icon": "$(extensions)"
       },
       {
+        "command": "minecraftWorkbench.browse.tw",
+        "title": "瀏覽內容",
+        "category": "Minecraft Workbench",
+        "icon": "$(extensions)"
+      },
+      {
         "command": "minecraftWorkbench.installed",
         "title": "Installed Content",
         "category": "Minecraft Workbench",
@@ -542,6 +764,12 @@
       {
         "command": "minecraftWorkbench.installed.zh",
         "title": "已安装内容",
+        "category": "Minecraft Workbench",
+        "icon": "$(package)"
+      },
+      {
+        "command": "minecraftWorkbench.installed.tw",
+        "title": "已安裝內容",
         "category": "Minecraft Workbench",
         "icon": "$(package)"
       },
@@ -558,6 +786,12 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "minecraftWorkbench.inspectInstance.tw",
+        "title": "實例設定",
+        "category": "Minecraft Workbench",
+        "icon": "$(settings-gear)"
+      },
+      {
         "command": "minecraftWorkbench.language",
         "title": "Change Language",
         "category": "Minecraft Workbench",
@@ -566,6 +800,12 @@
       {
         "command": "minecraftWorkbench.language.zh",
         "title": "切换语言",
+        "category": "Minecraft Workbench",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "minecraftWorkbench.language.tw",
+        "title": "切換語言",
         "category": "Minecraft Workbench",
         "icon": "$(globe)"
       },
@@ -582,6 +822,12 @@
         "icon": "$(copy)"
       },
       {
+        "command": "minecraftWorkbench.cloneInstance.tw",
+        "title": "複製實例",
+        "category": "Minecraft Workbench",
+        "icon": "$(copy)"
+      },
+      {
         "command": "minecraftWorkbench.exportPack",
         "title": "Export Modpack",
         "category": "Minecraft Workbench",
@@ -590,6 +836,12 @@
       {
         "command": "minecraftWorkbench.exportPack.zh",
         "title": "导出整合包",
+        "category": "Minecraft Workbench",
+        "icon": "$(export)"
+      },
+      {
+        "command": "minecraftWorkbench.exportPack.tw",
+        "title": "匯出整合包",
         "category": "Minecraft Workbench",
         "icon": "$(export)"
       },
@@ -606,6 +858,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "minecraftWorkbench.importContent.tw",
+        "title": "匯入內容檔案",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
         "command": "minecraftWorkbench.manageInstances",
         "title": "Open Instances",
         "category": "Minecraft Workbench",
@@ -614,6 +872,12 @@
       {
         "command": "minecraftWorkbench.manageInstances.zh",
         "title": "打开实例管理",
+        "category": "Minecraft Workbench",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "minecraftWorkbench.manageInstances.tw",
+        "title": "開啟實例管理",
         "category": "Minecraft Workbench",
         "icon": "$(open-preview)"
       },
@@ -630,6 +894,12 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "minecraftWorkbench.manageAccounts.tw",
+        "title": "管理帳戶",
+        "category": "Minecraft Workbench",
+        "icon": "$(open-preview)"
+      },
+      {
         "command": "minecraftWorkbench.manageJava",
         "title": "Manage Java",
         "category": "Minecraft Workbench",
@@ -637,6 +907,12 @@
       },
       {
         "command": "minecraftWorkbench.manageJava.zh",
+        "title": "管理 Java",
+        "category": "Minecraft Workbench",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "minecraftWorkbench.manageJava.tw",
         "title": "管理 Java",
         "category": "Minecraft Workbench",
         "icon": "$(open-preview)"
@@ -654,6 +930,12 @@
         "icon": "$(open-preview)"
       },
       {
+        "command": "minecraftWorkbench.manageTasks.tw",
+        "title": "管理任務",
+        "category": "Minecraft Workbench",
+        "icon": "$(open-preview)"
+      },
+      {
         "command": "minecraftWorkbench.manageProjects",
         "title": "Manage Projects",
         "category": "Minecraft Workbench",
@@ -662,6 +944,12 @@
       {
         "command": "minecraftWorkbench.manageProjects.zh",
         "title": "管理项目",
+        "category": "Minecraft Workbench",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "minecraftWorkbench.manageProjects.tw",
+        "title": "管理專案",
         "category": "Minecraft Workbench",
         "icon": "$(open-preview)"
       },
@@ -678,6 +966,12 @@
         "icon": "$(shield)"
       },
       {
+        "command": "minecraftWorkbench.agreements.tw",
+        "title": "協議與關於",
+        "category": "Minecraft Workbench",
+        "icon": "$(shield)"
+      },
+      {
         "command": "minecraftWorkbench.manageServers",
         "title": "Manage Servers",
         "category": "Minecraft Workbench",
@@ -686,6 +980,12 @@
       {
         "command": "minecraftWorkbench.manageServers.zh",
         "title": "管理服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.manageServers.tw",
+        "title": "管理服務端",
         "category": "Minecraft Workbench",
         "icon": "$(server)"
       },
@@ -702,6 +1002,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "minecraftWorkbench.createServer.tw",
+        "title": "新建服務端",
+        "category": "Minecraft Workbench",
+        "icon": "$(add)"
+      },
+      {
         "command": "minecraftWorkbench.serverActions",
         "title": "Server Settings & Console",
         "category": "Minecraft Workbench",
@@ -710,6 +1016,12 @@
       {
         "command": "minecraftWorkbench.serverActions.zh",
         "title": "服务端设置与控制台",
+        "category": "Minecraft Workbench",
+        "icon": "$(server)"
+      },
+      {
+        "command": "minecraftWorkbench.serverActions.tw",
+        "title": "服務端設定與主控台",
         "category": "Minecraft Workbench",
         "icon": "$(server)"
       },
@@ -726,6 +1038,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "minecraftWorkbench.startServer.tw",
+        "title": "啟動服務端",
+        "category": "Minecraft Workbench",
+        "icon": "$(play)"
+      },
+      {
         "command": "minecraftWorkbench.stopServer",
         "title": "Stop Server",
         "category": "Minecraft Workbench",
@@ -734,6 +1052,12 @@
       {
         "command": "minecraftWorkbench.stopServer.zh",
         "title": "停止服务端",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "minecraftWorkbench.stopServer.tw",
+        "title": "停止服務端",
         "category": "Minecraft Workbench",
         "icon": "$(debug-stop)"
       },
@@ -750,6 +1074,12 @@
         "icon": "$(plug)"
       },
       {
+        "command": "minecraftWorkbench.mcp.tw",
+        "title": "註冊 / 取消註冊 AI MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
         "command": "minecraftWorkbench.mcpCopy",
         "title": "Copy MCP Connection",
         "category": "Minecraft Workbench",
@@ -758,6 +1088,12 @@
       {
         "command": "minecraftWorkbench.mcpCopy.zh",
         "title": "复制 MCP 连接",
+        "category": "Minecraft Workbench",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "minecraftWorkbench.mcpCopy.tw",
+        "title": "複製 MCP 連線",
         "category": "Minecraft Workbench",
         "icon": "$(copy)"
       },
@@ -780,8 +1116,20 @@
         "icon": "$(plug)"
       },
       {
+        "command": "minecraftWorkbench.registerMcp.tw",
+        "title": "註冊 MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(plug)"
+      },
+      {
         "command": "minecraftWorkbench.unregisterMcp.zh",
         "title": "取消注册 MCP",
+        "category": "Minecraft Workbench",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "minecraftWorkbench.unregisterMcp.tw",
+        "title": "取消註冊 MCP",
         "category": "Minecraft Workbench",
         "icon": "$(debug-disconnect)"
       },
@@ -798,6 +1146,12 @@
         "icon": "$(layout-sidebar-left)"
       },
       {
+        "command": "minecraftWorkbench.showView.tw",
+        "title": "顯示側邊欄分類…",
+        "category": "Minecraft Workbench",
+        "icon": "$(layout-sidebar-left)"
+      },
+      {
         "command": "minecraftWorkbench.terracotta",
         "title": "Terracotta Multiplayer (Beta)",
         "category": "Minecraft Workbench",
@@ -806,6 +1160,12 @@
       {
         "command": "minecraftWorkbench.terracotta.zh",
         "title": "陶瓦联机（Beta）",
+        "category": "Minecraft Workbench",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "minecraftWorkbench.terracotta.tw",
+        "title": "陶瓦聯機（Beta）",
         "category": "Minecraft Workbench",
         "icon": "$(radio-tower)"
       },
@@ -822,6 +1182,12 @@
         "icon": "$(cloud-download)"
       },
       {
+        "command": "minecraftWorkbench.checkExtensionUpdates.tw",
+        "title": "檢查插件更新",
+        "category": "Minecraft Workbench",
+        "icon": "$(cloud-download)"
+      },
+      {
         "command": "minecraftWorkbench.curseforgeKey",
         "title": "Configure CurseForge API Key",
         "category": "Minecraft Workbench",
@@ -830,6 +1196,12 @@
       {
         "command": "minecraftWorkbench.curseforgeKey.zh",
         "title": "配置 CurseForge API 密钥",
+        "category": "Minecraft Workbench",
+        "icon": "$(key)"
+      },
+      {
+        "command": "minecraftWorkbench.curseforgeKey.tw",
+        "title": "設定 CurseForge API 金鑰",
         "category": "Minecraft Workbench",
         "icon": "$(key)"
       },
@@ -846,6 +1218,12 @@
         "icon": "$(shield)"
       },
       {
+        "command": "minecraftWorkbench.reviewServerEula.tw",
+        "title": "確認服務端 EULA",
+        "category": "Minecraft Workbench",
+        "icon": "$(shield)"
+      },
+      {
         "command": "minecraftWorkbench.importServer",
         "title": "Import Server",
         "category": "Minecraft Workbench",
@@ -858,6 +1236,12 @@
         "icon": "$(folder-opened)"
       },
       {
+        "command": "minecraftWorkbench.importServer.tw",
+        "title": "匯入服務端",
+        "category": "Minecraft Workbench",
+        "icon": "$(folder-opened)"
+      },
+      {
         "command": "minecraftWorkbench.exportLogs",
         "title": "Export Launcher Logs",
         "category": "Minecraft Workbench",
@@ -866,6 +1250,12 @@
       {
         "command": "minecraftWorkbench.exportLogs.zh",
         "title": "导出启动器日志",
+        "category": "Minecraft Workbench",
+        "icon": "$(export)"
+      },
+      {
+        "command": "minecraftWorkbench.exportLogs.tw",
+        "title": "匯出啟動器日誌",
         "category": "Minecraft Workbench",
         "icon": "$(export)"
       }
@@ -937,7 +1327,12 @@
       {
         "view": "minecraftWorkbench.instances",
         "contents": "Create an isolated Minecraft instance.\n[New Instance](command:minecraftWorkbench.createInstance)\n[Import Modpack](command:minecraftWorkbench.importPack)\n[Import Instance](command:minecraftWorkbench.importInstance)",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.instances",
+        "contents": "建立獨立的 Minecraft 實例。\n[新建實例](command:minecraftWorkbench.createInstance)\n[匯入整合包](command:minecraftWorkbench.importPack)\n[匯入實例](command:minecraftWorkbench.importInstance)",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.instances",
@@ -947,7 +1342,12 @@
       {
         "view": "minecraftWorkbench.projects",
         "contents": "Create a Fabric, Forge or NeoForge mod project.\n[New Mod Project](command:minecraftWorkbench.createProject)\n[Import Project](command:minecraftWorkbench.importProject)",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.projects",
+        "contents": "建立 Fabric、Forge 或 NeoForge 模組專案。\n[新建模組專案](command:minecraftWorkbench.createProject)\n[匯入專案](command:minecraftWorkbench.importProject)",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.projects",
@@ -957,7 +1357,12 @@
       {
         "view": "minecraftWorkbench.accounts",
         "contents": "[Add Account](command:minecraftWorkbench.addAccount)",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.accounts",
+        "contents": "[新增帳戶](command:minecraftWorkbench.addAccount)",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.accounts",
@@ -967,7 +1372,12 @@
       {
         "view": "minecraftWorkbench.java",
         "contents": "[Detect Local Java](command:minecraftWorkbench.detectJava)\n[Download JDK](command:minecraftWorkbench.downloadJava)",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.java",
+        "contents": "[檢測本機 Java](command:minecraftWorkbench.detectJava)\n[下載 JDK](command:minecraftWorkbench.downloadJava)",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.java",
@@ -977,7 +1387,12 @@
       {
         "view": "minecraftWorkbench.downloads",
         "contents": "Installation and download tasks appear here.",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.downloads",
+        "contents": "安裝和下載任務顯示在此處。",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.downloads",
@@ -987,7 +1402,12 @@
       {
         "view": "minecraftWorkbench.servers",
         "contents": "[New Server](command:minecraftWorkbench.createServer)\n[Import Server](command:minecraftWorkbench.importServer)",
-        "when": "minecraftWorkbench.language != zh-cn"
+        "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
+      },
+      {
+        "view": "minecraftWorkbench.servers",
+        "contents": "[新建服務端](command:minecraftWorkbench.createServer)\n[匯入服務端](command:minecraftWorkbench.importServer)",
+        "when": "minecraftWorkbench.language == zh-tw"
       },
       {
         "view": "minecraftWorkbench.servers",
@@ -999,7 +1419,7 @@
       "view/title": [
         {
           "command": "minecraftWorkbench.createInstance",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1008,8 +1428,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.createInstance.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.refresh",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1018,8 +1443,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.refresh.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.createProject",
-          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1028,8 +1458,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.createProject.tw",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.addAccount",
-          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1038,8 +1473,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.addAccount.tw",
+          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.detectJava",
-          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1048,8 +1488,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.detectJava.tw",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.downloadJava",
-          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1058,8 +1503,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.downloadJava.tw",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.output",
-          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1068,8 +1518,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.output.tw",
+          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.importPack",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1078,8 +1533,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.importPack.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.refreshManifest",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1088,8 +1548,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.refreshManifest.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.importProject",
-          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1098,8 +1563,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.importProject.tw",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.addJava",
-          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1108,8 +1578,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.addJava.tw",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.checkUpdates",
-          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1118,8 +1593,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.checkUpdates.tw",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.conflicts",
-          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1128,8 +1608,13 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.conflicts.tw",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.browse",
-          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1138,8 +1623,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.browse.tw",
+          "when": "(view == minecraftWorkbench.content && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.manageInstances",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1148,8 +1638,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.manageInstances.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.manageAccounts",
-          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1158,8 +1653,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.manageAccounts.tw",
+          "when": "(view == minecraftWorkbench.accounts && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.manageJava",
-          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1168,8 +1668,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.manageJava.tw",
+          "when": "(view == minecraftWorkbench.java && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.manageTasks",
-          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1178,8 +1683,13 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.manageTasks.tw",
+          "when": "(view == minecraftWorkbench.downloads && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.manageProjects",
-          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "navigation"
         },
         {
@@ -1188,13 +1698,18 @@
           "group": "navigation"
         },
         {
+          "command": "minecraftWorkbench.manageProjects.tw",
+          "when": "(view == minecraftWorkbench.projects && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "navigation"
+        },
+        {
           "command": "minecraftWorkbench.createServer",
-          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "navigation@1"
         },
         {
           "command": "minecraftWorkbench.manageServers",
-          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "navigation@2"
         },
         {
@@ -1203,13 +1718,23 @@
           "group": "navigation@1"
         },
         {
+          "command": "minecraftWorkbench.createServer.tw",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
+          "group": "navigation@1"
+        },
+        {
           "command": "minecraftWorkbench.manageServers.zh",
           "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
           "group": "navigation@2"
         },
         {
+          "command": "minecraftWorkbench.manageServers.tw",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
+          "group": "navigation@2"
+        },
+        {
           "command": "minecraftWorkbench.showView",
-          "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "views"
         },
         {
@@ -1218,8 +1743,13 @@
           "group": "views"
         },
         {
+          "command": "minecraftWorkbench.showView.tw",
+          "when": "view == minecraftWorkbench.home && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
+          "group": "views"
+        },
+        {
           "command": "minecraftWorkbench.importInstance",
-          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "tools"
         },
         {
@@ -1228,20 +1758,30 @@
           "group": "tools"
         },
         {
+          "command": "minecraftWorkbench.importInstance.tw",
+          "when": "(view == minecraftWorkbench.instances && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "tools"
+        },
+        {
           "command": "minecraftWorkbench.importServer",
-          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "navigation@3"
         },
         {
           "command": "minecraftWorkbench.importServer.zh",
           "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
           "group": "navigation@3"
+        },
+        {
+          "command": "minecraftWorkbench.importServer.tw",
+          "when": "view == minecraftWorkbench.servers && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
         {
           "command": "minecraftWorkbench.launch",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1250,8 +1790,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.launch.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.install",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1260,8 +1805,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.install.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.configureInstance",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1270,8 +1820,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.configureInstance.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.backups",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1280,8 +1835,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.backups.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.openInstance",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1290,8 +1850,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.openInstance.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.exportInstance",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1300,8 +1865,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.exportInstance.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.deleteInstance",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1310,8 +1880,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.deleteInstance.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.stop",
-          "when": "(viewItem == runningInstance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == runningInstance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1320,8 +1895,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.stop.tw",
+          "when": "(viewItem == runningInstance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.gameLog",
-          "when": "(viewItem == runningInstance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == runningInstance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1330,8 +1910,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.gameLog.tw",
+          "when": "(viewItem == runningInstance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.removeAccount",
-          "when": "(viewItem == account && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == account && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1340,8 +1925,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.removeAccount.tw",
+          "when": "(viewItem == account && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.projectActions",
-          "when": "(viewItem == project && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == project && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1350,8 +1940,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.projectActions.tw",
+          "when": "(viewItem == project && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.contentActions",
-          "when": "(viewItem == contentItem && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == contentItem && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1360,8 +1955,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.contentActions.tw",
+          "when": "(viewItem == contentItem && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.jobActions",
-          "when": "(viewItem == runningJob && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == runningJob && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1370,8 +1970,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.jobActions.tw",
+          "when": "(viewItem == runningJob && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.jobActions",
-          "when": "(viewItem == job && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == job && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "inline"
         },
         {
@@ -1380,8 +1985,13 @@
           "group": "inline"
         },
         {
+          "command": "minecraftWorkbench.jobActions.tw",
+          "when": "(viewItem == job && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "inline"
+        },
+        {
           "command": "minecraftWorkbench.cloneInstance",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1390,8 +2000,13 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.cloneInstance.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.exportPack",
-          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted",
+          "when": "(viewItem == instance && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted",
           "group": "manage"
         },
         {
@@ -1400,13 +2015,18 @@
           "group": "manage"
         },
         {
+          "command": "minecraftWorkbench.exportPack.tw",
+          "when": "(viewItem == instance && minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted",
+          "group": "manage"
+        },
+        {
           "command": "minecraftWorkbench.startServer",
-          "when": "view == minecraftWorkbench.servers && viewItem == server && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.servers && viewItem == server && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "inline@1"
         },
         {
           "command": "minecraftWorkbench.stopServer",
-          "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn",
+          "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw",
           "group": "inline@1"
         },
         {
@@ -1415,27 +2035,45 @@
           "group": "inline@1"
         },
         {
+          "command": "minecraftWorkbench.startServer.tw",
+          "when": "view == minecraftWorkbench.servers && viewItem == server && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
+          "group": "inline@1"
+        },
+        {
           "command": "minecraftWorkbench.stopServer.zh",
           "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn",
+          "group": "inline@1"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer.tw",
+          "when": "view == minecraftWorkbench.servers && viewItem == runningServer && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw",
           "group": "inline@1"
         }
       ],
       "commandPalette": [
         {
           "command": "minecraftWorkbench.mode",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.mode.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.mode.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.createInstance",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.createInstance.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.createInstance.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.selectInstance",
@@ -1446,36 +2084,56 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.selectInstance.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.launch",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.launch.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.launch.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.stop",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.stop.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.stop.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.install",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.install.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.install.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.configureInstance",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.configureInstance.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.configureInstance.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.deleteInstance",
@@ -1483,6 +2141,10 @@
         },
         {
           "command": "minecraftWorkbench.deleteInstance.zh",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.deleteInstance.tw",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
@@ -1494,11 +2156,19 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.openInstance.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.gameLog",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.gameLog.zh",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.gameLog.tw",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
@@ -1510,12 +2180,20 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.exportInstance.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.addAccount",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.addAccount.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.addAccount.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.selectAccount",
@@ -1523,6 +2201,10 @@
         },
         {
           "command": "minecraftWorkbench.selectAccount.zh",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.selectAccount.tw",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
@@ -1534,28 +2216,44 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.removeAccount.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.detectJava",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.detectJava.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.detectJava.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.addJava",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.addJava.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.addJava.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.downloadJava",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.downloadJava.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.downloadJava.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.javaActions",
@@ -1566,20 +2264,32 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.javaActions.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.search",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.search.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.search.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.importPack",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.importPack.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.importPack.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.contentActions",
@@ -1590,44 +2300,68 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.contentActions.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.checkUpdates",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.checkUpdates.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.checkUpdates.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.conflicts",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.conflicts.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.conflicts.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.backups",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.backups.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.backups.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.createProject",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.createProject.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.createProject.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.importProject",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.importProject.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.importProject.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.projectActions",
@@ -1635,6 +2369,10 @@
         },
         {
           "command": "minecraftWorkbench.projectActions.zh",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.projectActions.tw",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
@@ -1646,12 +2384,20 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.jobActions.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.refreshManifest",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.refreshManifest.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.refreshManifest.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.refresh",
@@ -1662,52 +2408,80 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.refresh.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.settings",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.settings.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.settings.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.output",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.output.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.output.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.openStorage",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.openStorage.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.openStorage.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.proxyCredentials",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.proxyCredentials.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.proxyCredentials.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.help",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.help.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.help.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.browse",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.browse.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.browse.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.installed",
@@ -1715,6 +2489,10 @@
         },
         {
           "command": "minecraftWorkbench.installed.zh",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.installed.tw",
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
@@ -1726,124 +2504,188 @@
           "when": "(false) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.inspectInstance.tw",
+          "when": "(false) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.language",
-          "when": "minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.language.zh",
           "when": "minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.language.tw",
+          "when": "minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.cloneInstance",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.cloneInstance.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.cloneInstance.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.exportPack",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.exportPack.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.exportPack.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.importContent",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.importContent.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.importContent.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.manageInstances",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageInstances.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageInstances.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.manageAccounts",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageAccounts.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageAccounts.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.manageJava",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageJava.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageJava.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.manageTasks",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageTasks.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageTasks.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.manageProjects",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageProjects.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageProjects.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.agreements",
-          "when": "minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.agreements.zh",
           "when": "minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.agreements.tw",
+          "when": "minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.manageServers",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.manageServers.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.manageServers.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.createServer",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.createServer.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.createServer.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.serverActions",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.serverActions.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.serverActions.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.startServer",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.startServer.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.startServer.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.stopServer",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.stopServer.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.stopServer.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.mcp",
@@ -1854,84 +2696,128 @@
           "when": "false"
         },
         {
+          "command": "minecraftWorkbench.mcp.tw",
+          "when": "false"
+        },
+        {
           "command": "minecraftWorkbench.mcpCopy",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         },
         {
           "command": "minecraftWorkbench.mcpCopy.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         },
         {
+          "command": "minecraftWorkbench.mcpCopy.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+        },
+        {
           "command": "minecraftWorkbench.registerMcp",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
         },
         {
           "command": "minecraftWorkbench.unregisterMcp",
-          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         },
         {
           "command": "minecraftWorkbench.registerMcp.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
         },
         {
+          "command": "minecraftWorkbench.registerMcp.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted && !minecraftWorkbench.mcpEnabled"
+        },
+        {
           "command": "minecraftWorkbench.unregisterMcp.zh",
           "when": "minecraftWorkbench.language == zh-cn && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
         },
         {
+          "command": "minecraftWorkbench.unregisterMcp.tw",
+          "when": "minecraftWorkbench.language == zh-tw && minecraftWorkbench.agreementsAccepted && minecraftWorkbench.mcpEnabled"
+        },
+        {
           "command": "minecraftWorkbench.showView",
-          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.showView.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.showView.tw",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.importInstance",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.importInstance.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
         },
         {
+          "command": "minecraftWorkbench.importInstance.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
           "command": "minecraftWorkbench.terracotta",
-          "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language != zh-cn"
+          "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.terracotta.zh",
           "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.terracotta.tw",
+          "when": "config.minecraftWorkbench.terracotta.enabled && minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.checkExtensionUpdates",
-          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.checkExtensionUpdates.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.checkExtensionUpdates.tw",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.githubUpdates && minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.curseforgeKey",
-          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.curseforgeKey.zh",
           "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.curseforgeKey.tw",
+          "when": "minecraftWorkbench.agreementsAccepted && minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.importServer",
-          "when": "minecraftWorkbench.language != zh-cn"
+          "when": "minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw"
         },
         {
           "command": "minecraftWorkbench.importServer.zh",
           "when": "minecraftWorkbench.language == zh-cn"
         },
         {
+          "command": "minecraftWorkbench.importServer.tw",
+          "when": "minecraftWorkbench.language == zh-tw"
+        },
+        {
           "command": "minecraftWorkbench.exportLogs",
-          "when": "(minecraftWorkbench.language != zh-cn) && minecraftWorkbench.agreementsAccepted"
+          "when": "(minecraftWorkbench.language != zh-cn && minecraftWorkbench.language != zh-tw) && minecraftWorkbench.agreementsAccepted"
         },
         {
           "command": "minecraftWorkbench.exportLogs.zh",
           "when": "(minecraftWorkbench.language == zh-cn) && minecraftWorkbench.agreementsAccepted"
+        },
+        {
+          "command": "minecraftWorkbench.exportLogs.tw",
+          "when": "(minecraftWorkbench.language == zh-tw) && minecraftWorkbench.agreementsAccepted"
         }
       ]
     },
@@ -1947,11 +2833,13 @@
             "enum": [
               "en",
               "zh-cn",
+              "zh-tw",
               "auto"
             ],
             "enumItemLabels": [
               "%enum.language.en%",
               "%enum.language.zh-cn%",
+              "%enum.language.zh-tw%",
               "%enum.language.auto%"
             ]
           },
