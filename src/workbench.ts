@@ -5,7 +5,7 @@ import { Store } from './store';
 import { ContentService } from './content';
 import { Minecraft } from './minecraft';
 import { UI } from './ui';
-import { config, t } from './config';
+import { config, locale, t } from './config';
 import { minecraftDirectory, instancesDirectory } from './game-paths';
 import { Item } from './views';
 import { Instance } from './models';
@@ -96,7 +96,7 @@ export class Workbench implements vscode.Disposable {
     const memory = memorySettings();
     return {
       consent: this.consent.snapshot(),
-      locale: t('en', 'zh-cn') as Bootstrap['locale'],
+      locale: locale(),
       page: resolvePage(this.page, this.store.state.mode, this.terracotta?.snapshot().enabled),
       kind: this.kind,
       instances: this.store.state.instances,

@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { toTraditional } from '../traditional';
 import { renderServers } from './server-page';
 import { renderServerCreate } from './server-create-page';
 import { renderServer } from './server-detail-page';
@@ -52,7 +53,7 @@ let boot: Bootstrap;
 let initialState: Bootstrap | undefined;
 let initialNavigation: { page: WorkbenchPage; kind: ProjectKind } | undefined;
 let page: WorkbenchPage = 'discover';
-let agreementLanguage: 'auto' | 'en' | 'zh-cn' = 'auto';
+let agreementLanguage: 'auto' | 'en' | 'zh-cn' | 'zh-tw' = 'auto';
 let kind: ProjectKind = 'mod';
 let query = '';
 let order = 'downloads';
@@ -93,7 +94,8 @@ let updateManaged: (() => void) | undefined;
 let syncMemoryControls: (() => void) | undefined;
 let debounce: ReturnType<typeof setTimeout>;
 const root = document.getElementById('app')!;
-const L = (en: string, zh: string) => (boot?.locale === 'zh-cn' ? zh : en);
+const L = (en: string, zh: string) =>
+  boot?.locale === 'zh-cn' ? zh : boot?.locale === 'zh-tw' ? toTraditional(zh) : en;
 const currentInstance = () => boot.instances.find((i) => i.id === boot.selectedInstance);
 const currentTarget = () =>
   boot.mode === 'server'
@@ -243,7 +245,8 @@ async function action(name: string) {
   if (resultMessage) notice(resultMessage);
 }
 function shell() {
-  document.documentElement.lang = boot.locale === 'zh-cn' ? 'zh-CN' : 'en';
+  document.documentElement.lang =
+    boot.locale === 'zh-cn' ? 'zh-CN' : boot.locale === 'zh-tw' ? 'zh-TW' : 'en';
   document.body.dataset.density = boot.preferences.density;
   document.body.dataset.contentLayout = boot.preferences.layout || 'auto';
   const isServer = boot.mode === 'server';
@@ -2234,11 +2237,11 @@ void call<Bootstrap>('ready')
           query?: string;
           order?: string;
           onlyCompatible?: boolean;
-          agreementLanguage?: 'auto' | 'en' | 'zh-cn';
+          agreementLanguage?: 'auto' | 'en' | 'zh-cn' | 'zh-tw';
         }
       | undefined;
     if (saved) {
-      if (['auto', 'en', 'zh-cn'].includes(String(saved.agreementLanguage)))
+      if (['auto', 'en', 'zh-cn', 'zh-tw'].includes(String(saved.agreementLanguage)))
         agreementLanguage = saved.agreementLanguage!;
       query = saved.query || '';
       order = saved.order || boot.preferences.order;
