@@ -11,6 +11,8 @@ import { inspectJava } from './java';
 import { Template } from './developer';
 import { describeError } from './errors';
 import { moveInstance } from './instance-move';
+import { manageInstances } from './instance-actions';
+import { instanceGroup } from './instance-groups';
 
 export class LauncherActions {
   constructor(
@@ -35,6 +37,54 @@ export class LauncherActions {
       return instance;
     };
     switch (method) {
+      case 'launcher.manageInstances':
+        return manageInstances(this.store, this.minecraft, this.ui.jobs, params);
+      case 'launcher.renameGroup': {
+        const group = instanceGroup(text('group', 100));
+        if (!group) throw new Error('Invalid instance group');
+        const ids = this.store.state.instances
+          .filter((instance) => instance.group === group)
+          .map((instance) => instance.id);
+        if (!ids.length) throw new Error('Instance group not found.');
+        const name =
+          params.name === undefined
+            ? await vscode.window.showInputBox({
+                title: t('Rename group', '重命名分组'),
+                value: group,
+                validateInput: (value) => {
+                  try {
+                    return instanceGroup(value)
+                      ? undefined
+                      : t('Enter a group name.', '请输入分组名称。');
+                  } catch {
+                    return t('Invalid group name.', '分组名称无效。');
+                  }
+                },
+              })
+            : text('name', 100);
+        if (name === undefined) return { cancelled: true };
+        if (!instanceGroup(name)) throw new Error('Invalid instance group');
+        return manageInstances(this.store, this.minecraft, this.ui.jobs, {
+          ids,
+          action: 'group',
+          group: name,
+        });
+      }
+      case 'launcher.importInstances': {
+        await trusted();
+        const mode = text('mode');
+        if (mode !== 'link' && mode !== 'copy') throw new Error('Invalid import mode.');
+        return this.ui.jobs.run(['Import selected instances', '导入所选实例'], (signal, report) =>
+          this.ui.imports.commitMany(
+            params.entries as { key: string; name: string }[],
+            mode,
+            signal,
+            report,
+            params.root ? text('root') : undefined,
+            params.group === undefined ? undefined : text('group', 100),
+          ),
+        );
+      }
       case 'launcher.gameVersions':
         return this.minecraft.manifest(params.force === true);
       case 'launcher.loaderVersions': {

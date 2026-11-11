@@ -132,3 +132,54 @@ test('disposing a pending sidebar releases native loading requests', async () =>
     mock.restoreAll();
   }
 });
+
+test('instance groups use native folders with stable instance identities and preserve flat lists without groups', async () => {
+  const { View } = await import('../src/views');
+  const store = new Store('/unused', () => {});
+  store.state.instances = [
+    {
+      id: 'a',
+      name: 'A',
+      group: 'Survival',
+      minecraft: '1.20.1',
+      loader: 'fabric',
+      directory: '/a',
+      createdAt: '',
+    },
+    {
+      id: 'b',
+      name: 'B',
+      group: 'Modpacks',
+      minecraft: '1.20.1',
+      loader: 'forge',
+      directory: '/b',
+      createdAt: '',
+    },
+    { id: 'c', name: 'C', minecraft: '1.8.9', loader: 'vanilla', directory: '/c', createdAt: '' },
+  ];
+  const view = new View(
+    'instances',
+    store,
+    { status: () => 'stopped' } as never,
+    {} as never,
+    {} as never,
+  );
+  try {
+    const groups = await view.getChildren();
+    assert.deepEqual(
+      groups.map((item) => item.group),
+      ['Modpacks', 'Survival', ''],
+    );
+    assert.ok(groups.every((item) => item.kind === 'instanceGroup'));
+    assert.equal((await view.getChildren(groups[1]))[0].id, 'a');
+    assert.equal((await view.getChildren(groups[2]))[0].id, 'c');
+    for (const instance of store.state.instances) delete instance.group;
+    assert.deepEqual(
+      (await view.getChildren()).map((item) => item.id),
+      ['a', 'b', 'c'],
+    );
+  } finally {
+    view.dispose();
+    store.dispose();
+  }
+});

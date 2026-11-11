@@ -4,6 +4,28 @@ import type * as VSCode from 'vscode';
 import { Jobs } from '../src/jobs';
 const vscode = require('vscode') as typeof VSCode;
 
+test('a batch returning partial results after cancellation is recorded as cancelled', async () => {
+  const original = vscode.window;
+  Object.assign(vscode, {
+    window: {
+      withProgress: async (_options: unknown, work: Function) =>
+        work({ report() {} }, { onCancellationRequested: () => ({ dispose() {} }) }),
+    },
+  });
+  const jobs = new Jobs(() => {}, { info() {}, error() {} } as never);
+  try {
+    const result = await jobs.run('Import instances', async () => {
+      jobs.items[0].controller.abort();
+      return { imported: 1, cancelled: true };
+    });
+    assert.equal(result.imported, 1);
+    assert.equal(jobs.items[0].status, 'cancelled');
+  } finally {
+    jobs.dispose();
+    Object.assign(vscode, { window: original });
+  }
+});
+
 test('an external abort is recorded as cancelled while a real failure stays failed', async () => {
   const original = vscode.window;
   Object.assign(vscode, {

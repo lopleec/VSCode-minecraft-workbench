@@ -3,6 +3,15 @@ import * as path from 'node:path';
 import { Store } from './store';
 import { extractZip } from './files';
 import { ImportScan, InstanceImporter, scanInstances } from './instance-import';
+import type { Instance } from './models';
+import { instanceGroup } from './instance-groups';
+import { describeError } from './errors';
+
+export interface BatchImportResult {
+  imported: { key: string; instance: Instance }[];
+  failed: { key: string; name: string; message: string }[];
+  cancelled: boolean;
+}
 
 export class ImportSession {
   private stage?: string;
@@ -66,6 +75,84 @@ export class ImportSession {
     this.stage = undefined;
     this.scan = undefined;
     this.source = undefined;
+  }
+  async commitMany(
+    entries: { key: string; name: string }[],
+    mode: 'link' | 'copy',
+    signal: AbortSignal,
+    report: (text: string) => void,
+    root?: string,
+    group?: string,
+  ): Promise<BatchImportResult> {
+    if (this.busy || !this.source || !this.scan)
+      throw new Error('Scan the source directory first.');
+    if (
+      !Array.isArray(entries) ||
+      !entries.length ||
+      entries.length > 2000 ||
+      entries.some(
+        (entry) =>
+          !entry ||
+          typeof entry.key !== 'string' ||
+          typeof entry.name !== 'string' ||
+          !entry.name.trim() ||
+          entry.name.length > 100 ||
+          /[\x00-\x1f]/.test(entry.name),
+      ) ||
+      new Set(entries.map((entry) => entry.key)).size !== entries.length
+    )
+      throw new Error('Invalid instance import selection.');
+    if (
+      entries.some(
+        (entry) => !this.scan!.candidates.some((candidate) => candidate.key === entry.key),
+      )
+    )
+      throw new Error('Instance was not found in the scan.');
+    if (mode !== 'copy' && mode !== 'link') throw new Error('Invalid import mode.');
+    if (this.stage && mode !== 'copy') throw new Error('ZIP instances must be copied.');
+    const targetGroup = instanceGroup(group);
+    this.busy = true;
+    const result: BatchImportResult = { imported: [], failed: [], cancelled: false };
+    try {
+      const refreshed = new Map(
+        (await scanInstances(this.source, signal)).candidates.map((candidate) => [
+          candidate.key,
+          candidate,
+        ]),
+      );
+      for (const entry of entries) {
+        if (signal.aborted) {
+          result.cancelled = true;
+          break;
+        }
+        report(
+          `${result.imported.length + result.failed.length + 1} / ${entries.length}: ${entry.name}`,
+        );
+        try {
+          const candidate = refreshed.get(entry.key);
+          if (!candidate) throw new Error('The source changed. Scan it again.');
+          const instance = await new InstanceImporter(this.store).import(
+            candidate,
+            mode,
+            signal,
+            entry.name,
+            root,
+            true,
+            { name: entry.name, group: targetGroup },
+          );
+          result.imported.push({ key: entry.key, instance });
+        } catch (error) {
+          if (signal.aborted) {
+            result.cancelled = true;
+            break;
+          }
+          result.failed.push({ ...entry, message: describeError(error) });
+        }
+      }
+      return result;
+    } finally {
+      this.busy = false;
+    }
   }
   dispose() {
     void this.clear().catch(() => {});

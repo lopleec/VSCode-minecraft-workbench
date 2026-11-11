@@ -2,7 +2,7 @@
   "name": "minecraft-workbench",
   "displayName": "Minecraft Workbench",
   "description": "%extension.description%",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "Lopleec",
   "license": "MIT",
   "engines": {
@@ -2112,6 +2112,21 @@
             "markdownDescription": "%setting.debugPort%",
             "minimum": 1024,
             "maximum": 65535
+          },
+          "minecraftWorkbench.linuxWindowSystem": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "x11",
+              "wayland"
+            ],
+            "default": "auto",
+            "enumItemLabels": [
+              "%enum.linuxWindowSystem.auto%",
+              "X11 / XWayland",
+              "Wayland"
+            ],
+            "markdownDescription": "%setting.linuxWindowSystem%"
           }
         }
       },

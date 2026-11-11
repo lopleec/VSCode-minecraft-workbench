@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { gameEnvironment } from './game-environment';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -579,7 +580,10 @@ export class Developer {
         'Minecraft Workbench',
         new vscode.ProcessExecution(runtime.path, args, {
           cwd: project.directory,
-          env: { ...process.env, JAVA_HOME: path.dirname(path.dirname(runtime.path)) },
+          env: {
+            ...gameEnvironment(process.env, process.platform, config('linuxWindowSystem', 'auto')),
+            JAVA_HOME: path.dirname(path.dirname(runtime.path)),
+          },
         }),
         ['$javac'],
       );

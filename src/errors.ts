@@ -3,6 +3,10 @@ import { redact } from './files';
 import { HttpError } from './network';
 
 const messages: [string, string][] = [
+  ['Invalid instance group', '实例分组名称无效'],
+  ['Instance group not found.', '实例分组不存在。'],
+  ['Invalid instance import selection.', '实例导入选择无效。'],
+  ['Select between 1 and 2000 instances.', '请选择 1 到 2000 个实例。'],
   ['Invalid JSON response from', '返回了无效 JSON 的服务：'],
   ['Enable Terracotta Beta in Settings first.', '请先在设置中开启陶瓦联机 Beta。'],
   ['Read and accept the Terracotta notices first.', '请先阅读并确认陶瓦联机须知。'],

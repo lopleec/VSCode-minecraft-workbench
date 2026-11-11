@@ -24,7 +24,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'workbench_export_logs',
     method: 'action',
     description:
-      'Open the native Save dialog to export sanitized launcher diagnostics. No credentials or logs are returned to the AI.',
+      'Open native dialogs to choose sanitized or original launcher diagnostics and save a ZIP. No credentials or logs are returned to the AI.',
     properties: { action: { type: 'string', const: 'exportLogs' } },
     required: ['action'],
   },
@@ -48,6 +48,49 @@ export const mcpOperations: McpOperation[] = [
     },
     required: ['action', 'files', 'kind'],
     destructive: true,
+  },
+  {
+    name: 'instance_manage_selected',
+    method: 'launcher.manageInstances',
+    description:
+      'Move selected client instances to a group, stop them, repair them, or remove them. Removal requires stopped instances and native user confirmation. Files managed in place are kept.',
+    properties: {
+      ids: { type: 'array', items: id, minItems: 1, maxItems: 2000 },
+      action: choice(['group', 'stop', 'repair', 'remove']),
+      group: str('Group name; empty removes grouping. Omit to open native group selection.'),
+    },
+    required: ['ids', 'action'],
+    destructive: true,
+  },
+  {
+    name: 'instance_rename_group',
+    method: 'launcher.renameGroup',
+    description:
+      'Rename a client instance group. Omit name to use a native input dialog. Existing target groups are merged.',
+    properties: { group: str('Existing group name'), name: str('New group name') },
+    required: ['group'],
+  },
+  {
+    name: 'instance_import_selected',
+    method: 'launcher.importInstances',
+    description:
+      'Import multiple candidates from instance_scan in one cancellable task. Rechecks the source once, reports individual failures, and optionally groups the imported instances.',
+    properties: {
+      entries: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 2000,
+        items: {
+          type: 'object',
+          properties: { key: str('Candidate key'), name: str('Instance name') },
+          required: ['key', 'name'],
+        },
+      },
+      mode: choice(['link', 'copy']),
+      root: str('Optional shared Minecraft directory'),
+      group: str('Optional instance group'),
+    },
+    required: ['entries', 'mode'],
   },
   {
     name: 'instance_move',
@@ -218,6 +261,7 @@ export const mcpOperations: McpOperation[] = [
         type: 'object',
         properties: {
           name: str('Instance name'),
+          group: str('Optional instance group'),
           minecraft: str('Minecraft version'),
           loader: choice(['vanilla', 'fabric', 'quilt', 'forge', 'neoforge']),
           loaderVersion: str('Loader version'),
@@ -241,7 +285,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'instance_save_settings',
     method: 'saveInstance',
     description:
-      'Save client name, java path, accountId, minMemory/maxMemory (MB), gc (default/g1/zgc), jvmArgs and gameArgs arrays, resolution {width,height,fullscreen}, server address, backupBeforeLaunch. Omit memory fields for global automatic memory.',
+      'Save client name, group, java path, accountId, minMemory/maxMemory (MB), gc (default/g1/zgc), jvmArgs and gameArgs arrays, resolution {width,height,fullscreen}, server address, backupBeforeLaunch. Omit memory fields for global automatic memory.',
     properties: { ...instanceId, value: { type: 'object' } },
     required: ['instanceId', 'value'],
   },

@@ -1,9 +1,11 @@
 import { Account, Instance } from './models';
 import { validGameLanguage } from './game-language';
+import { instanceGroup } from './instance-groups';
 
 export type InstanceSettings = Pick<
   Instance,
   | 'name'
+  | 'group'
   | 'accountId'
   | 'java'
   | 'minMemory'
@@ -78,6 +80,7 @@ export function validateInstanceSettings(value: unknown, accounts: Account[]): I
     throw new Error('Invalid backup preference');
   return {
     name,
+    group: instanceGroup(input.group),
     gameLanguage,
     accountId,
     java: text('java'),

@@ -12,9 +12,11 @@ import { Servers } from './servers';
 import type { ServerProfile } from './models';
 import { serverEngines } from './server-catalog';
 import { serverTarget } from './server-settings';
+import { instanceGroups } from './instance-groups';
 
 export type ItemValue = Instance | Account | Project | Content | JavaRuntime | Job | ServerProfile;
 export class Item extends vscode.TreeItem {
+  group?: string;
   constructor(
     label: string,
     readonly kind: string,
@@ -231,7 +233,32 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       ];
     }
     if (this.section === 'instances') {
-      return state.instances.map((instance) => {
+      if (!_parent && state.instances.some((instance) => instance.group)) {
+        return [
+          ...instanceGroups(state.instances),
+          ...(state.instances.some((instance) => !instance.group) ? [''] : []),
+        ].map((group) => {
+          const item = new Item(
+            group || t('Ungrouped', '未分组'),
+            'instanceGroup',
+            undefined,
+            'folder',
+            undefined,
+            String(state.instances.filter((instance) => (instance.group || '') === group).length),
+            true,
+          );
+          item.group = group;
+          item.id = `minecraftWorkbench.instances.group:${encodeURIComponent(group)}`;
+          return item;
+        });
+      }
+      const instances = _parent
+        ? state.instances.filter(
+            (instance) =>
+              _parent.kind === 'instanceGroup' && (instance.group || '') === _parent.group,
+          )
+        : state.instances;
+      return instances.map((instance) => {
         const status = this.minecraft.status(instance);
         const running = status !== 'stopped';
         const item = new Item(

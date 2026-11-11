@@ -73,10 +73,12 @@ export class Jobs implements vscode.Disposable {
               lastUpdate = Date.now();
             }
           });
-          job.status = 'done';
+          job.status = job.controller.signal.aborted ? 'cancelled' : 'done';
           job.detail = undefined;
           log();
-          this.output.info(`${prefix}: Completed (${((Date.now() - started) / 1000).toFixed(1)}s)`);
+          this.output.info(
+            `${prefix}: ${job.status === 'cancelled' ? 'Cancelled' : 'Completed'} (${((Date.now() - started) / 1000).toFixed(1)}s)`,
+          );
           return result;
         } catch (error) {
           job.status =

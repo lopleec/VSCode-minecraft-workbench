@@ -47,6 +47,7 @@ export interface ServerProfile {
 export interface Instance {
   id: string;
   name: string;
+  group?: string;
   minecraft: string;
   versionId?: string;
   loader: Loader;

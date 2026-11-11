@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.5.2 — 2026-11-11
+
+### Added
+
+- Group instances in the sidebar and instance list; filter, sort, rename groups and batch stop, repair or remove instances. ([#11](https://github.com/lopleec/VSCode-minecraft-workbench/issues/11))
+- Select all or filtered instances during import, assign a group and import them in one cancellable task. Large imports recheck the source once instead of rescanning for each instance.
+- Expose batch instance management and import through MCP.
+
+### Fixed
+
+- Correct inherited VS Code GTK and Snap environment settings for Linux game windows and development clients, including GNOME/Wayland title-bar compatibility. Add an optional X11/Wayland setting. ([#9](https://github.com/lopleec/VSCode-minecraft-workbench/issues/9))
+- Keep completed imports when a batch is cancelled and report individual failures without stopping the remaining imports.
+
+### 新增
+
+- 侧栏及实例列表支持分组，可筛选、排序、重命名分组，并批量停止、修复或删除实例。
+- 导入时支持全选、选择筛选结果和指定分组，整批导入可取消；大量实例只统一重检一次来源，不再逐个重复扫描。
+- MCP 支持实例批量管理和批量导入。
+
+### 修复
+
+- 修正 Linux 游戏及开发客户端继承的 VS Code GTK／Snap 环境，改善 GNOME／Wayland 标题栏兼容性；增加可选的 X11／Wayland 设置。
+- 取消批量导入时保留已完成的实例，单个实例失败后继续处理其他实例。
+
 ## 0.5.1 — 2026-11-02
 
 ### Added

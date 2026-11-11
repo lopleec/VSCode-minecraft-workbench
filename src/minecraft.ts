@@ -22,6 +22,7 @@ import { RuntimeQueue } from './runtime-queue';
 import { resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 import { gameJavaExecutable } from './game-java';
+import { gameEnvironment } from './game-environment';
 
 export class Minecraft {
   readonly running = new Map<string, ChildProcess>();
@@ -245,6 +246,14 @@ export class Minecraft {
           const address = serverOverride?.trim() || instance.server?.trim();
           const portMatch = address?.match(/^(.*):(\d+)$/);
           const executable = await gameJavaExecutable(java.path);
+          const env = gameEnvironment(
+            process.env,
+            process.platform,
+            config('linuxWindowSystem', 'auto'),
+          );
+          this.jobs.output.info(
+            `[${instance.name}] Window environment: ${JSON.stringify(Object.fromEntries(['DISPLAY', 'WAYLAND_DISPLAY', 'XDG_SESSION_TYPE', 'GDK_BACKEND', 'SDL_VIDEO_DRIVER', 'SDL_VIDEODRIVER'].filter((key) => env[key] !== undefined).map((key) => [key, env[key]])))}`,
+          );
           this.jobs.output.info(`[${instance.name}] Java executable: ${executable}`);
           const game = await launch({
             spawn: (command, args, options) => {
@@ -286,7 +295,7 @@ export class Minecraft {
             launcherName: 'Minecraft Workbench',
             launcherBrand: 'minecraft-workbench',
             // windowsHide also hides LWJGL game windows; javaw.exe avoids a separate console.
-            extraExecOption: { windowsHide: false, signal },
+            extraExecOption: { windowsHide: false, signal, env },
           });
           this.running.set(instance.id, game);
           this.jobs.output.info(

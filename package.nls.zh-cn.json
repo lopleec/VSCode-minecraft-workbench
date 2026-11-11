@@ -180,5 +180,8 @@
   "setting.contentLayout": "项目详情可与内容列表左右分栏，或使用单栏。自动布局根据编辑器可用宽度切换。",
   "enum.contentLayout.auto": "自动",
   "enum.contentLayout.split": "左右分栏",
-  "enum.contentLayout.single": "单栏"
+  "enum.contentLayout.single": "单栏",
+  "label.linuxWindowSystem": "Linux 窗口系统",
+  "setting.linuxWindowSystem": "适用于 Linux 游戏和开发运行。自动模式清理不兼容的 VS Code GTK 环境，沿用桌面会话；系统缺少 Wayland 窗口装饰时可选 X11 / XWayland。Wayland 需要游戏和桌面库支持。",
+  "enum.linuxWindowSystem.auto": "自动"
 }

@@ -119,6 +119,10 @@ Java selection uses the **instance override → global default → automatic det
 
 ## Existing instances and storage
 
+Use **Instances → Select multiple** to move instances into a group, stop, repair or remove them together. Selection is off by default. Groups appear in the native sidebar and as collapsible sections in the instance list; search, group filters and sorting help manage large collections. Select a group in the filter to rename it or ungroup its instances. Game files stay in their existing folders.
+
+**Import instance** supports **Select all**, **Select filtered**, clearing the selection and an optional destination group. A batch runs as one cancellable task; completed instances are kept, and individual failures remain available for retry.
+
 Use **Open directory** on an instance card or settings page to open its game files. **Instance settings → Move instance** moves the entire instance, including worlds and configuration, and supports moving between disks. Shared runtimes outside the instance remain in place. Linked instances must be duplicated before moving. **World backups → Open saves directory** opens `saves` directly.
 
 New instances use the **Prism / MultiMC format**: a named folder containing `instance.cfg`, `mmc-pack.json`, and a `.minecraft` game directory. World saves remain ordinary Java Edition worlds in `saves/<world>/`. Shared Minecraft versions, libraries and assets use the system Minecraft directory; `minecraftWorkbench.gameDirectory` changes that location. `minecraftWorkbench.instanceDirectory` selects the instances parent and can point to an existing PrismLauncher `instances` directory. Existing Workbench directories continue to work.
@@ -208,6 +212,8 @@ Gradle runs through the project's wrapper in VS Code Tasks. The first run downlo
 Expand **Project settings** for a project-specific Java executable, Gradle options and debug port. Empty Java and port `0` follow extension defaults; project values take priority. Missing JDKs are prepared automatically. **Stop Gradle task** stops a running build or test client, and **Reload project metadata** reads changes to `gradle.properties`. Re-importing a project updates its metadata while retaining its settings.
 
 ## Settings, downloads and storage
+
+On Linux, game and development-client processes restore the original GTK settings saved by the VS Code Snap launcher and avoid inheriting an X11-only GTK backend in a Wayland session. `minecraftWorkbench.linuxWindowSystem` defaults to `auto`; choose `x11` (XWayland) or `wayland` when required by the desktop. GNOME native Wayland window decorations require the system libdecor library and a decoration plugin; see the [SDL Wayland documentation](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md).
 
 Open **Minecraft Workbench: Settings** for settings in the extension language, with a link to VS Code Settings. **Change Language** and the sidebar language item switch language immediately. Editor pages use **Tools** for accounts, Java, tasks and settings; the target selector appears only on pages that use it. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, Tasks, Output and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens extension settings.
 
@@ -322,6 +328,8 @@ GitHub / 手动 VSIX 安装可使用**更多 → 检查插件更新**。点击�
 仅将提示版本、确认时间和两项选择保存在本地 VS Code 配置中。插件提示更新后需重新确认；此版本号不代表 Mojang EULA 版本。之后可通过侧栏或命令面板的 **协议与关于** 再次查看。此确认不为 MIT 增加限制，也不授予 Minecraft 游戏许可。
 
 ### 启动模式
+
+在 **实例 → 批量管理** 中可将所选实例移至分组，或批量停止、修复、删除；默认关闭多选。分组同时显示在原生侧栏和实例列表中，可折叠、搜索、按分组筛选及排序。选中分组筛选后可重命名或取消分组，游戏文件仍保留在原目录。**导入实例** 支持全选、选择筛选结果、取消选择及指定分组；整批导入可以取消，保留已完成的实例，单项失败不会中断其他导入。
 
 1. 打开 **实例 → 新建实例**，填写名称，选择游戏版本、加载器和父目录。
 2. 在 **工具 → 账户** 添加离线账户，或按下文配置 Microsoft 登录。
@@ -441,6 +449,8 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 展开 **项目设置** 可指定此项目的 Java、Gradle 参数和调试端口；Java 留空、端口填 `0` 使用插件默认值，项目设置优先。缺少 JDK 时会自动准备。**停止 Gradle 任务** 可停止正在构建或运行的测试客户端，**重新读取项目元数据** 会读取 `gradle.properties` 的变化；再次导入同一项目会更新元数据并保留原有设置。
 
 ### 网络、目录与诊断
+
+Linux 游戏及开发客户端会恢复 VS Code Snap 启动器保存的原始 GTK 设置，避免在 Wayland 会话中继承仅限 X11 的 GTK 后端。`minecraftWorkbench.linuxWindowSystem` 默认 `auto`，也可手动选择 `x11`（XWayland）或 `wayland`。GNOME 的原生 Wayland 标题栏需要系统安装 libdecor 和窗口装饰插件，详见 [SDL Wayland 文档](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md)。
 
 编辑器使用 **工具** 菜单进入账户、Java、任务及设置，实例选择只出现在需要目标的页面。工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、输出和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字打开插件设置页，其中保留 VS Code 原生设置入口。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
 

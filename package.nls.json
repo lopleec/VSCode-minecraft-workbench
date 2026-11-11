@@ -180,5 +180,8 @@
   "setting.contentLayout": "Display project details beside the content list or in a single pane. Auto uses the available editor width.",
   "enum.contentLayout.auto": "Automatic",
   "enum.contentLayout.split": "Side by side",
-  "enum.contentLayout.single": "Single pane"
+  "enum.contentLayout.single": "Single pane",
+  "label.linuxWindowSystem": "Linux window system",
+  "setting.linuxWindowSystem": "Linux client and development runs: Auto removes incompatible VS Code GTK overrides while respecting the desktop session. Use X11 / XWayland if the system lacks Wayland window decorations; Wayland requires compatible game and desktop libraries.",
+  "enum.linuxWindowSystem.auto": "Automatic"
 }

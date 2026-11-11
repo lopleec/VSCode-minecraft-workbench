@@ -4,7 +4,8 @@ import { renderServerCreate } from './server-create-page';
 import { renderServer } from './server-detail-page';
 import { serverContent } from '../server-types';
 import { renderAgreements } from './agreements-page';
-import { renderInstances, renderSetup } from './setup-page';
+import { renderSetup } from './setup-page';
+import { renderInstances } from './instances-page';
 import { renderImport } from './import-page';
 import { renderBatchInstall, renderBatchInput } from './batch-install';
 import { renderManagement } from './manage-pages';
@@ -1896,6 +1897,7 @@ function renderInstance() {
         'div',
         { class: 'form-grid' },
         field(L('Instance name', '实例名称'), formInput('name', instance.name)),
+        field(L('Group', '分组'), formInput('group', instance.group || '')),
         field(
           L('Minecraft language', 'Minecraft 语言'),
           formSelect('gameLanguage', instance.gameLanguage || '', [
@@ -2109,6 +2111,7 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
     instanceId: instance.id,
     value: {
       name: value('name'),
+      group: value('group'),
       gameLanguage: value('gameLanguage'),
       accountId: value('accountId'),
       java: value('java'),

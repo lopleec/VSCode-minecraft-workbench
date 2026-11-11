@@ -144,6 +144,9 @@ export class Diagnostics implements vscode.Disposable {
             'DISPLAY',
             'WAYLAND_DISPLAY',
             'XDG_SESSION_TYPE',
+            'GDK_BACKEND',
+            'SDL_VIDEO_DRIVER',
+            'SDL_VIDEODRIVER',
           ]
             .filter((key) => process.env[key] !== undefined)
             .map((key) => [key, process.env[key]]),

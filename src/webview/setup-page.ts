@@ -2,106 +2,7 @@ import { h } from './dom';
 import { PageContext, field, input, select, heading, blank, busy } from './page-ui';
 import type { Instance, VersionManifest } from '../models';
 import { gameVersionCategory } from '../game-versions';
-
-export function renderInstances(main: HTMLElement, ctx: PageContext) {
-  const L = ctx.text;
-  const rows = h('div', { class: 'management-list' });
-  main.append(
-    heading(L('Instances', '实例')),
-    h(
-      'div',
-      { class: 'inline-actions page-actions' },
-      ctx.button(L('New instance', '新建实例'), () => ctx.navigate('create'), 'primary'),
-      ctx.button(L('Import instance', '导入实例'), () => ctx.navigate('import'), 'secondary'),
-      ctx.button(
-        L('Import modpack', '导入整合包'),
-        () => ctx.request('action', { action: 'importPack' }),
-        'secondary',
-      ),
-    ),
-    rows,
-  );
-  const update = () => {
-    const state = ctx.state();
-    rows.replaceChildren(
-      ...state.instances.map((instance) =>
-        h(
-          'article',
-          { class: 'management-row' },
-          h(
-            'div',
-            { class: 'row-body' },
-            h('strong', {}, instance.name),
-            h(
-              'p',
-              { class: 'muted' },
-              `${instance.minecraft} · ${instance.loader}${instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}`,
-            ),
-            h('div', { class: 'path-value muted' }, instance.directory),
-          ),
-          h(
-            'div',
-            { class: 'inline-actions' },
-            h(
-              'span',
-              { class: 'muted' },
-              state.instanceStatus[instance.id] === 'installing'
-                ? L('Installing', '安装中')
-                : state.instanceStatus[instance.id] === 'starting'
-                  ? L('Starting', '启动中')
-                  : state.running.includes(instance.id)
-                    ? L('Running', '运行中')
-                    : instance.installed
-                      ? L('Ready', '已安装')
-                      : L('Not installed', '未安装'),
-            ),
-            ctx.button(
-              L('Open directory', '打开实例目录'),
-              () => ctx.request('action', { action: 'directory', instanceId: instance.id }),
-              'secondary',
-            ),
-            ctx.button(
-              L('Configure', '配置'),
-              async () => {
-                await ctx.request('selectInstance', { instanceId: instance.id });
-                await ctx.navigate('instance');
-              },
-              'secondary',
-            ),
-            ctx.button(
-              state.instanceStatus[instance.id] !== 'stopped'
-                ? L('Stop', '停止')
-                : instance.installed
-                  ? L('Launch', '启动')
-                  : L('Install', '安装'),
-              async () => {
-                await ctx.request('selectInstance', { instanceId: instance.id });
-                if (state.instanceStatus[instance.id] !== 'stopped')
-                  await ctx.request('action', { action: 'stop', instanceId: instance.id });
-                else if (instance.installed)
-                  await ctx.request('action', { action: 'launch', instanceId: instance.id });
-                else await ctx.navigate('version');
-              },
-              'secondary',
-            ),
-          ),
-        ),
-      ),
-    );
-    if (!state.instances.length)
-      rows.append(
-        blank(
-          L('No instances', '暂无实例'),
-          L(
-            'Create an instance, import an existing game, or install a modpack.',
-            '创建实例、导入现有游戏，或安装整合包。',
-          ),
-        ),
-      );
-  };
-  update();
-  return update;
-}
+import { instanceGroups } from '../instance-groups';
 
 export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) {
   const L = ctx.text,
@@ -152,6 +53,9 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
 
   function mountForm(manifest: VersionManifest) {
     const name = input('name', existing?.name || manifest.latest.release);
+    const group = input('group', existing?.group || '');
+    group.maxLength = 100;
+    group.setAttribute('list', 'setup-groups');
     name.required = true;
     name.maxLength = 100;
     let automaticName = !existing;
@@ -351,6 +255,12 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           { class: 'form-grid' },
           field(L('Instance name', '实例名称'), name),
           field(L('Account', '账户'), account),
+          field(L('Group (optional)', '分组（可选）'), group),
+        ),
+        h(
+          'datalist',
+          { id: 'setup-groups' },
+          ...instanceGroups(state.instances).map((name) => h('option', { value: name })),
         ),
         field(
           edit ? L('Game directory', '游戏目录') : L('Minecraft directory', 'Minecraft 目录'),
@@ -463,6 +373,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
             install: download.checked,
             value: {
               name: name.value,
+              group: group.value,
               minecraft: game.value,
               loader: loader.value,
               loaderVersion: loaderVersion.value,
