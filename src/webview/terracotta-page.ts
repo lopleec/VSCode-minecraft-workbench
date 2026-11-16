@@ -1,6 +1,7 @@
 import { h } from './dom';
 import { PageContext, field, input, select, heading } from './page-ui';
 import notice from '../terracotta-notice.json';
+import { toTraditional } from '../traditional';
 
 export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
@@ -16,6 +17,7 @@ export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
   const language = select('terracottaNoticeLanguage', ctx.state().locale, [
     ['en', 'English'],
     ['zh-cn', '简体中文'],
+    ['zh-tw', '繁體中文'],
   ]);
   const paragraphs = h('div');
   const license = h('input', { type: 'checkbox' });
@@ -35,14 +37,21 @@ export function renderTerracotta(body: HTMLElement, ctx: PageContext) {
     true,
   );
   const noticeText = () => {
-    const zh = language.value === 'zh-cn';
-    paragraphs.replaceChildren(...notice.paragraphs.map((p) => h('p', {}, zh ? p.zh : p.en)));
-    licenseLabel.textContent = zh
-      ? '我已阅读陶瓦的上游许可与项目信息。'
-      : 'I have read the Terracotta upstream license and project information.';
-    networkLabel.textContent = zh
-      ? '我理解并同意上述 Beta 联机须知。'
-      : 'I understand and agree to the Beta multiplayer notice above.';
+    const current = language.value;
+    const chinese = current !== 'en';
+    const text = (en: string, zh: string) =>
+      !chinese ? en : current === 'zh-tw' ? toTraditional(zh) : zh;
+    const pick = (value: { en: string; zh: string }) =>
+      !chinese ? value.en : current === 'zh-tw' ? toTraditional(value.zh) : value.zh;
+    paragraphs.replaceChildren(...notice.paragraphs.map((p) => h('p', {}, pick(p))));
+    licenseLabel.textContent = text(
+      'I have read the Terracotta upstream license and project information.',
+      '我已阅读陶瓦的上游许可与项目信息。',
+    );
+    networkLabel.textContent = text(
+      'I understand and agree to the Beta multiplayer notice above.',
+      '我理解并同意上述 Beta 联机须知。',
+    );
   };
   language.onchange = noticeText;
   noticeText();

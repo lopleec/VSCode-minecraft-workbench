@@ -11,7 +11,7 @@ import { Developer } from './developer';
 import { Backups } from './backups';
 import { View, Item, Section, updateStatus } from './views';
 import { UI } from './ui';
-import { config, t } from './config';
+import { config, locale, t } from './config';
 import { exists } from './files';
 import { Workbench } from './workbench';
 import { Consent } from './consent';
@@ -91,11 +91,7 @@ async function initialize(
       'minecraftWorkbench.agreementsAccepted',
       consent.accepted,
     );
-    void vscode.commands.executeCommand(
-      'setContext',
-      'minecraftWorkbench.language',
-      t('en', 'zh-cn'),
-    );
+    void vscode.commands.executeCommand('setContext', 'minecraftWorkbench.language', locale());
   };
   const consent = new Consent(context.globalState, refresh);
   let root = config('storageDirectory', '') || context.globalStorageUri.fsPath;
@@ -467,9 +463,7 @@ async function initialize(
         await vscode.commands.executeCommand('workbench.action.reloadWindow');
     },
     help: async () => {
-      const language = config<string>('language', 'auto');
-      const zh =
-        language === 'zh-cn' || (language === 'auto' && vscode.env.language.startsWith('zh'));
+      const zh = locale() !== 'en';
       const name = zh
         ? 'README.zh-CN.md'
         : (await exists(path.join(context.extensionPath, 'README.md')))
@@ -482,7 +476,7 @@ async function initialize(
     },
   };
   for (const [name, command] of Object.entries(commands)) {
-    for (const suffix of ['', '.zh'])
+    for (const suffix of ['', '.zh', '.tw'])
       context.subscriptions.push(
         vscode.commands.registerCommand(`minecraftWorkbench.${name}${suffix}`, (item?: Item) =>
           ui.guard(async () => {

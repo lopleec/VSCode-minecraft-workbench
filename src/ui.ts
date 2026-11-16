@@ -301,6 +301,7 @@ export class UI {
         { label: 'Follow VS Code / 跟随 VS Code', value: 'auto', description: '' },
         { label: 'English', value: 'en', description: 'English' },
         { label: '简体中文', value: 'zh-cn', description: 'Simplified Chinese' },
+        { label: '繁體中文', value: 'zh-tw', description: 'Traditional Chinese' },
       ],
       'Language / 语言',
     );

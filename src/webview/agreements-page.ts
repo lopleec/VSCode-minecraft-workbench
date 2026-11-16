@@ -1,20 +1,25 @@
 import { h } from './dom';
 import legal from '../legal.json';
 import type { ConsentStatus } from '../consent';
+import { toTraditional } from '../traditional';
 
 interface AgreementContext {
-  locale: 'en' | 'zh-cn';
-  preference: 'auto' | 'en' | 'zh-cn';
+  locale: 'en' | 'zh-cn' | 'zh-tw';
+  preference: 'auto' | 'en' | 'zh-cn' | 'zh-tw';
   status: ConsentStatus;
   request<T>(method: string, params?: Record<string, unknown>): Promise<T>;
   accept(): Promise<void>;
   back(): void;
-  language(value: 'auto' | 'en' | 'zh-cn'): Promise<void>;
+  language(value: 'auto' | 'en' | 'zh-cn' | 'zh-tw'): Promise<void>;
 }
 export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
-  const locale = ctx.locale === 'zh-cn' ? 'zh' : 'en';
-  const L = (en: string, zh: string) => (locale === 'zh' ? zh : en);
-  document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+  const locale = ctx.locale === 'en' ? 'en' : ctx.locale === 'zh-tw' ? 'zh-tw' : 'zh-cn';
+  const chinese = locale !== 'en';
+  const L = (en: string, zh: string) =>
+    !chinese ? en : locale === 'zh-tw' ? toTraditional(zh) : zh;
+  const pick = (value: { en: string; zh: string }) =>
+    !chinese ? value.en : locale === 'zh-tw' ? toTraditional(value.zh) : value.zh;
+  document.documentElement.lang = locale === 'en' ? 'en' : locale === 'zh-tw' ? 'zh-TW' : 'zh-CN';
   const error = h('p', { role: 'alert', class: 'agreement-error' });
   const run = (task: () => Promise<unknown>) => {
     void task().catch((e) => {
@@ -65,6 +70,7 @@ export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
               ['auto', L('Follow extension language', '跟随插件语言')],
               ['en', 'English'],
               ['zh-cn', '简体中文'],
+              ['zh-tw', '繁體中文'],
             ] as const
           ).map(([value, label]) =>
             h('option', { value, selected: ctx.preference === value }, label),
@@ -72,7 +78,7 @@ export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
         ),
       ),
     ),
-    h('p', { class: 'agreement-disclaimer' }, legal.disclaimer[locale]),
+    h('p', { class: 'agreement-disclaimer' }, pick(legal.disclaimer)),
     h(
       'section',
       {},
@@ -101,8 +107,8 @@ export function renderAgreements(root: HTMLElement, ctx: AgreementContext) {
         h(
           'section',
           { class: 'agreement-section' },
-          h('h3', {}, section.title[locale]),
-          ...section.paragraphs.map((p) => h('p', {}, p[locale])),
+          h('h3', {}, pick(section.title)),
+          ...section.paragraphs.map((p) => h('p', {}, pick(p))),
         ),
       ),
       h(

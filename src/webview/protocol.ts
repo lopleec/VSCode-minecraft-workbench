@@ -46,7 +46,7 @@ export interface Preferences {
 }
 export interface Bootstrap {
   consent: ConsentStatus;
-  locale: 'en' | 'zh-cn';
+  locale: 'en' | 'zh-cn' | 'zh-tw';
   page: WorkbenchPage;
   kind: ProjectKind;
   instances: Instance[];

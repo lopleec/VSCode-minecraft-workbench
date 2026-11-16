@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'node:path';
 import { readJson, redact } from './files';
-import { setLanguage, t } from './config';
+import { locale, setLanguage } from './config';
 import { validGameLanguage } from './game-language';
 
 interface SettingSchema {
@@ -69,13 +69,15 @@ export async function settingsAction(method: string, params: Record<string, unkn
   >;
   const settings = vscode.workspace.getConfiguration('minecraftWorkbench');
   if (method === 'settings.read') {
-    const locale = t('en', 'zh-cn');
-    if (!dictionaries.has(locale))
+    const current = locale();
+    if (!dictionaries.has(current))
       dictionaries.set(
-        locale,
-        readJson(path.join(root, locale === 'en' ? 'package.nls.json' : 'package.nls.zh-cn.json')),
+        current,
+        readJson(
+          path.join(root, current === 'en' ? 'package.nls.json' : `package.nls.${current}.json`),
+        ),
       );
-    const dictionary = await dictionaries.get(locale)!;
+    const dictionary = await dictionaries.get(current)!;
     const translate = (value: string) =>
       value.replace(
         /^%(.+)%$/,
