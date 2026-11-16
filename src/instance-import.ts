@@ -36,7 +36,7 @@ export interface ImportScan {
 export function parseIni(text: string): Record<string, string> {
   const values: Record<string, string> = Object.create(null);
   for (const line of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
-    const match = /^\s*([^#;=\[\]][^=]*?)\s*=\s*(.*?)\s*$/.exec(line);
+    const match = /^\s*([^#;:=\[\]]+?)\s*[=:]\s*(.*?)\s*$/.exec(line);
     if (match) {
       let value = match[2];
       if (value.startsWith('"') && value.endsWith('"')) {
@@ -61,6 +61,9 @@ async function json(file: string): Promise<Json | undefined> {
     throw new Error('Invalid instance metadata.');
   return value;
 }
+function forgeLoaderVersion(version: string, minecraft: string): string {
+  return version.replace(new RegExp(`^${minecraft.replaceAll('.', '\\.')}[-]`), '');
+}
 export function loaderInfo(
   libraries: Json[],
   minecraft: string,
@@ -70,6 +73,8 @@ export function loaderInfo(
     ['net.fabricmc:fabric-loader:', 'fabric'],
     ['net.neoforged:neoforge:', 'neoforge'],
     ['net.minecraftforge:forge:', 'forge'],
+    ['net.minecraftforge:fmlloader:', 'forge'],
+    ['net.minecraftforge:fmlearlydisplay:', 'forge'],
   ] as const) {
     const found = [...libraries]
       .reverse()
@@ -78,14 +83,68 @@ export function loaderInfo(
       const version = found.name.slice(group.length).split(':')[0];
       return {
         loader,
-        loaderVersion:
-          loader === 'forge'
-            ? version.replace(new RegExp(`^${minecraft.replaceAll('.', '\\.')}[-]`), '')
-            : version,
+        loaderVersion: loader === 'forge' ? forgeLoaderVersion(version, minecraft) : version,
       };
     }
   }
   return { loader: 'vanilla' };
+}
+const patchLoaders: Record<string, Loader> = {
+  fabric: 'fabric',
+  quilt: 'quilt',
+  forge: 'forge',
+  neoforge: 'neoforge',
+};
+function patchLoaderInfo(
+  chain: Json[],
+  minecraft: string,
+): { loader: Loader; loaderVersion?: string } | undefined {
+  for (const profile of chain) {
+    if (!Array.isArray(profile.patches)) continue;
+    for (const patch of profile.patches) {
+      const loader = typeof patch?.id === 'string' ? patchLoaders[patch.id] : undefined;
+      if (!loader) continue;
+      return {
+        loader,
+        loaderVersion:
+          typeof patch.version === 'string'
+            ? loader === 'forge'
+              ? forgeLoaderVersion(patch.version, minecraft)
+              : patch.version
+            : undefined,
+      };
+    }
+  }
+}
+function pclLoaderInfo(
+  pcl: Record<string, string>,
+): { loader: Loader; loaderVersion?: string } | undefined {
+  for (const [key, loader] of [
+    ['VersionNeoForge', 'neoforge'],
+    ['VersionForge', 'forge'],
+    ['VersionFabric', 'fabric'],
+    ['VersionQuilt', 'quilt'],
+  ] as const) {
+    if (pcl[key] && !/^(false|0)$/i.test(pcl[key])) return { loader, loaderVersion: pcl[key] };
+  }
+}
+function fmlVersion(profiles: Json[], argument: string): string | undefined {
+  for (const profile of profiles) {
+    const args = profile.arguments?.game;
+    if (!Array.isArray(args)) continue;
+    const index = args.indexOf(argument);
+    if (index >= 0 && typeof args[index + 1] === 'string') return args[index + 1];
+  }
+}
+function argumentLoaderInfo(chain: Json[]): { loader: Loader; loaderVersion?: string } | undefined {
+  const profiles = [
+    ...chain,
+    ...chain.flatMap((profile) => (Array.isArray(profile.patches) ? profile.patches : [])),
+  ];
+  const neoforge = fmlVersion(profiles, '--fml.neoForgeVersion');
+  if (neoforge) return { loader: 'neoforge', loaderVersion: neoforge };
+  const forge = fmlVersion(profiles, '--fml.forgeVersion');
+  if (forge) return { loader: 'forge', loaderVersion: forge };
 }
 function gameVersion(chain: Json[]): string {
   for (const profile of chain) {
@@ -131,10 +190,24 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
     }
   }
   const folder = path.join(root, 'versions', filename(id));
-  const libraries = [...chain].reverse().flatMap((p) => normalizeProfile(p).libraries || []);
-  const info = loaderInfo(libraries, minecraft);
   const settings = await json(path.join(folder, 'hmclversion.cfg'));
   const pcl = parseIni(await text(path.join(folder, 'PCL', 'Setup.ini')));
+  const libraries = [...chain].reverse().flatMap((p) => normalizeProfile(p).libraries || []);
+  const detected = [
+    patchLoaderInfo(chain, minecraft),
+    argumentLoaderInfo(chain),
+    loaderInfo(libraries, minecraft),
+    pclLoaderInfo(pcl),
+  ];
+  const info: { loader: Loader; loaderVersion?: string } = detected.find(
+    (item) => item && item.loader !== 'vanilla',
+  ) ?? { loader: 'vanilla' };
+  if (!info.loaderVersion) {
+    const version = detected.find(
+      (item) => item?.loader === info.loader && item.loaderVersion,
+    )?.loaderVersion;
+    if (version) info.loaderVersion = version;
+  }
   const isolated = await Promise.all(
     ['mods', 'saves', 'options.txt', 'config'].map((p) => exists(path.join(folder, p))),
   );
