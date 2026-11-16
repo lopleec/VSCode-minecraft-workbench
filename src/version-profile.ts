@@ -40,13 +40,9 @@ export function normalizeProfile(profile: Profile): Profile {
   let result: Profile = profile.root === true && !profile.inheritsFrom ? {} : { ...profile };
   delete result.patches;
   for (const patch of patches) {
-    if (
-      !patch ||
-      typeof patch !== 'object' ||
-      Array.isArray(patch) ||
-      patch.patches?.length ||
-      patch.inheritsFrom
-    )
+    // PCL loader patches may name their base game in inheritsFrom; their contents are already
+    // merged into the owning profile and the version chain, so only real nesting is rejected.
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch) || patch.patches?.length)
       throw new Error('Unsupported nested instance patch.');
     const arguments_ = {
       game: [...(result.arguments?.game || []), ...(patch.arguments?.game || [])],
