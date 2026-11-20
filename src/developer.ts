@@ -217,10 +217,12 @@ export class Developer {
       !validPackage(options.packageName) ||
       /[\r\n\\$"']/.test(options.name)
     )
-      throw new Error(t('Invalid project metadata.', '项目元数据无效。'));
+      throw new Error(t('Invalid project metadata.', '项目元数据无效。', '項目中繼資料無效。'));
     const directory = path.join(options.parent, options.modId);
     if (await exists(directory))
-      throw new Error(t('The project directory already exists.', '项目目录已存在。'));
+      throw new Error(
+        t('The project directory already exists.', '项目目录已存在。', '專案目錄已存在。'),
+      );
     const id = randomUUID();
     const stage = path.join(options.parent, `.minecraft-project-${id}`);
     const archive = path.join(this.store.root, 'cache', `template-${id}.zip`);
@@ -309,7 +311,13 @@ export class Developer {
       }
       const wrapper = path.join(stage, 'gradle', 'wrapper', 'gradle-wrapper.jar');
       if (!(await exists(wrapper)))
-        throw new Error(t('Template is missing the Gradle wrapper.', '模板缺少 Gradle Wrapper。'));
+        throw new Error(
+          t(
+            'Template is missing the Gradle wrapper.',
+            '模板缺少 Gradle Wrapper。',
+            '範本缺少 Gradle Wrapper。',
+          ),
+        );
       await writeJson(path.join(stage, '.minecraft-workbench.json'), project);
       await writeJson(path.join(stage, '.vscode', 'extensions.json'), {
         recommendations: ['vscjava.vscode-java-pack', 'vscjava.vscode-gradle'],
@@ -437,11 +445,14 @@ export class Developer {
         t(
           'Stop this project’s Gradle task before starting another action.',
           '请先停止此项目的 Gradle 任务，再执行其他操作。',
+          '請先停止此項目的 Gradle 工作，再執行其他操作。',
         ),
       );
   }
   stop(project: Project) {
-    this.preparing.get(project.id)?.abort(new DOMException(t('Cancelled', '已取消'), 'AbortError'));
+    this.preparing
+      .get(project.id)
+      ?.abort(new DOMException(t('Cancelled', '已取消', '已取消'), 'AbortError'));
     for (const execution of this.executions(project)) execution.terminate();
   }
   async remove(project: Project) {
@@ -523,7 +534,7 @@ export class Developer {
         report: (message: string, english?: string) => void,
       ) => {
         signal = AbortSignal.any([signal, controller.signal]);
-        report(t('Preparing JDK', '准备 JDK'), 'Preparing JDK');
+        report(t('Preparing JDK', '准备 JDK', '準備 JDK'), 'Preparing JDK');
         const required = await this.requiredJava(project, signal);
         signal.throwIfAborted();
         const preferred = preferredJava(project.java);
@@ -541,12 +552,21 @@ export class Developer {
             }
         }
         if (!(await isJdk(runtime.path)))
-          throw new Error(t('Development requires a JDK, not a JRE.', '开发模式需要完整 JDK。'));
+          throw new Error(
+            t(
+              'Development requires a JDK, not a JRE.',
+              '开发模式需要完整 JDK。',
+              '開發模式需要完整 JDK。',
+            ),
+          );
         signal.throwIfAborted();
         return runtime;
       };
       const runtime = this.jobs
-        ? await this.jobs.run([`Prepare ${project.name}`, `准备 ${project.name}`], prepare)
+        ? await this.jobs.run(
+            [`Prepare ${project.name}`, `准备 ${project.name}`, `準備 ${project.name}`],
+            prepare,
+          )
         : await prepare(new AbortController().signal, () => {});
       controller.signal.throwIfAborted();
       this.jobs?.output.info(
@@ -607,8 +627,9 @@ export class Developer {
         t(
           'Install Debugger for Java to attach to Minecraft.',
           '安装 Debugger for Java 后可连接 Minecraft 调试。',
+          '安裝 Debugger for Java 後可連接 Minecraft 偵錯。',
         ),
-        t('Open extension', '打开扩展'),
+        t('Open extension', '打开扩展', '開啟擴充套件'),
       );
       if (choice)
         await vscode.commands.executeCommand('extension.open', 'vscjava.vscode-java-debug');

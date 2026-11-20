@@ -8,22 +8,25 @@ import { manualServer } from '../server-types';
 
 export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
-  main.append(heading(L('New server', '新建服务端')));
+  main.append(heading(L('New server', '新建服务端', '新增伺服器')));
   const name = input('serverName');
   name.required = true;
   name.maxLength = 100;
   const engine = select(
     'engine',
     'paper',
-    engines.map(([id, title]) => [id, id === 'custom' ? L('Custom JAR', '自定义 JAR') : title]),
+    engines.map(([id, title]) => [
+      id,
+      id === 'custom' ? L('Custom JAR', '自定义 JAR', '自定義 JAR') : title,
+    ]),
   );
   const search = input('versionSearch', '', 'search');
-  search.placeholder = L('Filter versions…', '筛选版本…');
+  search.placeholder = L('Filter versions…', '筛选版本…', '篩選版本…');
   const category = select('versionType', 'release', [
-    ['release', L('Release', '正式版')],
-    ['all', L('All versions', '全部版本')],
-    ['snapshot', L('Snapshot / preview', '快照 / 预发布版')],
-    ['april_fools', L('April Fools', '愚人节版本')],
+    ['release', L('Release', '正式版', '正式版')],
+    ['all', L('All versions', '全部版本', '全部版本')],
+    ['snapshot', L('Snapshot / preview', '快照 / 预发布版', '快照 / 預發行版')],
+    ['april_fools', L('April Fools', '愚人节版本', '愚人節版本')],
     ['old_beta', 'Beta'],
     ['old_alpha', 'Alpha'],
   ]);
@@ -33,9 +36,9 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
   const experimental = h('input', { type: 'checkbox' });
   const parent = input('serverParent', ctx.state().defaults.serverDirectory);
   const behavior = select('afterCreate', 'start', [
-    ['start', L('Install and start', '安装并启动')],
-    ['install', L('Install only', '仅安装')],
-    ['create', L('Create only', '仅创建')],
+    ['start', L('Install and start', '安装并启动', '安裝並啟動')],
+    ['install', L('Install only', '仅安装', '僅安裝')],
+    ['create', L('Create only', '仅创建', '僅建立')],
   ]);
   const info = h('div', { class: 'setup-status', 'aria-live': 'polite' });
   const eula = h('input', { type: 'checkbox' });
@@ -46,7 +49,11 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
       'label',
       { class: 'check' },
       eula,
-      L('I have read and agree to the Minecraft EULA.', '我已阅读并同意 Minecraft EULA。'),
+      L(
+        'I have read and agree to the Minecraft EULA.',
+        '我已阅读并同意 Minecraft EULA。',
+        '我已閱讀並同意 Minecraft EULA。',
+      ),
     ),
     h(
       'div',
@@ -57,7 +64,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
         'text-button',
       ),
       ctx.button(
-        L('Third-party licenses ↗', '第三方许可 ↗'),
+        L('Third-party licenses ↗', '第三方许可 ↗', '第三方授權 ↗'),
         () => ctx.request('consent.link', { document: 'thirdParty' }),
         'text-button',
       ),
@@ -66,7 +73,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
   const submit = h(
     'button',
     { class: 'primary', type: 'submit', disabled: true },
-    L('Create and start', '创建并启动'),
+    L('Create and start', '创建并启动', '建立並啟動'),
   );
   const form = h('form', { class: 'management-form setup-form' });
   let all: string[] = [];
@@ -102,10 +109,10 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     behavior.disabled = custom;
     submit.textContent =
       custom || behavior.value === 'create'
-        ? L('Create server', '创建服务端')
+        ? L('Create server', '创建服务端', '建立伺服器')
         : behavior.value === 'install'
-          ? L('Create and install', '创建并安装')
-          : L('Create and start', '创建并启动');
+          ? L('Create and install', '创建并安装', '建立並安裝')
+          : L('Create and start', '创建并启动', '建立並啟動');
   };
   eula.onchange = updateSubmit;
   const displayBuilds = () => {
@@ -116,21 +123,22 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
         h(
           'option',
           { value: b.id, selected: b.id === previous },
-          b.id + (b.stable ? '' : L(' · Experimental', ' · 实验版')),
+          b.id + (b.stable ? '' : L(' · Experimental', ' · 实验版', ' · 實驗版')),
         ),
       ),
     );
     build.disabled = !builds.length;
     if (!builds.length && (engine.value === 'vanilla' || manualServer(engine.value)))
-      build.append(h('option', { value: '' }, L('Not required', '无需选择')));
+      build.append(h('option', { value: '' }, L('Not required', '无需选择', '無需選擇')));
     info.textContent =
       builds.length && !visible.length
         ? L(
             'No stable builds. Enable experimental builds to select one.',
             '暂无稳定构建，可勾选实验版后选择。',
+            '暫無穩定建置，可勾選實驗版後選擇。',
           )
         : !builds.length && engine.value !== 'vanilla' && !manualServer(engine.value)
-          ? L('No builds for this version.', '此版本暂无可用构建。')
+          ? L('No builds for this version.', '此版本暂无可用构建。', '此版本暫無可用建置。')
           : '';
     updateSubmit();
   };
@@ -138,7 +146,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     const current = ++buildsSequence;
     suggestName();
     submit.disabled = true;
-    build.replaceChildren(h('option', {}, L('Loading…', '加载中…')));
+    build.replaceChildren(h('option', {}, L('Loading…', '加载中…', '載入中…')));
     build.disabled = true;
     try {
       const result = await ctx.request<ServerBuild[]>('server.builds', {
@@ -172,7 +180,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     version.value = visible.includes(previous) ? previous : visible[0] || '';
     if (!visible.length) {
       build.replaceChildren();
-      info.textContent = L('No matching versions.', '没有符合条件的版本。');
+      info.textContent = L('No matching versions.', '没有符合条件的版本。', '沒有符合條件的版本。');
       updateSubmit();
       return;
     }
@@ -181,7 +189,7 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
   const load = async () => {
     const current = ++sequence;
     ++buildsSequence;
-    info.textContent = L('Loading versions…', '加载版本…');
+    info.textContent = L('Loading versions…', '加载版本…', '載入版本…');
     submit.disabled = true;
     version.disabled = true;
     build.disabled = true;
@@ -215,41 +223,49 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     h(
       'fieldset',
       {},
-      h('legend', {}, L('Server', '服务端')),
+      h('legend', {}, L('Server', '服务端', '伺服器')),
       h(
         'div',
         { class: 'form-grid' },
-        field(L('Name', '名称'), name),
-        field(L('Software', '服务端类型'), engine),
+        field(L('Name', '名称', '名稱'), name),
+        field(L('Software', '服务端类型', '伺服器類型'), engine),
       ),
     ),
     h(
       'fieldset',
       {},
-      h('legend', {}, L('Version', '版本')),
+      h('legend', {}, L('Version', '版本', '版本')),
       h(
         'div',
         { class: 'version-search-row' },
         search,
         category,
-        ctx.button(L('Refresh', '刷新'), () => load(), 'secondary'),
+        ctx.button(L('Refresh', '刷新', '重新整理'), () => load(), 'secondary'),
       ),
-      field(L('Minecraft / software version', 'Minecraft / 软件版本'), version),
-      field(L('Build / loader version', '构建 / Loader 版本'), build),
-      h('label', { class: 'check' }, experimental, L('Show experimental builds', '显示实验版构建')),
+      field(
+        L('Minecraft / software version', 'Minecraft / 软件版本', 'Minecraft / 軟體版本'),
+        version,
+      ),
+      field(L('Build / loader version', '构建 / Loader 版本', '建置 / Loader 版本'), build),
+      h(
+        'label',
+        { class: 'check' },
+        experimental,
+        L('Show experimental builds', '显示实验版构建', '顯示實驗版建置'),
+      ),
     ),
     h(
       'details',
       { class: 'advanced-options' },
-      h('summary', {}, L('Directory', '目录')),
+      h('summary', {}, L('Directory', '目录', '目錄')),
       field(
-        L('Parent directory', '父目录'),
+        L('Parent directory', '父目录', '上層目錄'),
         h(
           'div',
           { class: 'directory-control' },
           parent,
           ctx.button(
-            L('Browse…', '浏览…'),
+            L('Browse…', '浏览…', '瀏覽…'),
             async () => {
               const folder = await ctx.request<string | undefined>('launcher.pickDirectory');
               if (folder) parent.value = folder;
@@ -262,19 +278,23 @@ export function renderServerCreate(main: HTMLElement, ctx: PageContext) {
     h(
       'fieldset',
       {},
-      h('legend', {}, L('Install', '安装')),
-      field(L('After creation', '创建后'), behavior),
+      h('legend', {}, L('Install', '安装', '安裝')),
+      field(L('After creation', '创建后', '建立後'), behavior),
       eulaRow,
       h(
         'p',
         { class: 'field-hint' },
-        L('Java is detected or downloaded automatically.', '自动检测或下载所需 Java。'),
+        L(
+          'Java is detected or downloaded automatically.',
+          '自动检测或下载所需 Java。',
+          '自動偵測或下載所需 Java。',
+        ),
       ),
       h(
         'div',
         { class: 'save-row' },
         submit,
-        ctx.button(L('Cancel', '取消'), () => ctx.navigate('servers'), 'secondary'),
+        ctx.button(L('Cancel', '取消', '取消'), () => ctx.navigate('servers'), 'secondary'),
       ),
     ),
     info,

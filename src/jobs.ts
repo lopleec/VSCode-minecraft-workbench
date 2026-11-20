@@ -11,7 +11,7 @@ export interface Job {
   controller: AbortController;
   retry: () => Promise<unknown>;
 }
-export type JobTitle = string | readonly [english: string, chinese: string];
+export type JobTitle = string | readonly [english: string, chinese: string, traditional?: string];
 export class Jobs implements vscode.Disposable {
   readonly items: Job[] = [];
   private readonly retries = new Map<string, Promise<unknown>>();
@@ -114,6 +114,7 @@ export class Jobs implements vscode.Disposable {
       detail: t(
         'Gradle output is available in the task terminal.',
         'Gradle 完整输出位于任务终端。',
+        'Gradle 完整輸出位於工作終端。',
       ),
     };
     this.nativeTasks.set(execution, { job, started: Date.now(), processStarted: alreadyRunning });
@@ -149,7 +150,11 @@ export class Jobs implements vscode.Disposable {
         : exitCode === 0
           ? 'done'
           : 'failed';
-    job.detail = t(`Exit code: ${exitCode ?? '—'}`, `退出代码：${exitCode ?? '—'}`);
+    job.detail = t(
+      `Exit code: ${exitCode ?? '—'}`,
+      `退出代码：${exitCode ?? '—'}`,
+      `退出程式碼：${exitCode ?? '—'}`,
+    );
     const message = `[${job.id.slice(0, 8)}] ${job.label}: Exit code: ${exitCode ?? 'unknown'} (${((Date.now() - started) / 1000).toFixed(1)}s)`;
     if (job.status === 'failed') this.output.error(message);
     else this.output.info(message);

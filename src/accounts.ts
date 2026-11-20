@@ -36,6 +36,7 @@ export class Accounts implements vscode.Disposable {
         t(
           'Set Minecraft Workbench: Microsoft Client ID in Settings first.',
           '请先在设置中填写 Minecraft Workbench: Microsoft Client ID。',
+          '請先在設定中填寫 Minecraft Workbench: Microsoft Client ID。',
         ),
       );
     return clientId;
@@ -43,7 +44,11 @@ export class Accounts implements vscode.Disposable {
   async offline(name: string) {
     if (!/^[A-Za-z0-9_]{3,16}$/.test(name))
       throw new Error(
-        t('Use 3–16 letters, numbers or underscores.', '名称需为 3–16 位字母、数字或下划线。'),
+        t(
+          'Use 3–16 letters, numbers or underscores.',
+          '名称需为 3–16 位字母、数字或下划线。',
+          '名稱需為 3–16 位字母、數字或下劃線。',
+        ),
       );
     const id = offlineUuid(name);
     if (!this.store.state.accounts.some((a) => a.id === id))
@@ -69,6 +74,7 @@ export class Accounts implements vscode.Disposable {
       t(
         `Enter code ${device.user_code} (copied to clipboard)`,
         `输入验证码 ${device.user_code}（已复制）`,
+        `輸入驗證碼 ${device.user_code}（已複製）`,
       ),
       'Microsoft sign-in: waiting for device authorization',
     );
@@ -133,7 +139,11 @@ export class Accounts implements vscode.Disposable {
       }
     }
     throw new Error(
-      t('Sign-in code expired. Start sign-in again.', '登录验证码已过期，请重新登录。'),
+      t(
+        'Sign-in code expired. Start sign-in again.',
+        '登录验证码已过期，请重新登录。',
+        '登入驗證碼已過期，請重新登入。',
+      ),
     );
   }
   private async exchange(msToken: string, signal?: AbortSignal) {
@@ -179,7 +189,11 @@ export class Accounts implements vscode.Disposable {
     );
     if (!profile.id || !profile.name)
       throw new Error(
-        t('A Minecraft Java profile is required.', '该账户需要拥有 Minecraft Java 版档案。'),
+        t(
+          'A Minecraft Java profile is required.',
+          '该账户需要拥有 Minecraft Java 版档案。',
+          '該帳戶需要擁有 Minecraft Java 版檔案。',
+        ),
       );
     return {
       ...profile,
@@ -191,7 +205,10 @@ export class Accounts implements vscode.Disposable {
     if (account.kind === 'offline') return '0';
     if (account.kind === 'authlib') return this.authlib.token(account);
     const stored = await this.secrets.get(this.key(account.id));
-    if (!stored) throw new Error(t('Sign in to this account again.', '请重新登录该账户。'));
+    if (!stored)
+      throw new Error(
+        t('Sign in to this account again.', '请重新登录该账户。', '請重新登入該帳戶。'),
+      );
     let tokens: Tokens;
     try {
       tokens = JSON.parse(stored) as Tokens;
@@ -200,6 +217,7 @@ export class Accounts implements vscode.Disposable {
         t(
           'Stored login credentials are invalid. Sign in again.',
           '保存的登录凭据无效，请重新登录。',
+          '儲存的登入驗證資訊無效，請重新登入。',
         ),
       );
     }

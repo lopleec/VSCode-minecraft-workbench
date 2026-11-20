@@ -17,17 +17,21 @@ interface Setting {
 export async function renderSettings(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
   main.classList.add('settings-page');
-  main.append(heading(L('Settings', '设置')));
+  main.append(heading(L('Settings', '设置', '設定')));
   const search = h('input', {
     type: 'search',
-    placeholder: L('Search settings…', '搜索设置…'),
-    'aria-label': L('Search settings', '搜索设置'),
+    placeholder: L('Search settings…', '搜索设置…', '搜尋設定…'),
+    'aria-label': L('Search settings', '搜索设置', '搜尋設定'),
   });
   const form = h('form', { class: 'settings-form' });
   const draft = new Map<string, () => unknown>();
-  const save = h('button', { type: 'submit', class: 'primary', disabled: true }, L('Save', '保存'));
+  const save = h(
+    'button',
+    { type: 'submit', class: 'primary', disabled: true },
+    L('Save', '保存', '儲存'),
+  );
   const native = ctx.button(
-    L('Open in VS Code Settings', '在 VS Code 设置中打开'),
+    L('Open in VS Code Settings', '在 VS Code 设置中打开', '在 VS Code 設定中開啟'),
     () => ctx.request('action', { action: 'nativeSettings' }),
     'secondary',
   );
@@ -98,6 +102,7 @@ export async function renderSettings(main: HTMLElement, ctx: PageContext) {
         control.title = L(
           'Edit credentials in VS Code Settings.',
           '请在 VS Code 设置中修改包含凭据的配置。',
+          '請在 VS Code 設定中修改包含驗證資訊的設定。',
         );
       }
       const original = JSON.stringify(setting.value);
@@ -148,7 +153,7 @@ export async function renderSettings(main: HTMLElement, ctx: PageContext) {
           await ctx.request('settings.update', { key, value, scope: 'effective' });
         draft.clear();
         await ctx.refresh();
-        if (ctx.current()) ctx.notify(L('Settings saved.', '设置已保存。'));
+        if (ctx.current()) ctx.notify(L('Settings saved.', '设置已保存。', '設定已儲存。'));
       })()
         .catch(ctx.error)
         .finally(() => {

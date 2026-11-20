@@ -10,6 +10,7 @@ export class UnavailableProfile extends Error {
       t(
         `Cannot recover custom version profile ${id}. Restore it from its original launcher or backup.`,
         `无法恢复自定义版本配置 ${id}，请从原启动器或备份恢复。`,
+        `無法還原自定義版本設定 ${id}，請從原啟動器或備份還原。`,
       ),
     );
   }

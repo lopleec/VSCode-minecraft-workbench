@@ -91,15 +91,18 @@ export class CurseForge {
   }
   async configure() {
     const key = await vscode.window.showInputBox({
-      title: t('CurseForge API Key', 'CurseForge API 密钥'),
+      title: t('CurseForge API Key', 'CurseForge API 密钥', 'CurseForge API 金鑰'),
       password: true,
       ignoreFocusOut: true,
       prompt: t(
         'Used only for CurseForge downloads (Beta). Empty removes the saved key.',
         '仅用于 CurseForge 下载（Beta）。留空删除已保存的密钥。',
+        '僅用於 CurseForge 下載（Beta）。留空刪除已儲存的金鑰。',
       ),
       validateInput: (value) =>
-        /[\r\n\0]/.test(value) ? t('Invalid API key.', 'API 密钥无效。') : undefined,
+        /[\r\n\0]/.test(value)
+          ? t('Invalid API key.', 'API 密钥无效。', 'API 金鑰無效。')
+          : undefined,
     });
     if (key === undefined) return;
     if (key.trim()) await this.secrets.store(secretKey, key.trim());
@@ -120,6 +123,7 @@ export class CurseForge {
         t(
           'CurseForge downloads (Beta) are disabled. Use local files or enable the setting.',
           'CurseForge 下载（Beta）已关闭，请使用本地文件或开启设置。',
+          'CurseForge 下載（Beta）已關閉，請使用本機檔案或開啟設定。',
         ),
       );
     const key = await waitFor(Promise.resolve(this.secrets.get(secretKey)), signal);
@@ -130,6 +134,7 @@ export class CurseForge {
         t(
           'Configure a CurseForge API key in Workbench → Settings.',
           '请在工作台 → 设置中配置 CurseForge API 密钥。',
+          '請在工作台 → 設定中設定 CurseForge API 金鑰。',
         ),
       );
     const controller = new AbortController();
@@ -147,6 +152,7 @@ export class CurseForge {
           t(
             'CurseForge rejected the API key. Configure the key again.',
             'CurseForge 拒绝了 API 密钥，请重新配置。',
+            'CurseForge 拒絕了 API 金鑰，請重新設定。',
           ),
         );
       throw error;
@@ -260,7 +266,11 @@ export class CurseForge {
           }
         if (!found)
           throw new Error(
-            t(`Select the original file for ${record.path}.`, `请为 ${record.path} 选择原文件。`),
+            t(
+              `Select the original file for ${record.path}.`,
+              `请为 ${record.path} 选择原文件。`,
+              `請為 ${record.path} 選擇原始檔案。`,
+            ),
           );
         await copyPackFile(found, await packDestination(instance, record), record, signal);
       }
@@ -391,18 +401,20 @@ export class CurseForge {
 }
 
 async function localPackFiles(references: number, included: number, signal: AbortSignal) {
-  const choose = t('Choose local files', '选择本地文件'),
-    use = t('Use included files', '使用包内文件');
+  const choose = t('Choose local files', '选择本地文件', '選擇本機檔案'),
+    use = t('Use included files', '使用包内文件', '使用包內檔案');
   const selected = await waitFor(
     Promise.resolve(
       vscode.window.showQuickPick([choose, ...(included ? [use] : [])], {
         title: t(
           'CurseForge: local import (IDs unverified)',
           'CurseForge：本地导入（未校验文件 ID）',
+          'CurseForge：本機匯入（未驗證檔案 ID）',
         ),
         placeHolder: t(
           `${references} file references; ${included} files included. Offline import cannot verify CurseForge IDs.`,
           `清单引用 ${references} 个文件，包内包含 ${included} 个文件。离线导入无法校验 CurseForge 文件 ID。`,
+          `清單引用 ${references} 個檔案，包內包含 ${included} 個檔案。離線匯入無法驗證 CurseForge 檔案 ID。`,
         ),
       }),
     ),
@@ -428,7 +440,10 @@ async function manualDownloads(files: PackFile[], signal: AbortSignal): Promise<
       Promise.resolve(
         vscode.window.showQuickPick(
           [
-            { label: t('Select downloaded files…', '选择已下载的文件…'), file: undefined },
+            {
+              label: t('Select downloaded files…', '选择已下载的文件…', '選擇已下載的檔案…'),
+              file: undefined,
+            },
             ...files.map((file) => ({
               label: path.basename(file.path),
               description: file.website,
@@ -436,10 +451,11 @@ async function manualDownloads(files: PackFile[], signal: AbortSignal): Promise<
             })),
           ],
           {
-            title: t('Files requiring manual download', '需要手动下载的文件'),
+            title: t('Files requiring manual download', '需要手动下载的文件', '需要手動下載的檔案'),
             placeHolder: t(
               'Open a file page, then select the original downloaded files.',
               '打开文件页面，然后选择下载的原文件。',
+              '開啟檔案頁面，然後選擇下載的原始檔案。',
             ),
           },
         ),

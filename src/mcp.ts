@@ -114,16 +114,23 @@ export class WorkbenchMcp implements vscode.Disposable {
           ? t(
               'Minecraft Workbench MCP registered. Enable it in the chat tools picker.',
               'Minecraft Workbench MCP 已注册，可在聊天工具选择器中启用。',
+              'Minecraft Workbench MCP 已註冊，可在聊天工具選擇器中啟用。',
             )
           : t(
               'MCP enabled. Use Copy MCP connection to configure a compatible client. Automatic registration requires VS Code 1.101 or later.',
               'MCP 已启用。使用“复制 MCP 连接”配置兼容客户端。自动注册需要 VS Code 1.101 或更高版本。',
+              'MCP 已啟用。使用“複製 MCP 連接”設定相容用戶端。自動註冊需要 VS Code 1.101 或更高版本。',
             )
-        : t('Minecraft Workbench MCP unregistered.', 'Minecraft Workbench MCP 已取消注册。'),
+        : t(
+            'Minecraft Workbench MCP unregistered.',
+            'Minecraft Workbench MCP 已取消注册。',
+            'Minecraft Workbench MCP 已取消註冊。',
+          ),
     );
   }
   async copyConnection() {
-    if (!this.enabled) throw new Error(t('Register MCP first.', '请先注册 MCP。'));
+    if (!this.enabled)
+      throw new Error(t('Register MCP first.', '请先注册 MCP。', '請先註冊 MCP。'));
     await this.start();
     await vscode.env.clipboard.writeText(
       JSON.stringify(
@@ -144,6 +151,7 @@ export class WorkbenchMcp implements vscode.Disposable {
       t(
         'MCP connection copied. It is valid while this VS Code extension host is running.',
         'MCP 连接配置已复制，在当前 VS Code 扩展宿主运行期间有效。',
+        'MCP 連接設定已複製，在當前 VS Code 擴充套件宿主執行期間有效。',
       ),
     );
   }

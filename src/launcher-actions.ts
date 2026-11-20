@@ -33,7 +33,8 @@ export class LauncherActions {
       return value.trim();
     };
     const selected = () => {
-      if (!instance) throw new Error(t('Select an instance first.', '请先选择实例。'));
+      if (!instance)
+        throw new Error(t('Select an instance first.', '请先选择实例。', '請先選擇實例。'));
       return instance;
     };
     switch (method) {
@@ -49,15 +50,15 @@ export class LauncherActions {
         const name =
           params.name === undefined
             ? await vscode.window.showInputBox({
-                title: t('Rename group', '重命名分组'),
+                title: t('Rename group', '重命名分组', '重命名分組'),
                 value: group,
                 validateInput: (value) => {
                   try {
                     return instanceGroup(value)
                       ? undefined
-                      : t('Enter a group name.', '请输入分组名称。');
+                      : t('Enter a group name.', '请输入分组名称。', '請輸入分組名稱。');
                   } catch {
-                    return t('Invalid group name.', '分组名称无效。');
+                    return t('Invalid group name.', '分组名称无效。', '分組名稱無效。');
                   }
                 },
               })
@@ -74,15 +75,17 @@ export class LauncherActions {
         await trusted();
         const mode = text('mode');
         if (mode !== 'link' && mode !== 'copy') throw new Error('Invalid import mode.');
-        return this.ui.jobs.run(['Import selected instances', '导入所选实例'], (signal, report) =>
-          this.ui.imports.commitMany(
-            params.entries as { key: string; name: string }[],
-            mode,
-            signal,
-            report,
-            params.root ? text('root') : undefined,
-            params.group === undefined ? undefined : text('group', 100),
-          ),
+        return this.ui.jobs.run(
+          ['Import selected instances', '导入所选实例', '匯入所選實例'],
+          (signal, report) =>
+            this.ui.imports.commitMany(
+              params.entries as { key: string; name: string }[],
+              mode,
+              signal,
+              report,
+              params.root ? text('root') : undefined,
+              params.group === undefined ? undefined : text('group', 100),
+            ),
         );
       }
       case 'launcher.gameVersions':
@@ -107,7 +110,7 @@ export class LauncherActions {
       case 'launcher.pickJava': {
         const files = await vscode.window.showOpenDialog({
           canSelectMany: false,
-          openLabel: t('Select Java executable', '选择 Java 可执行文件'),
+          openLabel: t('Select Java executable', '选择 Java 可执行文件', '選擇 Java 執行檔'),
         });
         if (!files?.[0]) return;
         return (await inspectJava(files[0].fsPath)).path;
@@ -118,18 +121,19 @@ export class LauncherActions {
           canSelectFolders: true,
           canSelectMany: false,
           filters: { 'Instance ZIP': ['zip'] },
-          title: t('Import existing instance', '导入现有实例'),
+          title: t('Import existing instance', '导入现有实例', '匯入現有實例'),
         });
         return source?.[0]?.fsPath;
       }
       case 'launcher.scanInstances':
-        return this.ui.jobs.run(['Find existing instances', '查找现有实例'], (signal) =>
-          this.ui.imports.inspect(text('source'), signal),
+        return this.ui.jobs.run(
+          ['Find existing instances', '查找现有实例', '尋找現有實例'],
+          (signal) => this.ui.imports.inspect(text('source'), signal),
         );
       case 'launcher.importInstance': {
         const mode = text('mode');
         if (mode !== 'link' && mode !== 'copy') throw new Error('Invalid import mode.');
-        return this.ui.jobs.run(['Import instance', '导入实例'], (signal) =>
+        return this.ui.jobs.run(['Import instance', '导入实例', '匯入實例'], (signal) =>
           this.ui.imports.commit(
             text('key'),
             mode,
@@ -147,20 +151,21 @@ export class LauncherActions {
             t(
               'Duplicate this linked instance before moving its files.',
               '请先复制原地管理的实例，再移动文件。',
+              '請先複製原地管理的實例，再移動檔案。',
             ),
           );
         const folders = await vscode.window.showOpenDialog({
           canSelectFiles: false,
           canSelectFolders: true,
           canSelectMany: false,
-          title: t('Move instance', '移动实例'),
+          title: t('Move instance', '移动实例', '移動實例'),
         });
         if (!folders?.[0]) return false;
         const parent = folders[0].fsPath;
         await trusted();
         return this.ui.content.exclusive(value, async () => {
           this.minecraft.assertIdle(value);
-          return this.ui.jobs.run(['Move instance', '移动实例'], (signal, report) =>
+          return this.ui.jobs.run(['Move instance', '移动实例', '移動實例'], (signal, report) =>
             moveInstance(
               value,
               parent,
@@ -200,7 +205,11 @@ export class LauncherActions {
         const clientId = text('value', 100);
         if (clientId && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(clientId))
           throw new Error(
-            t('Enter a Microsoft application Client ID.', '请输入 Microsoft 应用 Client ID。'),
+            t(
+              'Enter a Microsoft application Client ID.',
+              '请输入 Microsoft 应用 Client ID。',
+              '請輸入 Microsoft 應用 Client ID。',
+            ),
           );
         await vscode.workspace
           .getConfiguration('minecraftWorkbench')
@@ -211,14 +220,19 @@ export class LauncherActions {
         const name = text('name', 16);
         if (!/^[A-Za-z0-9_]{3,16}$/.test(name))
           throw new Error(
-            t('Use 3–16 letters, numbers or underscores.', '请输入 3–16 位字母、数字或下划线。'),
+            t(
+              'Use 3–16 letters, numbers or underscores.',
+              '请输入 3–16 位字母、数字或下划线。',
+              '請輸入 3–16 位字母、數字或下劃線。',
+            ),
           );
         await this.ui.accounts.offline(name);
         return true;
       }
       case 'launcher.signIn':
-        await this.ui.jobs.run(['Microsoft sign-in', 'Microsoft 登录'], (signal, report) =>
-          this.ui.accounts.login(signal, report),
+        await this.ui.jobs.run(
+          ['Microsoft sign-in', 'Microsoft 登录', 'Microsoft 登入'],
+          (signal, report) => this.ui.accounts.login(signal, report),
         );
         return true;
       case 'launcher.authlibSignIn':
@@ -232,10 +246,14 @@ export class LauncherActions {
           await this.store.save();
         } else if (action === 'refresh') await this.ui.accounts.token(account);
         else if (action === 'remove') {
-          const remove = t('Remove', '移除');
+          const remove = t('Remove', '移除', '移除');
           if (
             (await vscode.window.showWarningMessage(
-              t(`Remove account ${account.name}?`, `移除账户 ${account.name}？`),
+              t(
+                `Remove account ${account.name}?`,
+                `移除账户 ${account.name}？`,
+                `移除帳戶 ${account.name}？`,
+              ),
               { modal: true },
               remove,
             )) === remove
@@ -286,7 +304,7 @@ export class LauncherActions {
         if (!job) throw new Error('Task not found');
         const action = text('action');
         if (action === 'cancel' && job.status === 'running')
-          job.controller.abort(new Error(t('Cancelled', '已取消')));
+          job.controller.abort(new Error(t('Cancelled', '已取消', '已取消')));
         else if (action === 'retry' && job.status !== 'running') await this.ui.jobs.retry(job);
         else if (action === 'output') this.ui.jobs.output.show(true);
         else throw new Error('Task action is unavailable');
@@ -314,25 +332,26 @@ export class LauncherActions {
             vscode.Uri.file(this.ui.backups.directory(value)),
           );
         } else if (action === 'create')
-          await this.ui.operation(value, ['Back up worlds', '备份存档'], () =>
+          await this.ui.operation(value, ['Back up worlds', '备份存档', '備份存檔'], () =>
             this.ui.backups.create(value),
           );
         else if (action === 'restore') {
           const id = text('id', 150);
           if (!(await this.ui.backups.list(value)).includes(id))
             throw new Error('Backup not found');
-          const restore = t('Restore', '恢复');
+          const restore = t('Restore', '恢复', '還原');
           if (
             (await vscode.window.showWarningMessage(
               t(
                 'Replace current worlds? A backup will be created first.',
                 '替换当前存档？恢复前会自动备份当前存档。',
+                '替換當前存檔？還原前會自動備份當前存檔。',
               ),
               { modal: true },
               restore,
             )) === restore
           )
-            await this.ui.operation(value, ['Restore worlds', '恢复存档'], () =>
+            await this.ui.operation(value, ['Restore worlds', '恢复存档', '還原存檔'], () =>
               this.ui.backups.restore(value, id),
             );
         } else throw new Error('Unknown backup action');
@@ -361,17 +380,19 @@ export class LauncherActions {
         else throw new Error('Invalid project loader');
         const template = templates.find((t) => t.name === text('template', 200));
         if (!template) throw new Error('Template not found');
-        const project = await this.ui.jobs.run(['Create mod project', '创建模组项目'], (signal) =>
-          this.ui.developer.create(
-            template,
-            {
-              name: text('name', 100),
-              modId: text('modId', 64),
-              packageName: text('packageName', 250),
-              parent: text('parent'),
-            },
-            signal,
-          ),
+        const project = await this.ui.jobs.run(
+          ['Create mod project', '创建模组项目', '建立模組專案'],
+          (signal) =>
+            this.ui.developer.create(
+              template,
+              {
+                name: text('name', 100),
+                modId: text('modId', 64),
+                packageName: text('packageName', 250),
+                parent: text('parent'),
+              },
+              signal,
+            ),
         );
         if (params.open === true || (params.open === undefined && config('autoOpenProject', true)))
           await this.ui.developer.open(project);

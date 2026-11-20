@@ -71,13 +71,13 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       return this.section === 'home'
         ? [
             new Item(
-              t('Agreements & About', '协议与关于'),
+              t('Agreements & About', '协议与关于', '協議與關於'),
               'action',
               undefined,
               'shield',
               'agreements',
             ),
-            new Item(t('Language', '语言'), 'action', undefined, 'globe', 'language'),
+            new Item(t('Language', '语言', '語言'), 'action', undefined, 'globe', 'language'),
           ]
         : [];
     if (this.section === 'home') {
@@ -86,7 +86,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ...(this.updates?.visible
             ? [
                 new Item(
-                  t('Check for extension updates', '检查插件更新'),
+                  t('Check for extension updates', '检查插件更新', '檢查擴充套件更新'),
                   'action',
                   undefined,
                   'cloud-download',
@@ -95,14 +95,14 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ]
             : []),
           new Item(
-            t('Java settings', 'Java 设置'),
+            t('Java settings', 'Java 设置', 'Java 設定'),
             'action',
             undefined,
             'symbol-method',
             'manageJava',
           ),
           new Item(
-            t('Tasks', '任务'),
+            t('Tasks', '任务', '工作'),
             'action',
             undefined,
             'tasklist',
@@ -111,9 +111,9 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ? String(this.jobs.items.filter((job) => job.status === 'running').length)
               : undefined,
           ),
-          new Item(t('Output', '输出'), 'action', undefined, 'output', 'output'),
+          new Item(t('Output', '输出', '輸出'), 'action', undefined, 'output', 'output'),
           new Item(
-            t('Export launcher logs…', '导出启动器日志…'),
+            t('Export launcher logs…', '导出启动器日志…', '匯出啟動器日誌…'),
             'action',
             undefined,
             'export',
@@ -122,7 +122,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ...(state.mode === 'launcher' && config('terracotta.enabled', false)
             ? [
                 new Item(
-                  t('Terracotta (Beta)', '陶瓦联机（Beta）'),
+                  t('Terracotta (Beta)', '陶瓦联机（Beta）', 'Terracotta（Beta）'),
                   'action',
                   undefined,
                   'radio-tower',
@@ -131,7 +131,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ]
             : []),
           new Item(
-            t('Agreements & About', '协议与关于'),
+            t('Agreements & About', '协议与关于', '協議與關於'),
             'action',
             undefined,
             'shield',
@@ -141,7 +141,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       if (_parent?.kind === 'settingsHome')
         return [
           new Item(
-            t('Proxy credentials', '代理凭据'),
+            t('Proxy credentials', '代理凭据', 'Proxy 驗證資訊'),
             'action',
             undefined,
             'key',
@@ -150,7 +150,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ...(state.mode === 'launcher' && config('curseforge.enabled', false)
             ? [
                 new Item(
-                  t('CurseForge API key', 'CurseForge API 密钥'),
+                  t('CurseForge API key', 'CurseForge API 密钥', 'CurseForge API 金鑰'),
                   'action',
                   undefined,
                   'key',
@@ -160,8 +160,8 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             : []),
           new Item(
             config('mcp.enabled', false)
-              ? t('Unregister MCP', '取消注册 MCP')
-              : t('Register MCP', '注册 MCP'),
+              ? t('Unregister MCP', '取消注册 MCP', '取消註冊 MCP')
+              : t('Register MCP', '注册 MCP', '註冊 MCP'),
             'action',
             undefined,
             'plug',
@@ -170,7 +170,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ...(config('mcp.enabled', false)
             ? [
                 new Item(
-                  t('Copy MCP connection', '复制 MCP 连接'),
+                  t('Copy MCP connection', '复制 MCP 连接', '複製 MCP 連接'),
                   'action',
                   undefined,
                   'copy',
@@ -179,17 +179,17 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ]
             : []),
           new Item(
-            t('Open storage directory', '打开存储目录'),
+            t('Open storage directory', '打开存储目录', '開啟儲存目錄'),
             'action',
             undefined,
             'folder-opened',
             'openStorage',
           ),
-          new Item(t('Documentation', '使用文档'), 'action', undefined, 'book', 'help'),
+          new Item(t('Documentation', '使用文档', '使用說明'), 'action', undefined, 'book', 'help'),
         ];
       if (_parent) return [];
       const more = new Item(
-        t('More', '更多'),
+        t('More', '更多', '更多'),
         'moreHome',
         undefined,
         'ellipsis',
@@ -199,7 +199,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       );
       more.id = 'minecraftWorkbench.more';
       const settings = new Item(
-        t('Settings', '设置'),
+        t('Settings', '设置', '設定'),
         'settingsHome',
         undefined,
         'settings-gear',
@@ -211,22 +211,22 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       return [
         new Item(
           state.mode === 'launcher'
-            ? t('Launcher Mode', '启动模式')
+            ? t('Launcher Mode', '启动模式', '啟動模式')
             : state.mode === 'server'
-              ? t('Server Mode', '开服模式')
-              : t('Developer Mode', '开发模式'),
+              ? t('Server Mode', '开服模式', '架設伺服器模式')
+              : t('Developer Mode', '开发模式', '開發模式'),
           'mode',
           undefined,
           state.mode === 'launcher' ? 'game' : state.mode === 'server' ? 'server' : 'code',
           'mode',
         ),
         new Item(
-          t('Language', '语言'),
+          t('Language', '语言', '語言'),
           'action',
           undefined,
           'globe',
           'language',
-          t('English', '简体中文'),
+          t('English', '简体中文', '繁體中文'),
         ),
         settings,
         more,
@@ -239,7 +239,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           ...(state.instances.some((instance) => !instance.group) ? [''] : []),
         ].map((group) => {
           const item = new Item(
-            group || t('Ungrouped', '未分组'),
+            group || t('Ungrouped', '未分组', '未分組'),
             'instanceGroup',
             undefined,
             'folder',
@@ -271,7 +271,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
               ? 'pass-filled'
               : 'package',
           'inspectInstance',
-          `${instance.minecraft} · ${instance.loader}${status === 'starting' ? t(' · Starting', ' · 启动中') : status === 'installing' ? t(' · Installing', ' · 安装中') : instance.installed ? '' : t(' · Not installed', ' · 未安装')}`,
+          `${instance.minecraft} · ${instance.loader}${status === 'starting' ? t(' · Starting', ' · 启动中', ' · 啟動中') : status === 'installing' ? t(' · Installing', ' · 安装中', ' · 安裝中') : instance.installed ? '' : t(' · Not installed', ' · 未安装', ' · 未安裝')}`,
           false,
         );
         item.id = instance.id;
@@ -288,7 +288,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           server,
           status === 'stopped' ? 'server' : 'vm-running',
           'serverActions',
-          `${server.minecraft} · ${server.engine} · ${{ stopped: t('Stopped', '已停止'), preparing: t('Preparing', '准备中'), starting: t('Starting', '启动中'), running: t('Running', '运行中'), stopping: t('Stopping', '停止中') }[status] || status}`,
+          `${server.minecraft} · ${server.engine} · ${{ stopped: t('Stopped', '已停止', '已停止'), preparing: t('Preparing', '准备中', '準備中'), starting: t('Starting', '启动中', '啟動中'), running: t('Running', '运行中', '執行中'), stopping: t('Stopping', '停止中', '停止中') }[status] || status}`,
         );
         item.id = server.id;
         return item;
@@ -314,7 +314,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
             account,
             account.id === state.selectedAccount ? 'pass-filled' : 'account',
             'selectAccount',
-            account.kind === 'microsoft' ? 'Microsoft' : t('Offline', '离线'),
+            account.kind === 'microsoft' ? 'Microsoft' : t('Offline', '离线', '離線'),
           ),
       );
     if (this.section === 'java')
@@ -338,10 +338,10 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
           failed: 'error',
         }[job.status];
         const states = {
-          running: t('Running', '运行中'),
-          done: t('Completed', '已完成'),
-          cancelled: t('Cancelled', '已取消'),
-          failed: t('Failed', '失败'),
+          running: t('Running', '运行中', '執行中'),
+          done: t('Completed', '已完成', '已完成'),
+          cancelled: t('Cancelled', '已取消', '已取消'),
+          failed: t('Failed', '失败', '失敗'),
         };
         const item = new Item(
           job.label,
@@ -356,7 +356,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       });
     const instance = this.store.selected;
     const browse = new Item(
-      t('Browse content', '浏览内容'),
+      t('Browse content', '浏览内容', '瀏覽內容'),
       'action',
       undefined,
       'extensions',
@@ -367,7 +367,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       if (!server)
         return [
           new Item(
-            t('Manage servers', '管理服务端'),
+            t('Manage servers', '管理服务端', '管理伺服器'),
             'action',
             undefined,
             'server',
@@ -378,7 +378,11 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       if (!kind)
         return [
           new Item(
-            t('This server does not load mods or plugins.', '此服务端不加载模组或插件。'),
+            t(
+              'This server does not load mods or plugins.',
+              '此服务端不加载模组或插件。',
+              '此伺服器不載入模組或擴充套件。',
+            ),
             'information',
             undefined,
             'info',
@@ -387,7 +391,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
       const counts = await this.content.list(serverTarget(server), kind);
       return [
         new Item(
-          kind === 'plugin' ? t('Plugins', '插件') : t('Mods', '模组'),
+          kind === 'plugin' ? t('Plugins', '插件', '擴充套件') : t('Mods', '模组', '模組'),
           kind,
           undefined,
           'extensions',
@@ -401,7 +405,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
     const counts = await this.content.list(instance);
     return [
       new Item(
-        t('Mods', '模组'),
+        t('Mods', '模组', '模組'),
         'mod',
         undefined,
         'extensions',
@@ -409,7 +413,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
         String(counts.filter((i) => i.kind === 'mod').length),
       ),
       new Item(
-        t('Resource packs', '资源包'),
+        t('Resource packs', '资源包', '資源包'),
         'resourcepack',
         undefined,
         'file-media',
@@ -417,7 +421,7 @@ export class View implements vscode.TreeDataProvider<Item>, vscode.Disposable {
         String(counts.filter((i) => i.kind === 'resourcepack').length),
       ),
       new Item(
-        t('Shaders', '光影包'),
+        t('Shaders', '光影包', '光影包'),
         'shader',
         undefined,
         'sparkle',
@@ -437,10 +441,10 @@ export function updateStatus(status: vscode.StatusBarItem, store: Store) {
   const mode = store.state.mode;
   const label =
     mode === 'launcher'
-      ? t('Launcher', '启动器')
+      ? t('Launcher', '启动器', '啟動器')
       : mode === 'server'
-        ? t('Servers', '开服')
-        : t('Developer', '开发');
+        ? t('Servers', '开服', '架設伺服器')
+        : t('Developer', '开发', '開發');
   const selected =
     mode === 'launcher'
       ? store.selected?.name
@@ -450,7 +454,7 @@ export function updateStatus(status: vscode.StatusBarItem, store: Store) {
   status.text = `$(${mode === 'server' ? 'server' : mode === 'developer' ? 'code' : 'game'}) ${label}${selected ? ' · ' + selected : ''}`;
   status.tooltip =
     mode === 'launcher'
-      ? `${account?.name || t('No account', '未选择账户')} · ${memorySettings(store.selected).maxMemory} MB`
+      ? `${account?.name || t('No account', '未选择账户', '未選擇帳戶')} · ${memorySettings(store.selected).maxMemory} MB`
       : label;
   status.command = 'minecraftWorkbench.mode';
   status.show();

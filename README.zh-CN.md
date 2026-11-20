@@ -1,12 +1,12 @@
 # Minecraft Workbench
 
-[下载](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [English](README.md) · [双语 README](README.md)
+[下载](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [English](README.md) · [双语 README](README.md) · [繁體中文](README.zh-TW.md)
 
 ## 简体中文
 
 **Java 设置**、**任务**、**输出**分别放在 **更多**。模组项目只出现在开发模式，各模式使用对应的管理页面。可通过 `minecraftWorkbench.showRuntimeViews` 单独显示 Java 和任务分栏。插件设置页跟随插件语言，也保留 VS Code 原生设置入口。
 
-在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文或简体中文。
+在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文、简体中文或繁体中文。
 
 ### 安装与开始使用
 

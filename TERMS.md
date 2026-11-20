@@ -1,4 +1,4 @@
-# Minecraft Workbench — Terms and Notices / 用户协议与声明
+# Minecraft Workbench — Terms and Notices / 用户协议与声明 / 使用者協議與聲明
 
 ## English
 
@@ -91,3 +91,49 @@ Minecraft、相关商标和游戏资源归各自权利人所有。插件不授�
 Minecraft 的使用以链接中的官方 EULA 全文为准，本文不替代官方条款。记录的版本号代表本插件提示版本，并非 Mojang EULA 的修订版本。
 
 [Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服务](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)
+
+## 繁體中文
+
+提示版本: 2026-11-01.1
+
+本軟體並非 Minecraft 官方產品，未經 Mojang 或 Microsoft 批準，與其無關聯。
+
+### 版權與授權
+
+Copyright © 2026 Lopleec。擴充套件採用 MIT 授權，允許依照該授權使用、修改和重新散布，並保留所要求的版權與授權聲明。本文不為 MIT 增加額外限制。
+
+### 專案與散布
+
+官方原始碼、專案資訊及 CI 建置透過下方 GitHub 儲存庫發行。第三方可依照 MIT 授權重新散布，其建置可能有所不同，由對應散布者負責。Minecraft Workbench 是獨立的社群專案。
+
+### Minecraft 與下載內容
+
+Minecraft、相關商標和遊戲資源歸各自權利人所有。擴充套件不授予 Minecraft 遊戲授權；包括離線遊玩在內的遊戲使用，仍需具備相應權利並遵守 Minecraft EULA。
+
+### 模組、整合包與重新散布
+
+模組、伺服器擴充套件、資源包、光影、範本和執行階段保留作者權利並適用各自授權。下載或自動解析相依性不會授予額外權利。分享整合包或匯出的本機檔案前，請確認每項內容的重新散布權限，並保留授權要求的聲明、署名和原始碼提供義務。授權缺失或未知不代表允許重新散布。
+
+### 第三方程式碼、相容性與備份
+
+模組、安裝程式和 Gradle 專案可使用本機權限執行程式碼。項目清單、相依性檢查、雜湊總和檢查碼衝突提示不構成安全審計或相容性保證。請核對來源與伺服器規則，在更新或還原前保留獨立備份；仍可能出現崩潰、資料損壞或遺失。
+
+### 本機資料與外部服務
+
+目錄、帳戶中繼資料和確認記錄儲存在本機，登入權杖使用 VS Code SecretStorage 儲存。擴充套件不收集遙測；請求發送至相應服務和所選下載源或 Proxy，並適用其政策。外部服務、鏡像和社群內容可能變更或停止提供。分享日誌及匯出檔案前，請檢查其中的隱私資訊。
+
+### 伺服器與 AI 工具
+
+伺服器軟體和擴充套件以本機權限執行。服主需負責存取控制、備份，以及伺服器和內容適用的條款。啟用 MCP 後，所連接的 AI 用戶端可請求擴充套件操作，並接收包含本機路徑、項目中繼資料或伺服器日誌的工具結果。請查看 AI 用戶端的資料政策與工具審批設定。MCP 不返回登入權杖；關閉 MCP 會關閉其本機介面並取消註冊。
+
+### 擔保與責任
+
+軟體按原樣提供，在適用法律允許範圍內採用 MIT 中的擔保與責任條款。本文不免除依法不得排除的責任，不剝奪適用的消費者權利，也不限制 MIT 授予的權限。
+
+### 架設伺服器與模組開發
+
+執行或使用 Minecraft 伺服器須遵守 Minecraft EULA 與適用的使用指南。伺服器軟體、載入器、模組、擴充套件、JDK、Gradle 和項目範本分別適用各自授權。匯入伺服器不會代為確認 EULA，首次啟動需在擴充套件中確認；未經所需授權，請勿重新散布 Minecraft 二進位或第三方內容。
+
+Minecraft 的使用以連結中的官方 EULA 全文為準，本文不取代官方條款。記錄的版本號碼代表本擴充套件提示版本，並非 Mojang EULA 的修訂版本。
+
+[Minecraft EULA](https://www.minecraft.net/en-us/eula) · [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) · [Minecraft Usage Guidelines](https://www.minecraft.net/en-us/usage-guidelines) · [GitHub](https://github.com/lopleec/VSCode-minecraft-workbench) · [MIT License](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/LICENSE) · [Modpack permissions](https://support.modrinth.com/en/articles/8797527-obtaining-modpack-permissions) · [Modrinth terms](https://modrinth.com/legal/terms) · [Third-party services / 第三方服務](https://github.com/lopleec/VSCode-minecraft-workbench/blob/main/THIRD_PARTY_NOTICES.md)

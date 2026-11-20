@@ -30,10 +30,11 @@ export class ServerActions {
       params.serverId === undefined
         ? this.servers.selected
         : this.servers.store.state.servers.find((s) => s.id === params.serverId);
-    if (!server) throw new Error(t('Select a server first.', '请先选择服务端。'));
+    if (!server)
+      throw new Error(t('Select a server first.', '请先选择服务端。', '請先選擇伺服器。'));
     return server;
   }
-  private async confirm(message: string, label = t('Continue', '继续')) {
+  private async confirm(message: string, label = t('Continue', '继续', '繼續')) {
     return (await vscode.window.showWarningMessage(message, { modal: true }, label)) === label;
   }
   private async localJars(value: unknown, many: boolean): Promise<string[] | undefined> {
@@ -47,7 +48,13 @@ export class ServerActions {
     }
     const files = typeof value === 'string' && !many ? [value] : value;
     if (!Array.isArray(files) || files.length < 1 || files.length > (many ? 100 : 1))
-      throw new Error(t('Select valid local JAR files.', '请选择有效的本地 JAR 文件。'));
+      throw new Error(
+        t(
+          'Select valid local JAR files.',
+          '请选择有效的本地 JAR 文件。',
+          '請選擇有效的本機 JAR 檔案。',
+        ),
+      );
     for (const file of files) {
       if (
         typeof file !== 'string' ||
@@ -55,11 +62,21 @@ export class ServerActions {
         file.includes('\0') ||
         !/\.jar$/i.test(file)
       )
-        throw new Error(t('Select valid local JAR files.', '请选择有效的本地 JAR 文件。'));
+        throw new Error(
+          t(
+            'Select valid local JAR files.',
+            '请选择有效的本地 JAR 文件。',
+            '請選擇有效的本機 JAR 檔案。',
+          ),
+        );
       const stat = await fs.stat(file);
       if (!stat.isFile() || stat.size > 512 * 1024 ** 2)
         throw new Error(
-          t('Select JAR files smaller than 512 MB.', '请选择小于 512 MB 的 JAR 文件。'),
+          t(
+            'Select JAR files smaller than 512 MB.',
+            '请选择小于 512 MB 的 JAR 文件。',
+            '請選擇小於 512 MB 的 JAR 檔案。',
+          ),
         );
     }
     return files as string[];
@@ -81,7 +98,7 @@ export class ServerActions {
     if (method === 'server.import') {
       if (!params.value || typeof params.value !== 'object' || Array.isArray(params.value))
         throw new Error('Invalid server settings');
-      return this.jobs.run(['Import server', '导入服务端'], (signal) =>
+      return this.jobs.run(['Import server', '导入服务端', '匯入伺服器'], (signal) =>
         importServer(this.servers.store, params.value as Record<string, unknown>, signal),
       );
     }
@@ -158,7 +175,7 @@ export class ServerActions {
     if (method === 'server.backup')
       return this.servers.exclusive(server, () =>
         this.jobs.run(
-          ['Back up server worlds', '备份服务端存档'],
+          ['Back up server worlds', '备份服务端存档', '備份伺服器存檔'],
           async () => {
             const properties = await this.servers.properties(server);
             return this.servers.backups.create(server, properties['level-name'] || 'world');
@@ -172,14 +189,15 @@ export class ServerActions {
           t(
             'Restore this backup? Current worlds will be backed up first.',
             '恢复此备份？当前存档会先自动备份。',
+            '還原此備份？當前存檔會先自動備份。',
           ),
-          t('Restore', '恢复'),
+          t('Restore', '恢复', '還原'),
         ))
       )
         return false;
       return this.servers.exclusive(server, () =>
         this.jobs.run(
-          ['Restore server worlds', '恢复服务端存档'],
+          ['Restore server worlds', '恢复服务端存档', '還原伺服器存檔'],
           async () => {
             const properties = await this.servers.properties(server);
             await this.servers.backups.restore(
@@ -206,7 +224,10 @@ export class ServerActions {
         throw new Error('Unknown content action');
       if (
         action === 'remove' &&
-        !(await this.confirm(t(`Remove ${item.file}?`, `删除 ${item.file}？`), t('Remove', '删除')))
+        !(await this.confirm(
+          t(`Remove ${item.file}?`, `删除 ${item.file}？`, `刪除 ${item.file}？`),
+          t('Remove', '删除', '刪除'),
+        ))
       )
         return false;
       return this.servers.exclusive(server, () =>
@@ -219,7 +240,7 @@ export class ServerActions {
             );
             if (!next) return false;
             await this.jobs.run(
-              [`Update ${item.name}`, `更新 ${item.name}`],
+              [`Update ${item.name}`, `更新 ${item.name}`, `更新 ${item.name}`],
               (signal, report) =>
                 this.content.install(target, next.version, item.kind, signal, report),
               () => this.handle(method, params),
@@ -249,8 +270,9 @@ export class ServerActions {
             t(
               'Force stop this server? Unsaved world data may be lost.',
               '强制停止服务端？未保存的存档数据可能丢失。',
+              '強制停止伺服器？未儲存的存檔資料可能遺失。',
             ),
-            t('Force stop', '强制停止'),
+            t('Force stop', '强制停止', '強制停止'),
           )
         )
           this.servers.forceStop(server);
@@ -273,6 +295,7 @@ export class ServerActions {
             t(
               'Install or start the server to generate its configuration.',
               '请先安装或启动服务端以生成配置。',
+              '請先安裝或啟動伺服器以生成設定。',
             ),
           );
         return vscode.window.showTextDocument(vscode.Uri.file(file));
@@ -337,7 +360,7 @@ export class ServerActions {
         if (manualServer(server.engine)) return false;
         const versions = await this.servers.catalog.versions(server.engine);
         const version = await vscode.window.showQuickPick(versions, {
-          title: t('Server version', '服务端版本'),
+          title: t('Server version', '服务端版本', '伺服器版本'),
           ignoreFocusOut: true,
         });
         if (!version) return false;
@@ -346,9 +369,9 @@ export class ServerActions {
           ? await vscode.window.showQuickPick(
               builds.map((b) => ({
                 label: b.id,
-                description: b.stable ? '' : t('Experimental', '实验版'),
+                description: b.stable ? '' : t('Experimental', '实验版', '實驗版'),
               })),
-              { title: t('Server build', '服务端构建'), ignoreFocusOut: true },
+              { title: t('Server build', '服务端构建', '伺服器建置'), ignoreFocusOut: true },
             )
           : undefined;
         if (builds.length && !build) return false;
@@ -357,6 +380,7 @@ export class ServerActions {
             t(
               'Change server version? Back up worlds before upgrading. Older game versions may not read newer worlds.',
               '更改服务端版本？升级前请备份存档，旧版本可能无法读取新版本存档。',
+              '更改伺服器版本？升級前請備份存檔，舊版本可能無法讀取新版本存檔。',
             ),
           ))
         )
@@ -391,8 +415,9 @@ export class ServerActions {
             t(
               `Remove ${server.name} from the list? Its files will remain on disk.`,
               `从列表移除 ${server.name}？文件将保留在磁盘中。`,
+              `從清單移除 ${server.name}？檔案將保留在磁盤中。`,
             ),
-            t('Remove', '移除'),
+            t('Remove', '移除', '移除'),
           ))
         )
           return false;

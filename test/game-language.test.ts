@@ -25,6 +25,9 @@ test('game language follows the extension/VS Code without replacing a player cho
   try {
     await prepareGameLanguage(instance);
     assert.equal(await fs.readFile(path.join(root, 'options.txt'), 'utf8'), 'lang:zh_cn\n');
+    settings.language = 'zh-tw';
+    await prepareGameLanguage(instance);
+    assert.equal(await fs.readFile(path.join(root, 'options.txt'), 'utf8'), 'lang:zh_tw\n');
     settings.language = 'en';
     await prepareGameLanguage(instance);
     assert.equal(await fs.readFile(path.join(root, 'options.txt'), 'utf8'), 'lang:en_us\n');
@@ -46,6 +49,9 @@ test('game language follows the extension/VS Code without replacing a player cho
     await prepareGameLanguage(instance);
     assert.match(await fs.readFile(path.join(root, 'options.txt'), 'utf8'), /lang:zh_tw/);
     assert.equal(minecraftLanguage('zh-TW'), 'zh_tw');
+    assert.equal(minecraftLanguage('zh-Hant-TW'), 'zh_tw');
+    assert.equal(minecraftLanguage('zh-MO'), 'zh_tw');
+    assert.equal(minecraftLanguage('zh-Hant-HK'), 'zh_hk');
     assert.equal(minecraftLanguage('pt-BR'), 'pt_br');
     assert.equal(minecraftLanguage('en'), 'en_us');
     instance.gameLanguage = 'en_us';

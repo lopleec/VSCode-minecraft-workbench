@@ -132,7 +132,11 @@ export async function copyPackFile(
 ) {
   if (!(await validPackFile(source, record, signal)))
     throw new Error(
-      t(`The local file does not match ${record.path}.`, `本地文件与 ${record.path} 不匹配。`),
+      t(
+        `The local file does not match ${record.path}.`,
+        `本地文件与 ${record.path} 不匹配。`,
+        `本機檔案與 ${record.path} 不匹配。`,
+      ),
     );
   await fs.mkdir(path.dirname(destination), { recursive: true });
   const temporary = `${destination}.${randomUUID()}.tmp`;
@@ -158,7 +162,11 @@ export async function repairPackFiles(
     const target = await packDestination(instance, file);
     if (await validPackFile(target, file, signal)) continue;
     report(
-      t(`Repair pack file: ${file.path}`, `修复整合包文件：${file.path}`),
+      t(
+        `Repair pack file: ${file.path}`,
+        `修复整合包文件：${file.path}`,
+        `修復整合包檔案：${file.path}`,
+      ),
       `Repair pack file: ${file.path}`,
     );
     if (file.source === 'curseforge') {
@@ -210,6 +218,7 @@ export async function repairPackFiles(
           t(
             `Restore the original file or re-import the modpack: ${file.path}`,
             `请恢复原文件或重新导入整合包：${file.path}`,
+            `請還原原始檔案或重新匯入整合包：${file.path}`,
           ),
         )
       );

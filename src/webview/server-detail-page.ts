@@ -9,20 +9,24 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
   const server = ctx.state().servers.find((s) => s.id === ctx.state().selectedServer);
   if (!server) {
     main.append(
-      blank(L('Select a server', '请选择服务端')),
+      blank(L('Select a server', '请选择服务端', '請選擇伺服器')),
       h(
         'div',
         { class: 'inline-actions' },
-        ctx.button(L('New server', '新建服务端'), () => ctx.navigate('serverCreate'), 'primary'),
         ctx.button(
-          L('Import server…', '导入服务端…'),
+          L('New server', '新建服务端', '新增伺服器'),
+          () => ctx.navigate('serverCreate'),
+          'primary',
+        ),
+        ctx.button(
+          L('Import server…', '导入服务端…', '匯入伺服器…'),
           () => ctx.navigate('serverImport'),
           'secondary',
         ),
         ...(ctx.state().servers.length
           ? [
               ctx.button(
-                L('Choose server', '选择服务端'),
+                L('Choose server', '选择服务端', '選擇伺服器'),
                 () => ctx.navigate('servers'),
                 'secondary',
               ),
@@ -34,12 +38,12 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
   }
   const id = server.id;
   const status = h('span', { class: 'status-label' });
-  const start = ctx.button(L('Start', '启动'), () => perform('start'), 'primary');
-  const stop = ctx.button(L('Stop', '停止'), () => perform('stop'), 'secondary');
-  const restart = ctx.button(L('Restart', '重启'), () => perform('restart'), 'secondary');
+  const start = ctx.button(L('Start', '启动', '啟動'), () => perform('start'), 'primary');
+  const stop = ctx.button(L('Stop', '停止', '停止'), () => perform('stop'), 'secondary');
+  const restart = ctx.button(L('Restart', '重启', '重啟'), () => perform('restart'), 'secondary');
   const tabs = h('nav', {
     class: 'segments server-tabs',
-    'aria-label': L('Server pages', '服务端页面'),
+    'aria-label': L('Server pages', '服务端页面', '伺服器頁面'),
   });
   const body = h('div', { class: 'server-body' });
   let tab = server.engine !== 'velocity' && !server.eulaAccepted ? 'agreements' : 'console';
@@ -96,10 +100,10 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
   function renderTab() {
     tabs.replaceChildren(
       ...[
-        ['console', L('Console', '控制台')],
-        ['settings', L('Settings', '设置')],
-        ['backups', L('Backups', '备份')],
-        ['agreements', L('Agreements & licenses', '协议与许可')],
+        ['console', L('Console', '控制台', '控制臺')],
+        ['settings', L('Settings', '设置', '設定')],
+        ['backups', L('Backups', '备份', '備份')],
+        ['agreements', L('Agreements & licenses', '协议与许可', '協議與授權')],
       ].map(([key, title]) =>
         ctx.button(
           title,
@@ -127,14 +131,14 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
       class: 'server-console',
       tabindex: 0,
       role: 'log',
-      'aria-label': L('Server console', '服务端控制台'),
+      'aria-label': L('Server console', '服务端控制台', '伺服器控制臺'),
     });
     const command = input('serverCommand');
-    command.placeholder = L('Server command…', '输入服务端指令…');
+    command.placeholder = L('Server command…', '输入服务端指令…', '輸入伺服器指令…');
     command.maxLength = 4096;
     command.required = true;
     command.autocomplete = 'off';
-    const send = h('button', { type: 'submit', class: 'secondary' }, L('Send', '发送'));
+    const send = h('button', { type: 'submit', class: 'secondary' }, L('Send', '发送', '發送'));
     const form = h('form', { class: 'console-command' }, command, send);
     form.onsubmit = (e) => {
       e.preventDefault();
@@ -153,9 +157,17 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
       h(
         'div',
         { class: 'inline-actions page-actions' },
-        ctx.button(L('Open output', '打开输出'), () => perform('log'), 'secondary'),
-        ctx.button(L('Open directory', '打开目录'), () => perform('directory'), 'secondary'),
-        ctx.button(L('Force stop…', '强制停止…'), () => perform('forceStop'), 'secondary danger'),
+        ctx.button(L('Open output', '打开输出', '開啟輸出'), () => perform('log'), 'secondary'),
+        ctx.button(
+          L('Open directory', '打开目录', '開啟目錄'),
+          () => perform('directory'),
+          'secondary',
+        ),
+        ctx.button(
+          L('Force stop…', '强制停止…', '強制停止…'),
+          () => perform('forceStop'),
+          'secondary danger',
+        ),
       ),
       output,
       form,
@@ -169,7 +181,8 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         if (!ctx.current() || !output.isConnected) return;
         const atEnd = output.scrollHeight - output.scrollTop - output.clientHeight < 36;
         const text =
-          result.lines.join('\n') || L('Server output appears here.', '服务端输出显示在此处。');
+          result.lines.join('\n') ||
+          L('Server output appears here.', '服务端输出显示在此处。', '伺服器輸出顯示在此處。');
         if (output.textContent !== text) output.textContent = text;
         if (atEnd) output.scrollTop = output.scrollHeight;
         command.disabled = !['running', 'starting'].includes(result.status);
@@ -182,7 +195,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
     void poll();
   }
   function settingsTab() {
-    const loading = h('p', { class: 'muted' }, L('Loading settings…', '加载设置…'));
+    const loading = h('p', { class: 'muted' }, L('Loading settings…', '加载设置…', '載入設定…'));
     body.append(loading);
     void ctx
       .request<Record<string, string>>('server.properties', { serverId: id })
@@ -193,7 +206,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         const name = input('name', current.name);
         name.required = true;
         const java = input('java', current.java || '');
-        java.placeholder = L('Automatic', '自动');
+        java.placeholder = L('Automatic', '自动', '自動');
         const min = input('minMemory', current.minMemory || 0, 'number');
         min.min = '0';
         min.max = '1048576';
@@ -203,7 +216,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         const major = input('javaMajor', current.javaMajor || '', 'number');
         major.min = '8';
         major.max = '99';
-        major.placeholder = L('From game version', '按游戏版本');
+        major.placeholder = L('From game version', '按游戏版本', '按遊戲版本');
         const args = h(
           'textarea',
           { name: 'jvmArgs', rows: 3 },
@@ -221,15 +234,15 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         const settings = h(
           'fieldset',
           { 'data-idle': true },
-          h('legend', {}, L('Java & memory', 'Java 与内存')),
+          h('legend', {}, L('Java & memory', 'Java 与内存', 'Java 與記憶體')),
           h(
             'div',
             { class: 'form-grid' },
-            field(L('Name', '名称'), name),
-            field(L('Java executable', 'Java 可执行文件'), java),
-            field(L('Java version override', '指定 Java 版本'), major),
-            field(L('Minimum memory (MB)', '最小内存（MB）'), min),
-            field(L('Maximum memory (MB)', '最大内存（MB）'), max),
+            field(L('Name', '名称', '名稱'), name),
+            field(L('Java executable', 'Java 可执行文件', 'Java 執行檔'), java),
+            field(L('Java version override', '指定 Java 版本', '指定 Java 版本'), major),
+            field(L('Minimum memory (MB)', '最小内存（MB）', '最小記憶體（MB）'), min),
+            field(L('Maximum memory (MB)', '最大内存（MB）', '最大記憶體（MB）'), max),
           ),
           h(
             'p',
@@ -237,33 +250,38 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
             L(
               `0 uses automatic memory (${ctx.state().defaults.minMemory}–${ctx.state().defaults.maxMemory} MB).`,
               `0 使用自动内存（${ctx.state().defaults.minMemory}–${ctx.state().defaults.maxMemory} MB）。`,
+              `0 使用自動記憶體（${ctx.state().defaults.minMemory}–${ctx.state().defaults.maxMemory} MB）。`,
             ),
           ),
           field(
-            L('JVM arguments', 'JVM 参数'),
+            L('JVM arguments', 'JVM 参数', 'JVM 引數'),
             args,
-            L('One argument per line.', '每行一个参数。'),
+            L('One argument per line.', '每行一个参数。', '每行一個引數。'),
           ),
         );
         form.append(settings);
         if (current.engine !== 'velocity') {
           const booleans: [string, string][] = [
-            ['true', L('Enabled', '启用')],
-            ['false', L('Disabled', '禁用')],
+            ['true', L('Enabled', '启用', '啟用')],
+            ['false', L('Disabled', '禁用', '停用')],
           ];
           form.append(
             h(
               'fieldset',
               { 'data-idle': true },
-              h('legend', {}, L('Network', '网络')),
+              h('legend', {}, L('Network', '网络', '網路')),
               h(
                 'div',
                 { class: 'form-grid' },
-                propField('server-ip', L('Bind address', '绑定地址')),
-                propField('server-port', L('Port', '端口')),
-                propField('max-players', L('Player limit', '人数上限')),
-                propField('online-mode', L('Verify player accounts', '验证正版账户'), booleans),
-                propField('white-list', L('Whitelist', '白名单'), booleans),
+                propField('server-ip', L('Bind address', '绑定地址', '繫結位址')),
+                propField('server-port', L('Port', '端口', '連接埠')),
+                propField('max-players', L('Player limit', '人数上限', '人數上限')),
+                propField(
+                  'online-mode',
+                  L('Verify player accounts', '验证正版账户', '驗證正版帳戶'),
+                  booleans,
+                ),
+                propField('white-list', L('Whitelist', '白名单', '白名單'), booleans),
               ),
               h(
                 'p',
@@ -271,37 +289,42 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
                 L(
                   '127.0.0.1: local only. 0.0.0.0: allow LAN connections.',
                   '127.0.0.1：仅本机；0.0.0.0：允许局域网连接。',
+                  '127.0.0.1：僅本機；0.0.0.0：允許區域網路連接。',
                 ),
               ),
             ),
             h(
               'fieldset',
               { 'data-idle': true },
-              h('legend', {}, L('World', '世界')),
+              h('legend', {}, L('World', '世界', '世界')),
               h(
                 'div',
                 { class: 'form-grid' },
-                propField('motd', L('Server description', '服务器简介')),
-                propField('level-name', L('World folder', '存档目录')),
-                propField('level-seed', L('Seed', '种子')),
-                propField('gamemode', L('Game mode', '游戏模式'), [
-                  ['survival', L('Survival', '生存')],
-                  ['creative', L('Creative', '创造')],
-                  ['adventure', L('Adventure', '冒险')],
-                  ['spectator', L('Spectator', '旁观')],
+                propField('motd', L('Server description', '服务器简介', '伺服器簡介')),
+                propField('level-name', L('World folder', '存档目录', '存檔目錄')),
+                propField('level-seed', L('Seed', '种子', '種子')),
+                propField('gamemode', L('Game mode', '游戏模式', '遊戲模式'), [
+                  ['survival', L('Survival', '生存', '生存')],
+                  ['creative', L('Creative', '创造', '創造')],
+                  ['adventure', L('Adventure', '冒险', '冒險')],
+                  ['spectator', L('Spectator', '旁观', '旁觀')],
                 ]),
-                propField('difficulty', L('Difficulty', '难度'), [
-                  ['peaceful', L('Peaceful', '和平')],
-                  ['easy', L('Easy', '简单')],
-                  ['normal', L('Normal', '普通')],
-                  ['hard', L('Hard', '困难')],
+                propField('difficulty', L('Difficulty', '难度', '難度'), [
+                  ['peaceful', L('Peaceful', '和平', '和平')],
+                  ['easy', L('Easy', '简单', '簡單')],
+                  ['normal', L('Normal', '普通', '普通')],
+                  ['hard', L('Hard', '困难', '困難')],
                 ]),
                 propField('pvp', 'PvP', booleans),
-                propField('view-distance', L('View distance', '视距')),
-                propField('simulation-distance', L('Simulation distance', '模拟距离')),
-                propField('spawn-protection', L('Spawn protection', '出生点保护')),
-                propField('enable-command-block', L('Command blocks', '命令方块'), booleans),
-                propField('allow-flight', L('Allow flight', '允许飞行'), booleans),
+                propField('view-distance', L('View distance', '视距', '視距')),
+                propField('simulation-distance', L('Simulation distance', '模拟距离', '模擬距離')),
+                propField('spawn-protection', L('Spawn protection', '出生点保护', '出生點保護')),
+                propField(
+                  'enable-command-block',
+                  L('Command blocks', '命令方块', '命令方塊'),
+                  booleans,
+                ),
+                propField('allow-flight', L('Allow flight', '允许飞行', '允許飛行'), booleans),
               ),
             ),
           );
@@ -313,9 +336,13 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
             h(
               'button',
               { type: 'submit', class: 'primary', 'data-idle': true },
-              L('Save settings', '保存设置'),
+              L('Save settings', '保存设置', '儲存設定'),
             ),
-            h('span', { class: 'muted' }, L('Stop the server to edit.', '停止服务端后可编辑。')),
+            h(
+              'span',
+              { class: 'muted' },
+              L('Stop the server to edit.', '停止服务端后可编辑。', '停止伺服器後可編輯。'),
+            ),
           ),
         );
         form.onsubmit = (e) => {
@@ -337,7 +364,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
               properties: Object.fromEntries([...controls].map(([key, c]) => [key, c.value])),
             });
             await ctx.refresh();
-            ctx.notify(L('Settings saved.', '设置已保存。'));
+            ctx.notify(L('Settings saved.', '设置已保存。', '設定已儲存。'));
           }).catch(ctx.error);
         };
         body.append(
@@ -345,16 +372,16 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
           h(
             'section',
             { class: 'maintenance' },
-            h('h2', {}, L('Server files', '服务端文件')),
+            h('h2', {}, L('Server files', '服务端文件', '伺服器檔案')),
             h(
               'div',
               { class: 'inline-actions' },
               ...[
-                ['install', L('Install / repair', '安装 / 修复')],
-                ['version', L('Change version…', '更改版本…')],
-                ['config', L('Open configuration', '打开配置文件')],
+                ['install', L('Install / repair', '安装 / 修复', '安裝 / 修復')],
+                ['version', L('Change version…', '更改版本…', '更改版本…')],
+                ['config', L('Open configuration', '打开配置文件', '開啟設定檔案')],
                 ...(manualServer(current.engine)
-                  ? [['importJar', L('Import server JAR…', '导入服务端 JAR…')]]
+                  ? [['importJar', L('Import server JAR…', '导入服务端 JAR…', '匯入伺服器 JAR…')]]
                   : []),
               ].map(([action, label]) => {
                 const button = ctx.button(label, () => perform(action), 'secondary');
@@ -367,7 +394,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
             'section',
             { class: 'danger-zone' },
             ctx.button(
-              L('Remove from list…', '从列表移除…'),
+              L('Remove from list…', '从列表移除…', '從清單移除…'),
               async () => {
                 await perform('delete');
                 if (!ctx.state().servers.some((s) => s.id === id)) await ctx.navigate('servers');
@@ -383,11 +410,11 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
         loading.remove();
         body.append(
           blank(
-            L('Could not load settings', '无法加载设置'),
+            L('Could not load settings', '无法加载设置', '無法載入設定'),
             error instanceof Error ? error.message : String(error),
           ),
           ctx.button(
-            L('Retry', '重试'),
+            L('Retry', '重试', '重試'),
             () => {
               body.replaceChildren();
               settingsTab();
@@ -400,7 +427,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
   function backupTab() {
     const list = h('div', { class: 'management-list' });
     const create = ctx.button(
-      L('Back up worlds', '备份存档'),
+      L('Back up worlds', '备份存档', '備份存檔'),
       async () => {
         await ctx.request('server.backup', { serverId: id });
         await refreshBackups();
@@ -419,7 +446,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
             { class: 'management-row' },
             h('span', { class: 'row-body' }, value),
             ctx.button(
-              L('Restore…', '恢复…'),
+              L('Restore…', '恢复…', '還原…'),
               async () => {
                 await ctx.request('server.restore', { serverId: id, id: value });
                 await refreshBackups();
@@ -430,7 +457,7 @@ export function renderServer(main: HTMLElement, ctx: PageContext) {
           ),
         ),
       );
-      if (!ids.length) list.append(blank(L('No backups', '暂无备份')));
+      if (!ids.length) list.append(blank(L('No backups', '暂无备份', '暫無備份')));
     }
     void refreshBackups().catch(ctx.error);
   }

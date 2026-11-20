@@ -1,4 +1,5 @@
 import type { ConsentStatus } from '../consent';
+import type { Language } from '../language';
 import type { TerracottaStatus } from '../terracotta';
 import type {
   Account,
@@ -46,7 +47,7 @@ export interface Preferences {
 }
 export interface Bootstrap {
   consent: ConsentStatus;
-  locale: 'en' | 'zh-cn';
+  locale: Language;
   page: WorkbenchPage;
   kind: ProjectKind;
   instances: Instance[];

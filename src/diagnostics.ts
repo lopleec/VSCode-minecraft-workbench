@@ -210,27 +210,29 @@ export class Diagnostics implements vscode.Disposable {
     const choice = await vscode.window.showQuickPick(
       [
         {
-          label: t('Sanitized (recommended)', '脱敏版（推荐）'),
+          label: t('Sanitized (recommended)', '脱敏版（推荐）', '去識別化版（推薦）'),
           description: t(
             'Hide home directories and player identifiers.',
             '隐藏用户目录和玩家身份信息。',
+            '隱藏使用者目錄和玩家身份資訊。',
           ),
           mode: 'sanitized' as const,
         },
         {
-          label: t('Original', '原始版'),
+          label: t('Original', '原始版', '原始版'),
           description: t(
             'Keep local paths and player identifiers. Credentials are excluded.',
             '保留本地路径和玩家身份信息，不包含登录凭据。',
+            '保留本機路徑和玩家身份資訊，不包含登入驗證資訊。',
           ),
           mode: 'original' as const,
         },
       ],
-      { title: t('Export launcher logs', '导出启动器日志') },
+      { title: t('Export launcher logs', '导出启动器日志', '匯出啟動器日誌') },
     );
     if (!choice) return;
     const target = await vscode.window.showSaveDialog({
-      title: t('Export launcher logs', '导出启动器日志'),
+      title: t('Export launcher logs', '导出启动器日志', '匯出啟動器日誌'),
       defaultUri: vscode.Uri.file(
         path.join(
           os.homedir(),
@@ -242,7 +244,9 @@ export class Diagnostics implements vscode.Disposable {
     if (!target) return;
     const data = await this.archive(snapshot, choice.mode);
     await vscode.workspace.fs.writeFile(target, data);
-    void vscode.window.showInformationMessage(t('Launcher logs exported.', '启动器日志已导出。'));
+    void vscode.window.showInformationMessage(
+      t('Launcher logs exported.', '启动器日志已导出。', '啟動器日誌已匯出。'),
+    );
   }
 
   async flush() {

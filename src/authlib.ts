@@ -46,6 +46,7 @@ export function authServerUrl(input: string): string {
       t(
         'Use an HTTPS authentication server API URL without credentials or query parameters.',
         '请使用 HTTPS 认证服务器 API 地址，不含凭据或查询参数。',
+        '請使用 HTTPS 驗證伺服器 API 位址，不含驗證資訊或查詢引數。',
       ),
     );
   url.pathname = url.pathname.replace(/\/$/, '') + '/';
@@ -96,6 +97,7 @@ export class Authlib {
         t(
           'This URL does not provide authlib-injector metadata.',
           '此地址未提供 authlib-injector 元数据。',
+          '此位址未提供 authlib-injector 中繼資料。',
         ),
       );
     return {
@@ -163,6 +165,7 @@ export class Authlib {
           t(
             'Create a player profile on this authentication server first.',
             '请先在认证服务器创建游戏角色。',
+            '請先在驗證伺服器建立遊戲角色。',
           ),
         );
       const selected = profiles.length === 1 ? profiles[0] : await select(profiles);
@@ -231,7 +234,10 @@ export class Authlib {
   private async refresh(account: Account): Promise<string> {
     const api = authServerUrl(account.authServer || '');
     const raw = await this.secrets.get(accountSecretKey(account.id));
-    if (!raw) throw new Error(t('Sign in to this account again.', '请重新登录该账户。'));
+    if (!raw)
+      throw new Error(
+        t('Sign in to this account again.', '请重新登录该账户。', '請重新登入該帳戶。'),
+      );
     let stored: Credentials;
     try {
       stored = JSON.parse(raw) as Credentials;
@@ -240,6 +246,7 @@ export class Authlib {
         t(
           'Stored login credentials are invalid. Sign in again.',
           '保存的登录凭据无效，请重新登录。',
+          '儲存的登入驗證資訊無效，請重新登入。',
         ),
       );
     }

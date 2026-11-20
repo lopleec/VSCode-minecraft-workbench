@@ -10,12 +10,17 @@ const entries = zip.getEntries().map((entry) => entry.entryName);
 for (const name of [
   'extension/readme.md',
   'extension/README.zh-CN.md',
+  'extension/README.zh-TW.md',
+  'extension/package.nls.json',
+  'extension/package.nls.zh-cn.json',
+  'extension/package.nls.zh-tw.json',
   'extension/LICENSE.txt',
   'extension/THIRD_PARTY_LICENSES.txt',
   'extension/TERMS.md',
 ])
   assert.ok(entries.includes(name), `Missing ${name}`);
-assert.ok(bytes <= 640 * 1024, `VSIX exceeds 640 KiB: ${bytes} bytes`);
+// Three UI languages, localized command titles and bundled documentation.
+assert.ok(bytes <= 704 * 1024, `VSIX exceeds 704 KiB: ${bytes} bytes`);
 assert.ok(
   !entries.some((name) =>
     /\.map$|bundle-meta\.json$|^extension\/(?:docs\/images|src|test|tests|scripts|fixtures|coverage|output|\.playwright-cli|node_modules)\//.test(

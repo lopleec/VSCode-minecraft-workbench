@@ -59,7 +59,11 @@ export class Consent {
       value.workbenchTerms !== true
     )
       throw new Error(
-        t('Read and accept both agreements to continue.', '请阅读并勾选两项协议后继续。'),
+        t(
+          'Read and accept both agreements to continue.',
+          '请阅读并勾选两项协议后继续。',
+          '請閱讀並勾選兩項協議後繼續。',
+        ),
       );
     if (this.accepted) return;
     const record: Acceptance = {

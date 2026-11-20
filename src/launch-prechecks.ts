@@ -46,7 +46,11 @@ export async function prepareNatives(
       size += entry.header.size;
       if (entry.header.size > 64 * 1024 ** 2 || size > 256 * 1024 ** 2)
         throw new Error(
-          t('Native library exceeds extraction size limit.', '本地库超过解压大小限制。'),
+          t(
+            'Native library exceeds extraction size limit.',
+            '本地库超过解压大小限制。',
+            '本機庫超過解壓大小限制。',
+          ),
         );
       const target = path.join(root, filename(path.posix.basename(name)));
       await rejectSymlinkParents(options.gamePath, target);
@@ -132,6 +136,7 @@ export function launchPrecheck(
           t(
             `Missing or corrupt game file: ${file.path}. Use Install / repair.`,
             `游戏文件缺失或损坏：${file.path}。请使用安装 / 修复。`,
+            `遊戲檔案缺失或損壞：${file.path}。請使用安裝 / 修復。`,
           ),
         );
     }

@@ -59,7 +59,7 @@ export class Workbench implements vscode.Disposable {
     if (!this.panel) {
       const panel = vscode.window.createWebviewPanel(
         'minecraftWorkbench.browser',
-        t('Minecraft Workbench', 'Minecraft 工作台'),
+        t('Minecraft Workbench', 'Minecraft 工作台', 'Minecraft 工作台'),
         vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -96,7 +96,7 @@ export class Workbench implements vscode.Disposable {
     const memory = memorySettings();
     return {
       consent: this.consent.snapshot(),
-      locale: t('en', 'zh-cn') as Bootstrap['locale'],
+      locale: t('en', 'zh-cn', 'zh-tw') as Bootstrap['locale'],
       page: resolvePage(this.page, this.store.state.mode, this.terracotta?.snapshot().enabled),
       kind: this.kind,
       instances: this.store.state.instances,
@@ -169,7 +169,7 @@ export class Workbench implements vscode.Disposable {
   private instance(params: Record<string, unknown>): Instance | undefined {
     if (params.instanceId === undefined || params.instanceId === '') return this.store.selected;
     const instance = this.store.state.instances.find((i) => i.id === params.instanceId);
-    if (!instance) throw new Error(t('Instance not found.', '实例不存在。'));
+    if (!instance) throw new Error(t('Instance not found.', '实例不存在。', '實例不存在。'));
     return instance;
   }
   private async receive(raw: unknown) {
@@ -194,7 +194,9 @@ export class Workbench implements vscode.Disposable {
   }
   private async acceptServerEula(params: Record<string, unknown>) {
     if (!this.consent.accepted || params.accepted !== true)
-      throw new Error(t('Read and accept the agreements first.', '请先阅读并确认协议。'));
+      throw new Error(
+        t('Read and accept the agreements first.', '请先阅读并确认协议。', '請先閱讀並確認協議。'),
+      );
     const server = this.store.state.servers.find((entry) => entry.id === params.serverId);
     if (!server) throw new Error('Server not found');
     return this.servers.exclusive(server, async () => {
@@ -242,6 +244,7 @@ export class Workbench implements vscode.Disposable {
         t(
           'Accept the agreements before using Minecraft Workbench.',
           '请先确认协议，再使用 Minecraft Workbench。',
+          '請先確認協議，再使用 Minecraft Workbench。',
         ),
       );
     if (method === 'ready') return this.snapshot();
@@ -267,8 +270,9 @@ export class Workbench implements vscode.Disposable {
       feature.requireAvailable();
       try {
         if (method === 'terracotta.download')
-          return await this.ui.jobs.run(['Download Terracotta', '下载陶瓦联机'], (signal, report) =>
-            feature.download(signal, report),
+          return await this.ui.jobs.run(
+            ['Download Terracotta', '下载陶瓦联机', '下載陶瓦連線'],
+            (signal, report) => feature.download(signal, report),
           );
         if (method === 'terracotta.installer')
           return await vscode.env.openExternal(vscode.Uri.file(await feature.installer()));
@@ -277,7 +281,7 @@ export class Workbench implements vscode.Disposable {
             canSelectMany: false,
             canSelectFiles: true,
             canSelectFolders: process.platform === 'darwin',
-            title: t('Choose Terracotta executable', '选择陶瓦可执行文件'),
+            title: t('Choose Terracotta executable', '选择陶瓦可执行文件', '選擇陶瓦執行檔'),
           });
           if (result?.[0])
             await vscode.workspace
@@ -286,7 +290,7 @@ export class Workbench implements vscode.Disposable {
           return true;
         }
         if (method === 'terracotta.connect')
-          await this.ui.jobs.run(['Connect Terracotta', '连接陶瓦'], (signal) =>
+          await this.ui.jobs.run(['Connect Terracotta', '连接陶瓦', '連接陶瓦'], (signal) =>
             feature.connect(signal),
           );
         else if (method === 'terracotta.host')
@@ -371,6 +375,7 @@ export class Workbench implements vscode.Disposable {
         t(
           'Specify either an instance ID or a server ID, not both.',
           '实例 ID 和服务端 ID 只能指定一个。',
+          '實例 ID 和伺服器 ID 只能指定一個。',
         ),
       );
     const instance = this.instance(params);
@@ -399,6 +404,7 @@ export class Workbench implements vscode.Disposable {
         t(
           'Specify an instance or server ID before changing content.',
           '修改内容前请指定实例或服务端 ID。',
+          '修改內容前請指定實例或伺服器 ID。',
         ),
       );
     const id = (name: string) => {
@@ -410,7 +416,13 @@ export class Workbench implements vscode.Disposable {
     switch (method) {
       case 'quickInstall': {
         if (!target)
-          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+          throw new Error(
+            t(
+              'Select an instance or server first.',
+              '请先选择实例或服务端。',
+              '請先選擇實例或伺服器。',
+            ),
+          );
         if (kind === 'modpack') throw new Error('Choose a modpack version first.');
         const channel = config<string>('contentReleaseChannel', 'release');
         const candidates = (await this.content.versions(id('projectId'), target, kind)).filter(
@@ -427,6 +439,7 @@ export class Workbench implements vscode.Disposable {
             t(
               'No compatible version found for this game and loader.',
               '没有与当前游戏版本和加载器兼容的版本。',
+              '沒有與當前遊戲版本和載入器相容的版本。',
             ),
           );
         return this.handle('install', {
@@ -437,7 +450,13 @@ export class Workbench implements vscode.Disposable {
       }
       case 'manageContent': {
         if (!target)
-          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+          throw new Error(
+            t(
+              'Select an instance or server first.',
+              '请先选择实例或服务端。',
+              '請先選擇實例或伺服器。',
+            ),
+          );
         const action = String(params.action);
         const files = params.files;
         if (
@@ -460,6 +479,7 @@ export class Workbench implements vscode.Disposable {
               t(
                 'Content changed. Refresh the file list and try again.',
                 '内容已变化，请刷新文件列表后重试。',
+                '內容已變化，請重新整理檔案清單後重試。',
               ),
             );
           return entry;
@@ -467,12 +487,13 @@ export class Workbench implements vscode.Disposable {
         if (server) this.servers.assertIdle(server);
         else this.minecraft.assertIdle(instance!);
         if (action === 'remove') {
-          const yes = t('Remove', '删除');
+          const yes = t('Remove', '删除', '刪除');
           if (
             (await vscode.window.showWarningMessage(
               t(
                 `Remove ${selected.length} selected files?`,
                 `删除所选的 ${selected.length} 个文件？`,
+                `刪除所選的 ${selected.length} 個檔案？`,
               ),
               { modal: true, detail: wanted.join('\n') },
               yes,
@@ -484,7 +505,7 @@ export class Workbench implements vscode.Disposable {
           if (!server) this.minecraft.assertIdle(instance!);
           return this.content.exclusive(target, () =>
             this.ui.jobs.run(
-              ['Manage selected content', '管理所选内容'],
+              ['Manage selected content', '管理所选内容', '管理所選內容'],
               async (signal, report) => {
                 let changed = 0;
                 const failed: { file: string; message: string }[] = [];
@@ -513,7 +534,8 @@ export class Workbench implements vscode.Disposable {
       }
       case 'batchPlan':
       case 'batchInstall': {
-        if (!target) throw new Error(t('Select an instance first.', '请先选择实例。'));
+        if (!target)
+          throw new Error(t('Select an instance first.', '请先选择实例。', '請先選擇實例。'));
         if (
           kind !== 'mod' ||
           (server && serverEngines.find((e) => e.id === server.engine)?.content !== 'mod')
@@ -525,7 +547,7 @@ export class Workbench implements vscode.Disposable {
           if (!server) this.minecraft.assertIdle(instance!);
           return this.content.exclusive(target, () => {
             return this.ui.jobs.run(
-              ['Install selected mods', '安装所选模组'],
+              ['Install selected mods', '安装所选模组', '安裝所選模組'],
               (signal, report) => this.content.installBatch(target, projects, signal, report),
               () => this.handle('batchInstall', params),
             );
@@ -589,7 +611,13 @@ export class Workbench implements vscode.Disposable {
         if (kind === 'modpack')
           return { version, plan: { entries: [], optional: [], conflicts: [] }, optionalNames: [] };
         if (!target)
-          throw new Error(t('Select an instance or server first.', '请先选择实例或服务端。'));
+          throw new Error(
+            t(
+              'Select an instance or server first.',
+              '请先选择实例或服务端。',
+              '請先選擇實例或伺服器。',
+            ),
+          );
         if (server && serverEngines.find((e) => e.id === server.engine)?.content !== kind)
           throw new Error('Unsupported server content type');
         if (!server && kind === 'plugin') throw new Error('Select a plugin server first');
@@ -614,7 +642,7 @@ export class Workbench implements vscode.Disposable {
           await this.servers.exclusive(server, () =>
             this.content.exclusive(target!, () =>
               this.ui.jobs.run(
-                [`Install ${version.name}`, `安装 ${version.name}`],
+                [`Install ${version.name}`, `安装 ${version.name}`, `安裝 ${version.name}`],
                 (signal, report) =>
                   this.content.install(target!, version, kind as 'mod' | 'plugin', signal, report, {
                     includeOptional: params.optional === true,
@@ -668,17 +696,18 @@ export class Workbench implements vscode.Disposable {
             'server.content',
             { ...params, action: method },
           );
-        if (!instance) throw new Error(t('Select an instance first.', '请先选择实例。'));
+        if (!instance)
+          throw new Error(t('Select an instance first.', '请先选择实例。', '請先選擇實例。'));
         const entry = (await this.content.list(instance)).find(
           (item) => item.file === params.file && item.kind === kind,
         );
         if (!entry) throw new Error('Content file not found');
         this.minecraft.assertIdle(instance);
         if (method === 'remove') {
-          const yes = t('Remove', '删除');
+          const yes = t('Remove', '删除', '刪除');
           if (
             (await vscode.window.showWarningMessage(
-              t(`Remove ${entry.file}?`, `删除 ${entry.file}？`),
+              t(`Remove ${entry.file}?`, `删除 ${entry.file}？`, `刪除 ${entry.file}？`),
               { modal: true },
               yes,
             )) !== yes

@@ -94,7 +94,10 @@ export class UI {
         return;
       const message = describeError(error);
       this.jobs.output.error(diagnosticError(error));
-      const action = await vscode.window.showErrorMessage(message, t('Show output', '查看输出'));
+      const action = await vscode.window.showErrorMessage(
+        message,
+        t('Show output', '查看输出', '查看輸出'),
+      );
       if (action) this.jobs.output.show(true);
     } finally {
       this.refresh();
@@ -110,7 +113,7 @@ export class UI {
       return item.value;
     if (this.store.selected) return this.store.selected;
     if (!this.store.state.instances.length)
-      throw new Error(t('Create an instance first.', '请先创建实例。'));
+      throw new Error(t('Create an instance first.', '请先创建实例。', '請先建立實例。'));
     return (
       await choose(
         this.store.state.instances.map((value) => ({
@@ -118,7 +121,7 @@ export class UI {
           description: `${value.minecraft} · ${value.loader}`,
           value,
         })),
-        t('Select instance', '选择实例'),
+        t('Select instance', '选择实例', '選擇實例'),
       )
     ).value;
   }
@@ -131,14 +134,16 @@ export class UI {
           description: value.kind,
           value,
         })),
-        t('Select account', '选择账户'),
+        t('Select account', '选择账户', '選擇帳戶'),
       )
     ).value;
   }
   private idle(instance: Instance) {
     this.minecraft.assertIdle(instance);
     if (this.content.isBusy(instance))
-      throw new Error(t('Content operation already in progress.', '内容操作正在进行。'));
+      throw new Error(
+        t('Content operation already in progress.', '内容操作正在进行。', '內容操作正在進行。'),
+      );
   }
   async operation<T>(
     instance: Instance,
@@ -155,22 +160,34 @@ export class UI {
     const selection = await choose(
       [
         {
-          label: `$(game) ${t('Launcher Mode', '启动模式')}`,
+          label: `$(game) ${t('Launcher Mode', '启动模式', '啟動模式')}`,
           value: 'launcher' as const,
-          description: t('Play and manage Minecraft', '启动与管理 Minecraft'),
+          description: t(
+            'Play and manage Minecraft',
+            '启动与管理 Minecraft',
+            '啟動與管理 Minecraft',
+          ),
         },
         {
-          label: `$(code) ${t('Developer Mode', '开发模式')}`,
+          label: `$(code) ${t('Developer Mode', '开发模式', '開發模式')}`,
           value: 'developer' as const,
-          description: t('Create, build and debug mods', '创建、构建与调试模组'),
+          description: t(
+            'Create, build and debug mods',
+            '创建、构建与调试模组',
+            '建立、建置與偵錯模組',
+          ),
         },
         {
-          label: `$(server) ${t('Server Mode', '开服模式')}`,
+          label: `$(server) ${t('Server Mode', '开服模式', '架設伺服器模式')}`,
           value: 'server' as const,
-          description: t('Install and run Minecraft servers', '安装与管理 Minecraft 服务端'),
+          description: t(
+            'Install and run Minecraft servers',
+            '安装与管理 Minecraft 服务端',
+            '安裝與管理 Minecraft 伺服器',
+          ),
         },
       ],
-      t('Minecraft Workbench mode', 'Minecraft Workbench 模式'),
+      t('Minecraft Workbench mode', 'Minecraft Workbench 模式', 'Minecraft Workbench 模式'),
     );
     this.store.state.mode = selection.value;
     await this.store.save();
@@ -191,27 +208,31 @@ export class UI {
             description: preset.url,
             url: preset.url as string,
           })),
-          { label: t('Custom…', '自定义…'), description: '', url: '' },
+          { label: t('Custom…', '自定义…', '自定義…'), description: '', url: '' },
         ],
-        { title: t('Authentication server', '认证服务器'), ignoreFocusOut: true },
+        { title: t('Authentication server', '认证服务器', '驗證伺服器'), ignoreFocusOut: true },
       );
       if (!provider) return false;
       address =
         provider.url ||
         (await vscode.window.showInputBox({
-          title: t('Authentication server API URL', '认证服务器 API 地址'),
+          title: t('Authentication server API URL', '认证服务器 API 地址', '驗證伺服器 API 位址'),
           ignoreFocusOut: true,
         }));
     }
     if (!address?.trim()) return false;
     const resolved = await this.jobs.run(
-      ['Find authentication server', '识别认证服务器'],
+      ['Find authentication server', '识别认证服务器', '識別驗證伺服器'],
       (signal) => this.accounts.authlib.discover(address, signal),
     );
-    const proceed = t('Continue sign-in', '继续登录');
+    const proceed = t('Continue sign-in', '继续登录', '繼續登入');
     if (
       (await vscode.window.showWarningMessage(
-        t('Sign in to this third-party service?', '登录此第三方认证服务？'),
+        t(
+          'Sign in to this third-party service?',
+          '登录此第三方认证服务？',
+          '登入此第三方驗證服務？',
+        ),
         {
           modal: true,
           detail:
@@ -220,6 +241,7 @@ export class UI {
             t(
               'Your username and password will be sent to this provider. Verify the address and use a separate password, never your Microsoft password. HTTPS does not establish provider trust.\n\nPasswords are not saved; tokens use VS Code SecretStorage.',
               '你的用户名和密码会发送至此服务商。请核对地址并使用独立密码，勿填写 Microsoft 密码。HTTPS 不代表服务商可信。\n\n插件不保存密码，令牌使用 VS Code SecretStorage 保存。',
+              '你的使用者名稱和密碼會發送至此服務商。請核對位址並使用獨立密碼，勿填寫 Microsoft 密碼。HTTPS 不代表服務商可信。\n\n擴充套件不儲存密碼，權杖使用 VS Code SecretStorage 儲存。',
             ),
         },
         proceed,
@@ -228,21 +250,22 @@ export class UI {
       return false;
     const host = new URL(resolved.url).host;
     const username = await vscode.window.showInputBox({
-      title: t(`Account · ${host}`, `账户 · ${host}`),
+      title: t(`Account · ${host}`, `账户 · ${host}`, `帳戶 · ${host}`),
       prompt: resolved.url,
       ignoreFocusOut: true,
-      validateInput: (value) => (value.trim() ? undefined : t('Enter an account.', '请输入账户。')),
+      validateInput: (value) =>
+        value.trim() ? undefined : t('Enter an account.', '请输入账户。', '請輸入帳戶。'),
     });
     if (username === undefined) return false;
     const password = await vscode.window.showInputBox({
-      title: t(`Password · ${host}`, `密码 · ${host}`),
+      title: t(`Password · ${host}`, `密码 · ${host}`, `密碼 · ${host}`),
       prompt: resolved.url,
       password: true,
       ignoreFocusOut: true,
     });
     if (password === undefined) return false;
     await this.jobs.run(
-      ['External sign-in', '外置登录'],
+      ['External sign-in', '外置登录', '外置登入'],
       (signal) =>
         this.accounts.authlib.login(
           resolved.url,
@@ -256,7 +279,7 @@ export class UI {
                   description: profile.id,
                   profile,
                 })),
-                t('Select player profile', '选择游戏角色'),
+                t('Select player profile', '选择游戏角色', '選擇遊戲角色'),
               )
             ).profile,
           signal,
@@ -274,7 +297,7 @@ export class UI {
     this.idle(instance);
     if (instance.backupBeforeLaunch ?? config('backupBeforeLaunch', false)) {
       if (await exists(path.join(instance.directory, 'saves')))
-        await this.operation(instance, ['Back up worlds', '备份存档'], async () => {
+        await this.operation(instance, ['Back up worlds', '备份存档', '備份存檔'], async () => {
           await this.backups.create(instance);
           await this.backups.prune(instance, config('backupRetention', 0));
         });
@@ -282,7 +305,7 @@ export class UI {
     if (config('checkConflictsBeforeLaunch', false)) {
       const conflicts = await this.content.conflicts(instance);
       if (conflicts.length) {
-        const proceed = t('Launch anyway', '仍然启动');
+        const proceed = t('Launch anyway', '仍然启动', '仍然啟動');
         if (
           (await vscode.window.showWarningMessage(
             conflicts.slice(0, 5).join('\n'),
@@ -298,11 +321,16 @@ export class UI {
   async language() {
     const result = await choose(
       [
-        { label: 'Follow VS Code / 跟随 VS Code', value: 'auto', description: '' },
+        {
+          label: t('Follow VS Code', '跟随 VS Code', '跟隨 VS Code'),
+          value: 'auto',
+          description: '',
+        },
         { label: 'English', value: 'en', description: 'English' },
         { label: '简体中文', value: 'zh-cn', description: 'Simplified Chinese' },
+        { label: '繁體中文', value: 'zh-tw', description: 'Traditional Chinese' },
       ],
-      'Language / 语言',
+      t('Language', '语言', '語言'),
     );
     await setLanguage(result.value);
   }
@@ -331,21 +359,21 @@ export class UI {
     const instance = await this.instance(item);
     this.idle(instance);
     const name = await input(
-      t('Copy name', '副本名称'),
-      `${instance.name} ${t('copy', '副本')}`,
-      (value) => (value.trim() ? undefined : t('Enter a name.', '请输入名称。')),
+      t('Copy name', '副本名称', '副本名稱'),
+      `${instance.name} ${t('copy', '副本', '副本')}`,
+      (value) => (value.trim() ? undefined : t('Enter a name.', '请输入名称。', '請輸入名稱。')),
     );
     const worlds = (
       await choose(
         [
-          { label: t('Copy mods and settings', '复制模组和设置'), value: false },
-          { label: t('Also copy worlds', '同时复制存档'), value: true },
+          { label: t('Copy mods and settings', '复制模组和设置', '複製模組和設定'), value: false },
+          { label: t('Also copy worlds', '同时复制存档', '同時複製存檔'), value: true },
         ],
-        t('Duplicate instance', '复制实例'),
+        t('Duplicate instance', '复制实例', '複製實例'),
       )
     ).value;
     const parent = minecraftDirectory();
-    await this.operation(instance, ['Duplicate instance', '复制实例'], (signal) =>
+    await this.operation(instance, ['Duplicate instance', '复制实例', '複製實例'], (signal) =>
       new InstanceFiles(this.store, this.content).clone(instance, parent, name, worlds, signal),
     );
   }
@@ -357,7 +385,7 @@ export class UI {
       filters: { [kind === 'mod' ? 'Java mods' : 'ZIP packs']: [kind === 'mod' ? 'jar' : 'zip'] },
     });
     if (!files?.length) return;
-    await this.operation(instance, ['Import local content', '导入本地内容'], () =>
+    await this.operation(instance, ['Import local content', '导入本地内容', '匯入本機內容'], () =>
       new InstanceFiles(this.store, this.content).importLocal(
         instance,
         kind,
@@ -373,7 +401,7 @@ export class UI {
       filters: { 'Modrinth modpack': ['mrpack'] },
     });
     if (!destination) return;
-    await this.operation(instance, ['Export modpack', '导出整合包'], (signal) =>
+    await this.operation(instance, ['Export modpack', '导出整合包', '匯出整合包'], (signal) =>
       new InstanceFiles(this.store, this.content).exportPack(instance, destination.fsPath, signal),
     );
   }
@@ -393,7 +421,8 @@ export class UI {
       await this.importPack(archive, (await this.content.project(version.project_id)).title);
       return;
     }
-    if (!instance) throw new Error(t('Select an instance first.', '请先选择实例。'));
+    if (!instance)
+      throw new Error(t('Select an instance first.', '请先选择实例。', '請先選擇實例。'));
     await this.operation(instance, version.name, (signal, report) =>
       this.content.install(instance, version, kind, signal, report, options),
     );
@@ -416,18 +445,20 @@ export class UI {
     const instance = await this.instance(item);
     this.idle(instance);
     const yes = instance.linked
-      ? t('Remove from list', '从列表移除')
-      : t('Move to Trash', '移到废纸篓');
+      ? t('Remove from list', '从列表移除', '從清單移除')
+      : t('Move to Trash', '移到废纸篓', '移到廢紙簍');
     if (
       (await vscode.window.showWarningMessage(
         instance.linked
           ? t(
               `Remove “${instance.name}” from Workbench? Its files will be kept.`,
               `从工作台移除“${instance.name}”？游戏文件会保留。`,
+              `從工作台移除“${instance.name}”？遊戲檔案會保留。`,
             )
           : t(
               `Delete “${instance.name}” and its game files?`,
               `删除“${instance.name}”及其游戏文件？`,
+              `刪除“${instance.name}”及其遊戲檔案？`,
             ),
         { modal: true },
         yes,
@@ -455,11 +486,11 @@ export class UI {
     await this.accounts.remove(await this.account(item));
   }
   async detectJava() {
-    await this.jobs.run(['Detect Java', '检测 Java'], () => this.java.detect());
+    await this.jobs.run(['Detect Java', '检测 Java', '偵測 Java'], () => this.java.detect());
   }
   async addJava() {
     const picked = await vscode.window.showOpenDialog({
-      title: t('Select Java executable', '选择 Java 可执行文件'),
+      title: t('Select Java executable', '选择 Java 可执行文件', '選擇 Java 執行檔'),
       canSelectMany: false,
     });
     if (!picked?.[0]) return;
@@ -499,9 +530,9 @@ export class UI {
       if (!(await this.content.curseforge.hasKey())) return;
     }
     const name = await input(
-      t('Instance name', '实例名称'),
+      t('Instance name', '实例名称', '實例名稱'),
       packName || path.basename(archive).replace(/\.(mrpack|zip)$/i, ''),
-      (v) => (v.trim() ? undefined : t('Enter a name.', '请输入名称。')),
+      (v) => (v.trim() ? undefined : t('Enter a name.', '请输入名称。', '請輸入名稱。')),
     );
     const id = randomUUID();
     const instance: Instance = {
@@ -544,9 +575,12 @@ export class UI {
     if (!content?.file) return;
     const selection = await choose(
       [
-        { label: content.enabled ? t('Disable', '禁用') : t('Enable', '启用'), key: 'toggle' },
-        { label: t('Remove', '删除'), key: 'remove' },
-        { label: t('Open on Modrinth', '在 Modrinth 中打开'), key: 'web' },
+        {
+          label: content.enabled ? t('Disable', '禁用', '停用') : t('Enable', '启用', '啟用'),
+          key: 'toggle',
+        },
+        { label: t('Remove', '删除', '刪除'), key: 'remove' },
+        { label: t('Open on Modrinth', '在 Modrinth 中打开', '在 Modrinth 中開啟'), key: 'web' },
       ],
       content.name,
     );
@@ -558,10 +592,10 @@ export class UI {
       return;
     }
     if (selection.key === 'remove') {
-      const yes = t('Remove', '删除');
+      const yes = t('Remove', '删除', '刪除');
       if (
         (await vscode.window.showWarningMessage(
-          t(`Remove ${content.file}?`, `删除 ${content.file}？`),
+          t(`Remove ${content.file}?`, `删除 ${content.file}？`, `刪除 ${content.file}？`),
           { modal: true },
           yes,
         )) !== yes
@@ -577,12 +611,17 @@ export class UI {
   async checkUpdates() {
     const instance = await this.instance();
     this.idle(instance);
-    const updates = await this.jobs.run(['Check content updates', '检查内容更新'], () =>
-      this.content.updates(instance),
+    const updates = await this.jobs.run(
+      ['Check content updates', '检查内容更新', '檢查內容更新'],
+      () => this.content.updates(instance),
     );
     if (!updates.length) {
       await vscode.window.showInformationMessage(
-        t('All recognized content is up to date.', '已识别的内容均为最新版本。'),
+        t(
+          'All recognized content is up to date.',
+          '已识别的内容均为最新版本。',
+          '已識別的內容均為最新版本。',
+        ),
       );
       return;
     }
@@ -593,30 +632,36 @@ export class UI {
         picked: true,
         value,
       })),
-      { canPickMany: true, title: t('Select updates', '选择更新') },
+      { canPickMany: true, title: t('Select updates', '选择更新', '選擇更新') },
     );
     if (!selected) return;
-    await this.operation(instance, ['Update content', '更新内容'], async (signal, report) => {
-      for (const entry of selected)
-        await this.content.install(
-          instance,
-          entry.value.version,
-          entry.value.item.kind,
-          signal,
-          report,
-        );
-    });
+    await this.operation(
+      instance,
+      ['Update content', '更新内容', '更新內容'],
+      async (signal, report) => {
+        for (const entry of selected)
+          await this.content.install(
+            instance,
+            entry.value.version,
+            entry.value.item.kind,
+            signal,
+            report,
+          );
+      },
+    );
   }
   async conflicts() {
     const instance = await this.instance();
-    const conflicts = await this.jobs.run(['Check mod conflicts', '检查模组冲突'], () =>
-      this.content.conflicts(instance),
+    const conflicts = await this.jobs.run(
+      ['Check mod conflicts', '检查模组冲突', '檢查模組衝突'],
+      () => this.content.conflicts(instance),
     );
     if (!conflicts.length) {
       await vscode.window.showInformationMessage(
         t(
           'No known conflicts found. Runtime compatibility still depends on the mods.',
           '未发现已知冲突。实际兼容性仍取决于模组运行情况。',
+          '未發現已知衝突。實際相容性仍取決於模組執行情況。',
         ),
       );
       return;
@@ -638,7 +683,7 @@ export class UI {
   }
   async importProject() {
     const project = await this.developer.import(
-      await directory(t('Import Gradle project', '导入 Gradle 项目')),
+      await directory(t('Import Gradle project', '导入 Gradle 项目', '匯入 Gradle 專案')),
     );
     if (config('autoOpenProject', true)) await this.developer.open(project);
   }
@@ -654,10 +699,14 @@ export class UI {
     const worlds = (
       await choose(
         [
-          { label: t('Mods and settings', '模组和设置'), value: false },
-          { label: t('Also include worlds', '同时包含世界存档'), value: true },
+          { label: t('Mods and settings', '模组和设置', '模組和設定'), value: false },
+          { label: t('Also include worlds', '同时包含世界存档', '同時包含世界存檔'), value: true },
         ],
-        t('Export Prism / MultiMC instance', '导出 Prism / MultiMC 实例'),
+        t(
+          'Export Prism / MultiMC instance',
+          '导出 Prism / MultiMC 实例',
+          '匯出 Prism / MultiMC 實例',
+        ),
       )
     ).value;
     const destination = await vscode.window.showSaveDialog({
@@ -665,7 +714,7 @@ export class UI {
       filters: { 'Prism / MultiMC instance': ['zip'] },
     });
     if (destination)
-      await this.operation(instance, ['Export instance', '导出实例'], (signal) =>
+      await this.operation(instance, ['Export instance', '导出实例', '匯出實例'], (signal) =>
         new InstanceFiles(this.store, this.content).exportNative(
           instance,
           destination.fsPath,
@@ -677,14 +726,14 @@ export class UI {
   async importWorld(item?: Item) {
     const instance = await this.instance(item);
     const source = await vscode.window.showOpenDialog({
-      title: t('Import Java Edition worlds', '导入 Java 版世界存档'),
+      title: t('Import Java Edition worlds', '导入 Java 版世界存档', '匯入 Java 版世界存檔'),
       canSelectFiles: true,
       canSelectFolders: true,
       canSelectMany: false,
       filters: { 'World ZIP': ['zip'] },
     });
     if (!source?.[0]) return;
-    await this.operation(instance, ['Import worlds', '导入世界存档'], (signal) =>
+    await this.operation(instance, ['Import worlds', '导入世界存档', '匯入世界存檔'], (signal) =>
       importWorlds(instance, source[0].fsPath, signal),
     );
   }
@@ -696,21 +745,24 @@ export class UI {
       if (entry.isDirectory() && (await exists(path.join(directory, entry.name, 'level.dat'))))
         names.push({ label: entry.name });
     if (!names.length)
-      throw new Error(t('No Java Edition worlds found.', '未找到 Java 版世界存档。'));
-    const world = await choose(names, t('Export world', '导出世界存档'));
+      throw new Error(
+        t('No Java Edition worlds found.', '未找到 Java 版世界存档。', '未找到 Java 版世界存檔。'),
+      );
+    const world = await choose(names, t('Export world', '导出世界存档', '匯出世界存檔'));
     const destination = await vscode.window.showSaveDialog({
       defaultUri: vscode.Uri.file(`${suggestedFilename(world.label)}.zip`),
       filters: { 'Java Edition world': ['zip'] },
     });
     if (destination)
-      await this.operation(instance, ['Export world', '导出世界存档'], (signal) =>
+      await this.operation(instance, ['Export world', '导出世界存档', '匯出世界存檔'], (signal) =>
         exportWorld(instance, world.label, destination.fsPath, signal),
       );
   }
 
   async refreshManifest() {
-    await this.jobs.run(['Update Minecraft manifest', '更新 Minecraft 版本清单'], () =>
-      this.minecraft.manifest(true),
+    await this.jobs.run(
+      ['Update Minecraft manifest', '更新 Minecraft 版本清单', '更新 Minecraft 版本清單'],
+      () => this.minecraft.manifest(true),
     );
   }
   async settings() {

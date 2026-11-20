@@ -2,11 +2,11 @@
 
 A Minecraft Java Edition launcher, mod development workspace and server manager for VS Code.
 
-[Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [MIT License](LICENSE)
+[Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [MIT License](LICENSE)
 
 **Java settings**, **Tasks** and **Output** are separate entries under **More**. Projects belong to Developer Mode; each mode shows its own management pages. Separate Java and Tasks panes can be enabled with `minecraftWorkbench.showRuntimeViews`. The extension Settings page follows the extension language and also links to VS Code Settings.
 
-Native sidebar views, commands, settings, tasks and output channels keep the extension at home in VS Code. Editor pages follow your theme, including light, dark and high contrast. The default language follows VS Code; English and Simplified Chinese can also be selected manually.
+Native sidebar views, commands, settings, tasks and output channels keep the extension at home in VS Code. Editor pages follow your theme, including light, dark and high contrast. The default language follows VS Code; English, Simplified Chinese and Traditional Chinese can also be selected manually.
 
 ![Modrinth discovery in VS Code with the Dark Modern theme](docs/images/discover-dark.png)
 
@@ -266,7 +266,7 @@ Bug reports, feature requests, translations and pull requests are welcome.
 
 - **Bugs:** search [existing issues](https://github.com/lopleec/VSCode-minecraft-workbench/issues) first, then [open an issue](https://github.com/lopleec/VSCode-minecraft-workbench/issues/new). Include reproduction steps, expected and actual behavior, extension and VS Code versions, operating system and architecture. For game issues, include the Minecraft, loader and Java versions, relevant mods and a short log excerpt.
 - **Feature requests:** describe the use case and the workflow you would like to improve in an [issue](https://github.com/lopleec/VSCode-minecraft-workbench/issues/new). Screenshots or small examples help explain UI suggestions.
-- **Pull requests:** fork the repository, create a branch and keep the change focused. Explain the problem, the change and how it was checked. Discuss substantial changes in an issue first. Follow the existing code style, update both languages when changing UI text or documentation, and include screenshots for UI changes. Run the relevant checks listed above before opening a [pull request](https://github.com/lopleec/VSCode-minecraft-workbench/pulls).
+- **Pull requests:** fork the repository, create a branch and keep the change focused. Explain the problem, the change and how it was checked. Discuss substantial changes in an issue first. Follow the existing code style, update all supported languages when changing UI text or documentation, and include screenshots for UI changes. Run the relevant checks listed above before opening a [pull request](https://github.com/lopleec/VSCode-minecraft-workbench/pulls).
 
 Remove tokens, proxy credentials, account details and personal paths from shared logs and screenshots. Keep downloaded game files, worlds, local instance data and generated VSIX files out of source contributions. Contributions are licensed under the project's [MIT License](LICENSE); third-party content retains its own license.
 
@@ -282,7 +282,7 @@ Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://
 
 **Java 设置**、**任务**、**输出**分别放在 **更多**。模组项目只出现在开发模式，各模式使用对应的管理页面。可通过 `minecraftWorkbench.showRuntimeViews` 单独显示 Java 和任务分栏。插件设置页跟随插件语言，也保留 VS Code 原生设置入口。
 
-在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文或简体中文。
+在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文、简体中文或繁体中文。
 
 ### 安装与开始使用
 

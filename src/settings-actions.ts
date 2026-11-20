@@ -69,11 +69,13 @@ export async function settingsAction(method: string, params: Record<string, unkn
   >;
   const settings = vscode.workspace.getConfiguration('minecraftWorkbench');
   if (method === 'settings.read') {
-    const locale = t('en', 'zh-cn');
+    const locale = t('en', 'zh-cn', 'zh-tw');
     if (!dictionaries.has(locale))
       dictionaries.set(
         locale,
-        readJson(path.join(root, locale === 'en' ? 'package.nls.json' : 'package.nls.zh-cn.json')),
+        readJson(
+          path.join(root, locale === 'en' ? 'package.nls.json' : `package.nls.${locale}.json`),
+        ),
       );
     const dictionary = await dictionaries.get(locale)!;
     const translate = (value: string) =>

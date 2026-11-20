@@ -178,7 +178,9 @@ export class ContentService {
   }
   async exclusive<T>(instance: ContentTarget, work: () => Promise<T>): Promise<T> {
     if (this.locks.has(instance.id))
-      throw new Error(t('Content operation already in progress.', '内容操作正在进行。'));
+      throw new Error(
+        t('Content operation already in progress.', '内容操作正在进行。', '內容操作正在進行。'),
+      );
     this.locks.add(instance.id);
     try {
       return await work();
@@ -345,6 +347,7 @@ export class ContentService {
           t(
             'Dependencies require different versions of the same mod.',
             '依赖要求安装同一模组的不同版本。',
+            '相依性要求安裝同一模組的不同版本。',
           ),
         );
         return;
@@ -355,11 +358,11 @@ export class ContentService {
         (await this.project(current.project_id, signal)).server_side === 'unsupported'
       )
         conflicts.add(
-          `${current.name}: ${t('Client-only content cannot be installed on a server.', '仅客户端内容不能安装到服务端。')}`,
+          `${current.name}: ${t('Client-only content cannot be installed on a server.', '仅客户端内容不能安装到服务端。', '僅用戶端內容不能安裝到伺服器。')}`,
         );
       if (!compatible(current, instance, currentKind))
         conflicts.add(
-          `${current.name}: ${t('This version is incompatible with the instance.', '该版本与实例不兼容。')}`,
+          `${current.name}: ${t('This version is incompatible with the instance.', '该版本与实例不兼容。', '該版本與實例不相容。')}`,
         );
       versions.set(current.project_id, current);
       entryKinds.set(current.project_id, currentKind);
@@ -385,7 +388,13 @@ export class ContentService {
             ? await dependencyVersion(dependency.project_id, undefined, dependencyKind)
             : undefined;
         if (!next) {
-          conflicts.add(t('A required dependency is unavailable.', '无法获取必需依赖。'));
+          conflicts.add(
+            t(
+              'A required dependency is unavailable.',
+              '无法获取必需依赖。',
+              '無法獲取必需相依性。',
+            ),
+          );
           continue;
         }
         if (
@@ -427,7 +436,7 @@ export class ContentService {
               : undefined;
             if (!next) {
               conflicts.add(
-                `${module.id}: ${t('missing dependency', '缺少前置')} ${dependencyId} ${JSON.stringify(predicate)}`,
+                `${module.id}: ${t('missing dependency', '缺少前置', '缺少前置')} ${dependencyId} ${JSON.stringify(predicate)}`,
               );
               continue;
             }
@@ -469,14 +478,14 @@ export class ContentService {
             const found = registry.get(id);
             if (!found || !fabricSatisfies(found, predicate))
               conflicts.add(
-                `${module.id}: ${id} ${JSON.stringify(predicate)} (${found || t('missing', '未安装')})`,
+                `${module.id}: ${id} ${JSON.stringify(predicate)} (${found || t('missing', '未安装', '未安裝')})`,
               );
           }
           for (const [id, predicate] of Object.entries(module.breaks || {})) {
             const found = registry.get(id);
             if (found && fabricSatisfies(found, predicate))
               conflicts.add(
-                `${t('Incompatible mod', '不兼容模组')}: ${module.id} / ${id} ${found}`,
+                `${t('Incompatible mod', '不兼容模组', '不相容模組')}: ${module.id} / ${id} ${found}`,
               );
           }
         }
@@ -494,7 +503,7 @@ export class ContentService {
           : [...present.values()].includes(dep.version_id);
         if (found)
           conflicts.add(
-            `${t('Incompatible mod', '不兼容模组')}: ${current.name} / ${dep.project_id || dep.version_id}`,
+            `${t('Incompatible mod', '不兼容模组', '不相容模組')}: ${current.name} / ${dep.project_id || dep.version_id}`,
           );
       }
       for (const dep of current.dependencies.filter(
@@ -505,7 +514,9 @@ export class ContentService {
           versions.has(d.project_id),
       )) {
         if (present.get(dep.project_id!) !== dep.version_id)
-          conflicts.add(`${current.name}: ${t('required version mismatch', '必需版本不匹配')}`);
+          conflicts.add(
+            `${current.name}: ${t('required version mismatch', '必需版本不匹配', '必需版本不匹配')}`,
+          );
       }
     };
     for (const current of versions.values()) inspect(current);
@@ -605,7 +616,9 @@ export class ContentService {
       projects.length > 100 ||
       projects.some((id) => typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,150}$/.test(id))
     )
-      throw new Error(t('Select between 1 and 100 mods.', '请选择 1 至 100 个模组。'));
+      throw new Error(
+        t('Select between 1 and 100 mods.', '请选择 1 至 100 个模组。', '請選擇 1 至 100 個模組。'),
+      );
     const versions: ModVersion[] = [];
     const unavailable: BatchInstallPlan['unavailable'] = [];
     for (const id of new Set(projects)) {
@@ -635,7 +648,7 @@ export class ContentService {
     const resolved = await this.planBatch(instance, projects, signal);
     if (resolved.unavailable.length)
       throw new Error(
-        t('No compatible version', '没有兼容版本') +
+        t('No compatible version', '没有兼容版本', '沒有相容版本') +
           ': ' +
           resolved.unavailable.map((item) => item.name).join(', '),
       );
@@ -720,7 +733,9 @@ export class ContentService {
         const destination = path.join(folder, file);
         await rejectSymlinkParents(instance.directory, destination);
         if ((await exists(destination)) && old?.file !== file)
-          throw new Error(`${t('Filename already exists', '文件名已存在')}: ${file}`);
+          throw new Error(
+            `${t('Filename already exists', '文件名已存在', '檔案名已存在')}: ${file}`,
+          );
         if (prepared.some((p) => p.destination === destination))
           throw new Error(`Duplicate content filename: ${file}`);
         const entry: (typeof prepared)[number] = { change, old, file, destination };
@@ -865,7 +880,9 @@ export class ContentService {
     const ids = new Map<string, string>();
     for (const item of items) {
       if (instance.loader === 'vanilla')
-        warnings.push(`${item.name}: ${t('requires a mod loader', '需要模组加载器')}`);
+        warnings.push(
+          `${item.name}: ${t('requires a mod loader', '需要模组加载器', '需要模組載入器')}`,
+        );
       try {
         const zip = new AdmZip(path.join(instance.directory, 'mods', item.file));
         const fabric = zip.getEntry('fabric.mod.json');
@@ -877,10 +894,12 @@ export class ContentService {
           if (ids.has(meta.id)) warnings.push(`${meta.id}: ${ids.get(meta.id)} / ${item.file}`);
           ids.set(meta.id, item.file);
           if (!['fabric', 'quilt'].includes(instance.loader))
-            warnings.push(`${item.name}: Fabric / Quilt ${t('required', '必需')}`);
+            warnings.push(`${item.name}: Fabric / Quilt ${t('required', '必需', '必需')}`);
         }
       } catch {
-        warnings.push(`${item.file}: ${t('unreadable mod archive', '无法读取模组文件')}`);
+        warnings.push(
+          `${item.file}: ${t('unreadable mod archive', '无法读取模组文件', '無法讀取模組檔案')}`,
+        );
       }
       if (item.versionId && !remoteUnavailable) {
         try {
@@ -892,7 +911,9 @@ export class ContentService {
             !version.game_versions.includes(instance.minecraft) ||
             !version.loaders.includes(instance.loader)
           )
-            warnings.push(`${item.name}: ${t('version or loader mismatch', '版本或加载器不匹配')}`);
+            warnings.push(
+              `${item.name}: ${t('version or loader mismatch', '版本或加载器不匹配', '版本或載入器不匹配')}`,
+            );
           for (const dep of version.dependencies) {
             const found = items.some((i) =>
               dep.project_id
@@ -916,6 +937,7 @@ export class ContentService {
               t(
                 'Online metadata unavailable; local checks only.',
                 '在线元数据不可用，仅完成本地检查。',
+                '線上中繼資料不可用，僅完成本機檢查。',
               ),
             );
           }
@@ -928,7 +950,7 @@ export class ContentService {
         native.fabricloader = instance.loaderVersion;
       for (const issue of fabricDiagnostics(localModules, native))
         warnings.push(
-          `${issue.owner}: ${issue.type === 'required' ? t('requires', '需要') : t('incompatible with', '不兼容')} ${issue.dependency} ${JSON.stringify(issue.expected)} (${issue.actual || t('missing', '未安装')})`,
+          `${issue.owner}: ${issue.type === 'required' ? t('requires', '需要', '需要') : t('incompatible with', '不兼容', '不相容')} ${issue.dependency} ${JSON.stringify(issue.expected)} (${issue.actual || t('missing', '未安装', '未安裝')})`,
         );
     }
     return [...new Set(warnings)];
@@ -952,6 +974,7 @@ export class ContentService {
         t(
           'Select a Modrinth .mrpack or CurseForge .zip. Use Import Instance for instance backups.',
           '请选择 Modrinth .mrpack 或 CurseForge .zip，实例备份请使用导入实例。',
+          '請選擇 Modrinth .mrpack 或 CurseForge .zip，實例備份請使用匯入實例。',
         ),
       );
     if (entry.header.size > 16 * 1024 ** 2) throw new Error('Modpack index exceeds size limit');

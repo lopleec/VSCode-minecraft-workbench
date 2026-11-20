@@ -11,17 +11,19 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
   let progress: HTMLElement | undefined;
   let activeForm: HTMLFormElement | undefined;
   if (edit && !existing) {
-    main.append(blank(L('Select an instance first', '请先选择实例')));
+    main.append(blank(L('Select an instance first', '请先选择实例', '請先選擇實例')));
     return;
   }
   const loading = h(
     'div',
     { class: 'loading' },
-    L('Loading Minecraft versions…', '加载 Minecraft 版本…'),
+    L('Loading Minecraft versions…', '加载 Minecraft 版本…', '載入 Minecraft 版本…'),
   );
   main.append(
     heading(
-      edit ? L('Install / change version', '安装 / 更改版本') : L('New instance', '新建实例'),
+      edit
+        ? L('Install / change version', '安装 / 更改版本', '安裝 / 更改版本')
+        : L('New instance', '新建实例', '新增實例'),
       existing?.name,
     ),
     loading,
@@ -37,7 +39,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
       if (ctx.current()) {
         loading.replaceChildren(
           ctx.button(
-            L('Retry loading versions', '重试加载版本'),
+            L('Retry loading versions', '重试加载版本', '重試載入版本'),
             () => ctx.navigate(edit ? 'version' : 'create'),
             'secondary',
           ),
@@ -71,7 +73,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
       parent,
       !edit &&
         ctx.button(
-          L('Browse…', '浏览…'),
+          L('Browse…', '浏览…', '瀏覽…'),
           async () => {
             const value = await ctx.request<string | undefined>('launcher.pickDirectory');
             if (value) parent.value = value;
@@ -80,18 +82,25 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
         ),
     );
     const versionType = select('versionType', 'all', [
-      ['all', L('All versions', '所有版本')],
-      ['release', L('Releases', '正式版')],
-      ['snapshot', L('Snapshots / previews', '快照 / 预发布版')],
-      ['april_fools', L('April Fools', '愚人节版本')],
-      ['old_beta', L('Old Beta', '旧 Beta')],
-      ['old_alpha', L('Old Alpha', '旧 Alpha')],
+      ['all', L('All versions', '所有版本', '所有版本')],
+      ['release', L('Releases', '正式版', '正式版')],
+      ['snapshot', L('Snapshots / previews', '快照 / 预发布版', '快照 / 預發行版')],
+      ['april_fools', L('April Fools', '愚人节版本', '愚人節版本')],
+      ['old_beta', L('Old Beta', '旧 Beta', '舊 Beta')],
+      ['old_alpha', L('Old Alpha', '旧 Alpha', '舊 Alpha')],
     ]);
-    versionType.setAttribute('aria-label', L('Version type', '版本类型'));
+    versionType.setAttribute('aria-label', L('Version type', '版本类型', '版本類型'));
     const search = input('versionSearch');
     search.type = 'search';
-    search.placeholder = L('Filter Minecraft versions…', '筛选 Minecraft 版本…');
-    search.setAttribute('aria-label', L('Filter Minecraft versions', '筛选 Minecraft 版本'));
+    search.placeholder = L(
+      'Filter Minecraft versions…',
+      '筛选 Minecraft 版本…',
+      '篩選 Minecraft 版本…',
+    );
+    search.setAttribute(
+      'aria-label',
+      L('Filter Minecraft versions', '筛选 Minecraft 版本', '篩選 Minecraft 版本'),
+    );
     const game = select('minecraft', existing?.minecraft || manifest.latest.release, []);
     game.size = 9;
     game.required = true;
@@ -107,7 +116,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
     const loaderVersion = select('loaderVersion', '', []);
     const loaderInfo = h('p', { class: 'field-hint', 'aria-live': 'polite' });
     const java = select('java', existing?.java || '', [
-      ['', L('Automatic / global preference', '自动选择 / 全局设置')],
+      ['', L('Automatic / global preference', '自动选择 / 全局设置', '自動選擇 / 全域設定')],
       ...state.java.map(
         (j) => [j.path, `Java ${j.version} · ${j.architecture}`] as [string, string],
       ),
@@ -116,14 +125,16 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
         : []),
     ]);
     const account = select('accountId', existing?.accountId || '', [
-      ['', L('Use active account', '使用当前账户')],
+      ['', L('Use active account', '使用当前账户', '使用當前帳戶')],
       ...state.accounts.map((a) => [a.id, a.name] as [string, string]),
     ]);
     const download = h('input', { type: 'checkbox', name: 'install', checked: true });
     const submit = h(
       'button',
       { type: 'submit', class: 'primary' },
-      edit ? L('Apply and install', '应用并安装') : L('Create and install', '创建并安装'),
+      edit
+        ? L('Apply and install', '应用并安装', '套用並安裝')
+        : L('Create and install', '创建并安装', '建立並安裝'),
     );
     const status = h('div', { class: 'setup-status', 'aria-live': 'polite' });
     const form = h('form', { class: 'management-form setup-form' });
@@ -140,12 +151,18 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
       loaderVersion.replaceChildren();
       loaderVersion.disabled = true;
       if (loader.value === 'vanilla') {
-        loaderVersion.append(h('option', { value: '' }, L('Not required', '无需加载器')));
+        loaderVersion.append(
+          h('option', { value: '' }, L('Not required', '无需加载器', '無需載入器')),
+        );
         loaderInfo.textContent = '';
         submit.disabled = !game.value;
         return;
       }
-      loaderInfo.textContent = L('Loading loader versions…', '加载 Loader 版本…');
+      loaderInfo.textContent = L(
+        'Loading loader versions…',
+        '加载 Loader 版本…',
+        '載入 Loader 版本…',
+      );
       submit.disabled = true;
       try {
         const versions = await ctx.request<string[]>('launcher.loaderVersions', {
@@ -165,10 +182,12 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           ? L(
               `${versions.length} compatible loader versions`,
               `${versions.length} 个兼容的 Loader 版本`,
+              `${versions.length} 個相容的 Loader 版本`,
             )
           : L(
               'No compatible loader for this Minecraft version. Select another version or Vanilla.',
               '该 Minecraft 版本没有兼容的 Loader，请更换版本或选择 Vanilla。',
+              '該 Minecraft 版本沒有相容的 Loader，請更換版本或選擇 Vanilla。',
             );
       } catch (error) {
         if (sequence === loaderSequence) {
@@ -179,11 +198,11 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
     };
     const typeName = (type: string) =>
       type === 'april_fools'
-        ? L('April Fools', '愚人节版本')
+        ? L('April Fools', '愚人节版本', '愚人節版本')
         : type === 'release'
-          ? L('Release', '正式版')
+          ? L('Release', '正式版', '正式版')
           : type === 'snapshot'
-            ? L('Snapshot / preview', '快照 / 预发布版')
+            ? L('Snapshot / preview', '快照 / 预发布版', '快照 / 預發行版')
             : type === 'old_beta'
               ? 'Beta'
               : type === 'old_alpha'
@@ -212,13 +231,21 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           ),
         ),
       );
-      count.textContent = L(`${values.length} versions`, `${values.length} 个版本`);
+      count.textContent = L(
+        `${values.length} versions`,
+        `${values.length} 个版本`,
+        `${values.length} 個版本`,
+      );
       updateVersionInfo();
       if (game.value) void loadLoaders();
       else {
         submit.disabled = true;
         loaderVersion.replaceChildren();
-        loaderInfo.textContent = L('No matching versions.', '没有符合条件的版本。');
+        loaderInfo.textContent = L(
+          'No matching versions.',
+          '没有符合条件的版本。',
+          '沒有符合條件的版本。',
+        );
       }
     };
     game.onchange = () => {
@@ -231,11 +258,11 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
     download.onchange = () => {
       submit.textContent = download.checked
         ? edit
-          ? L('Apply and install', '应用并安装')
-          : L('Create and install', '创建并安装')
+          ? L('Apply and install', '应用并安装', '套用並安裝')
+          : L('Create and install', '创建并安装', '建立並安裝')
         : edit
-          ? L('Apply changes', '应用更改')
-          : L('Create instance', '创建实例');
+          ? L('Apply changes', '应用更改', '應用更改')
+          : L('Create instance', '创建实例', '建立實例');
     };
     const quickVersion = (snapshot: boolean) => {
       versionType.value = 'all';
@@ -249,13 +276,13 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
       h(
         'fieldset',
         {},
-        h('legend', {}, L('Instance', '实例')),
+        h('legend', {}, L('Instance', '实例', '實例')),
         h(
           'div',
           { class: 'form-grid' },
-          field(L('Instance name', '实例名称'), name),
-          field(L('Account', '账户'), account),
-          field(L('Group (optional)', '分组（可选）'), group),
+          field(L('Instance name', '实例名称', '實例名稱'), name),
+          field(L('Account', '账户', '帳戶'), account),
+          field(L('Group (optional)', '分组（可选）', '分組（選用）'), group),
         ),
         h(
           'datalist',
@@ -263,14 +290,16 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           ...instanceGroups(state.instances).map((name) => h('option', { value: name })),
         ),
         field(
-          edit ? L('Game directory', '游戏目录') : L('Minecraft directory', 'Minecraft 目录'),
+          edit
+            ? L('Game directory', '游戏目录', '遊戲目錄')
+            : L('Minecraft directory', 'Minecraft 目录', 'Minecraft 目錄'),
           directoryRow,
         ),
       ),
       h(
         'fieldset',
         {},
-        h('legend', {}, L('Minecraft & loader', 'Minecraft 与 Loader')),
+        h('legend', {}, L('Minecraft & loader', 'Minecraft 与 Loader', 'Minecraft 與 Loader')),
         h('div', { class: 'version-search-row' }, search, versionType),
         h(
           'div',
@@ -278,18 +307,26 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           h(
             'div',
             { class: 'inline-actions' },
-            ctx.button(L('Latest release', '最新正式版'), () => quickVersion(false), 'text-button'),
-            ctx.button(L('Latest snapshot', '最新快照'), () => quickVersion(true), 'text-button'),
+            ctx.button(
+              L('Latest release', '最新正式版', '最新正式版'),
+              () => quickVersion(false),
+              'text-button',
+            ),
+            ctx.button(
+              L('Latest snapshot', '最新快照', '最新快照'),
+              () => quickVersion(true),
+              'text-button',
+            ),
           ),
           count,
         ),
-        field(L('Minecraft version', 'Minecraft 版本'), game),
+        field(L('Minecraft version', 'Minecraft 版本', 'Minecraft 版本'), game),
         versionInfo,
         h(
           'div',
           { class: 'form-grid loader-fields' },
-          field(L('Mod loader', '模组加载器'), loader),
-          field(L('Loader version', 'Loader 版本'), loaderVersion),
+          field(L('Mod loader', '模组加载器', '模組載入器'), loader),
+          field(L('Loader version', 'Loader 版本', 'Loader 版本'), loaderVersion),
         ),
         loaderInfo,
       ),
@@ -298,18 +335,19 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
         {},
         h('legend', {}, 'Java'),
         field(
-          L('Java runtime', 'Java 运行环境'),
+          L('Java runtime', 'Java 运行环境', 'Java 執行環境'),
           java,
           L(
             'The game metadata determines the required Java version.',
             '所需 Java 版本以游戏元数据为准。',
+            '所需 Java 版本以遊戲中繼資料為準。',
           ),
         ),
         h(
           'div',
           { class: 'inline-actions' },
           ctx.button(
-            L('Detect Java', '检测 Java'),
+            L('Detect Java', '检测 Java', '偵測 Java'),
             async () => {
               await ctx.request('launcher.javaAction', { action: 'detect' });
               await ctx.refresh();
@@ -318,7 +356,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
                 h(
                   'option',
                   { value: '' },
-                  L('Automatic / global preference', '自动选择 / 全局设置'),
+                  L('Automatic / global preference', '自动选择 / 全局设置', '自動選擇 / 全域設定'),
                 ),
                 ...ctx
                   .state()
@@ -336,7 +374,11 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
             },
             'text-button',
           ),
-          ctx.button(L('Manage Java…', '管理 Java…'), () => ctx.navigate('java'), 'text-button'),
+          ctx.button(
+            L('Manage Java…', '管理 Java…', '管理 Java…'),
+            () => ctx.navigate('java'),
+            'text-button',
+          ),
         ),
       ),
       h(
@@ -346,14 +388,14 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
           'label',
           { class: 'check' },
           download,
-          L('Download game files after saving', '保存后下载游戏文件'),
+          L('Download game files after saving', '保存后下载游戏文件', '儲存後下載遊戲檔案'),
         ),
         h(
           'div',
           { class: 'save-row' },
           submit,
           ctx.button(
-            L('Cancel', '取消'),
+            L('Cancel', '取消', '取消'),
             () => ctx.navigate(edit ? 'instance' : 'instances'),
             'secondary',
           ),
@@ -364,7 +406,7 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
     form.onsubmit = (event) => {
       event.preventDefault();
       if (!game.value || !form.reportValidity()) return;
-      status.textContent = L('Saving instance…', '保存实例…');
+      status.textContent = L('Saving instance…', '保存实例…', '儲存實例…');
       void busy(form, async () => {
         const result = await ctx.request<{ instance: Instance; installError?: string }>(
           'launcher.saveSetup',
@@ -390,8 +432,8 @@ export function renderSetup(main: HTMLElement, edit: boolean, ctx: PageContext) 
         else
           ctx.notify(
             download.checked
-              ? L('Instance installed.', '实例安装完成。')
-              : L('Instance saved.', '实例已保存。'),
+              ? L('Instance installed.', '实例安装完成。', '實例安裝完成。')
+              : L('Instance saved.', '实例已保存。', '實例已儲存。'),
           );
       }).catch((error) => {
         status.textContent = '';

@@ -117,19 +117,19 @@ export class Minecraft {
       this.installing.has(instance.id) ||
       this.starting.has(instance.id)
     )
-      throw new Error(t('This instance is busy.', '实例正在运行或安装。'));
+      throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
     const controller = new AbortController();
     this.installing.set(instance.id, controller);
     this.changed();
     try {
       await this.jobs.run(
         instance.installed
-          ? [`Repair ${instance.name}`, `修复 ${instance.name}`]
-          : [`Install ${instance.name}`, `安装 ${instance.name}`],
+          ? [`Repair ${instance.name}`, `修复 ${instance.name}`, `修復 ${instance.name}`]
+          : [`Install ${instance.name}`, `安装 ${instance.name}`, `安裝 ${instance.name}`],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([jobSignal, controller.signal]);
           report(
-            t('Preparing shared game files', '准备共享游戏文件'),
+            t('Preparing shared game files', '准备共享游戏文件', '準備共享遊戲檔案'),
             'Preparing shared game files',
           );
           await this.runtimeQueue.run(runtimeDirectory(instance), signal, async () => {
@@ -170,22 +170,22 @@ export class Minecraft {
     await trusted();
     this.assertIdle(instance);
     if (this.running.has(instance.id) || this.installing.has(instance.id))
-      throw new Error(t('This instance is busy.', '实例正在运行或安装。'));
+      throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
     if (!instance.installed) await this.install(instance);
     if (this.starting.has(instance.id) || this.running.has(instance.id))
-      throw new Error(t('This instance is busy.', '实例正在运行或安装。'));
+      throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
     const controller = new AbortController();
     this.starting.set(instance.id, controller);
     this.changed();
     try {
       await this.jobs.run(
-        [`Start ${instance.name}`, `启动 ${instance.name}`],
+        [`Start ${instance.name}`, `启动 ${instance.name}`, `啟動 ${instance.name}`],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([jobSignal, controller.signal]);
-          const phase = (message: string, chinese = message) => {
+          const phase = (message: string, chinese = message, traditional = chinese) => {
             signal.throwIfAborted();
             this.jobs.output.info(`[${instance.name}] ${message}`);
-            report(t(message, chinese), message);
+            report(t(message, chinese, traditional), message);
           };
           this.jobs.output.info(
             redact(
@@ -196,7 +196,9 @@ export class Minecraft {
             (a) => a.id === (instance.accountId || this.store.state.selectedAccount),
           );
           if (!account)
-            throw new Error(t('Add and select an account first.', '请先添加并选择账户。'));
+            throw new Error(
+              t('Add and select an account first.', '请先添加并选择账户。', '請先新增並選擇帳戶。'),
+            );
           const root = runtimeDirectory(instance);
           await prepareGameLanguage(instance);
           const version = await resolveGameVersion(
@@ -204,7 +206,7 @@ export class Minecraft {
             instance.versionId || instance.minecraft,
             signal,
           );
-          phase('Preparing Java', '准备 Java');
+          phase('Preparing Java', '准备 Java', '準備 Java');
           const java = await this.java.ensure(
             version.javaVersion?.majorVersion || 8,
             signal,
@@ -214,7 +216,7 @@ export class Minecraft {
           this.jobs.output.info(
             `[${instance.name}] Using Java ${java.major} (${java.version}): ${java.path}`,
           );
-          phase('Preparing account', '准备账户');
+          phase('Preparing account', '准备账户', '準備帳戶');
           const token = await waitFor(this.accounts.token(account), signal);
           const gc = instance.gc || config<string>('gc', 'default');
           const args = [
@@ -233,7 +235,11 @@ export class Minecraft {
           );
           if (minMemory > maxMemory)
             throw new Error(
-              t('Minimum memory exceeds maximum memory.', '最小内存不能大于最大内存。'),
+              t(
+                'Minimum memory exceeds maximum memory.',
+                '最小内存不能大于最大内存。',
+                '最小記憶體不能大於最大記憶體。',
+              ),
             );
           const resolution = instance.resolution || {
             width: config('windowWidth', 1280),
@@ -348,6 +354,7 @@ export class Minecraft {
                 t(
                   'Minecraft exited unexpectedly. Check the game logs.',
                   'Minecraft 异常退出，请查看游戏日志。',
+                  'Minecraft 異常退出，請查看遊戲日誌。',
                 ),
               );
           });
@@ -377,14 +384,20 @@ export class Minecraft {
       ),
     ];
     if (aliases.some(this.contentBusy))
-      throw new Error(t('Content operation already in progress.', '内容操作正在进行。'));
+      throw new Error(
+        t('Content operation already in progress.', '内容操作正在进行。', '內容操作正在進行。'),
+      );
     if (
       aliases.some(
         (i) => this.running.has(i.id) || this.installing.has(i.id) || this.starting.has(i.id),
       )
     )
       throw new Error(
-        t('Stop this instance before changing its files.', '修改文件前请先停止该实例。'),
+        t(
+          'Stop this instance before changing its files.',
+          '修改文件前请先停止该实例。',
+          '修改檔案前請先停止該實例。',
+        ),
       );
   }
   async stop(instance: Instance) {

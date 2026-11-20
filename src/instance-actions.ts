@@ -34,26 +34,33 @@ export async function manageInstances(
     if (group === undefined) {
       const choice = await vscode.window.showQuickPick(
         [
-          { label: t('New group…', '新建分组…'), create: true, group: '' },
-          { label: t('Ungrouped', '未分组'), group: '' },
+          { label: t('New group…', '新建分组…', '新增分組…'), create: true, group: '' },
+          { label: t('Ungrouped', '未分组', '未分組'), group: '' },
           ...instanceGroups(store.state.instances).map((group) => ({ label: group, group })),
         ],
-        { title: t('Move selected instances to group', '将所选实例移动到分组') },
+        {
+          title: t(
+            'Move selected instances to group',
+            '将所选实例移动到分组',
+            '將所選實例移動到分組',
+          ),
+        },
       );
       if (!choice) return { cancelled: true, changed: 0, failed: [] };
       group =
         'create' in choice && choice.create
           ? await vscode.window.showInputBox({
-              title: t('Group name', '分组名称'),
+              title: t('Group name', '分组名称', '分組名稱'),
               validateInput: (value) => {
                 try {
                   return instanceGroup(value)
                     ? undefined
-                    : t('Enter a group name.', '请输入分组名称。');
+                    : t('Enter a group name.', '请输入分组名称。', '請輸入分組名稱。');
                 } catch {
                   return t(
                     'Use up to 100 characters without control characters.',
                     '请使用不超过 100 个字符，不能包含控制字符。',
+                    '請使用不超過 100 個字符，不能包含控制字符。',
                   );
                 }
               },
@@ -78,13 +85,14 @@ export async function manageInstances(
   }
   if (action === 'remove') {
     for (const instance of instances) minecraft.assertIdle(instance);
-    const yes = t('Remove', '删除');
+    const yes = t('Remove', '删除', '刪除');
     const owned = instances.filter((instance) => !instance.linked).length;
     if (
       (await vscode.window.showWarningMessage(
         t(
           `Remove ${instances.length} selected instances?`,
           `删除所选的 ${instances.length} 个实例？`,
+          `刪除所選的 ${instances.length} 個實例？`,
         ),
         {
           modal: true,
@@ -92,6 +100,7 @@ export async function manageInstances(
             t(
               `${owned} managed instance folder(s) will be moved to Trash. Files managed in place will be kept.`,
               `${owned} 个托管实例目录会移入废纸篓，原地管理的实例保留文件。`,
+              `${owned} 個托管實例目錄會移入廢紙簍，原地管理的實例保留檔案。`,
             ) +
             '\n\n' +
             instances
@@ -105,7 +114,11 @@ export async function manageInstances(
       return { cancelled: true, changed: 0, failed: [] };
   }
   return jobs.run(
-    [`Manage ${instances.length} instances`, `管理 ${instances.length} 个实例`],
+    [
+      `Manage ${instances.length} instances`,
+      `管理 ${instances.length} 个实例`,
+      `管理 ${instances.length} 個實例`,
+    ],
     async (signal, report) => {
       let changed = 0;
       const failed: { id: string; name: string; message: string }[] = [];

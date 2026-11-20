@@ -80,7 +80,11 @@ export async function installRuntime(
         continue;
       if (!(await isRuntimeReady(peer, signal))) continue;
       report(
-        t('Using installed game files and loader', '复用已安装的游戏文件和加载器'),
+        t(
+          'Using installed game files and loader',
+          '复用已安装的游戏文件和加载器',
+          '重複使用已安裝的遊戲檔案和載入器',
+        ),
         'Using installed game files and loader',
       );
       const natives = path.join(instance.directory, '.workbench', 'natives');
@@ -153,7 +157,10 @@ export async function installRuntime(
     download,
     checksum: (file, algorithm) => hashFile(file, algorithm, signal),
     runJava: async (command) => {
-      report(t('Running Forge processors', '运行 Forge 处理器'), 'Running Forge processors');
+      report(
+        t('Running Forge processors', '运行 Forge 处理器', '執行 Forge 處理器'),
+        'Running Forge processors',
+      );
       const execution = exec(command.executable, command.args, {
         cwd: command.cwd,
         env: { ...process.env, ...command.env },
@@ -179,7 +186,7 @@ export async function installRuntime(
   let manifest: Promise<VersionManifest> | undefined;
   const official = async (id: string) => {
     report(
-      t(`Checking version profile: ${id}`, `检查版本配置：${id}`),
+      t(`Checking version profile: ${id}`, `检查版本配置：${id}`, `檢查版本設定：${id}`),
       `Checking version profile: ${id}`,
     );
     const entry = (await (manifest ??= services.manifest(signal))).versions.find(
@@ -201,7 +208,11 @@ export async function installRuntime(
   };
   const clientFiles = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
     report(
-      t(`Checking client and libraries: ${resolved.id}`, `检查客户端和运行库：${resolved.id}`),
+      t(
+        `Checking client and libraries: ${resolved.id}`,
+        `检查客户端和运行库：${resolved.id}`,
+        `檢查用戶端和執行階段程式庫：${resolved.id}`,
+      ),
       `Checking client and libraries: ${resolved.id}`,
     );
     const jar = resolveMinecraftJarInstallFile(resolved);
@@ -210,7 +221,7 @@ export async function installRuntime(
   };
   const assets = async (resolved: Awaited<ReturnType<typeof Version.parse>>) => {
     report(
-      t('Checking asset index and game assets', '检查资源索引和游戏资源'),
+      t('Checking asset index and game assets', '检查资源索引和游戏资源', '檢查資源索引和遊戲資源'),
       'Checking asset index and game assets',
     );
     await installFiles(resolveAssetMetadataInstallFiles(resolved, folder));
@@ -228,6 +239,7 @@ export async function installRuntime(
         t(
           'Select a loader version before repairing this instance.',
           '请先为此实例选择加载器版本，再执行修复。',
+          '請先為此實例選擇載入器版本，再執行修復。',
         ),
       );
     filename(selected);
@@ -275,7 +287,10 @@ export async function installRuntime(
         ? 'https://maven.neoforged.net/releases/net/neoforged/neoforge'
         : 'https://maven.minecraftforge.net/net/minecraftforge/forge';
       const name = neo ? 'neoforge' : 'forge';
-      report(t('Installing mod loader', '安装模组加载器'), 'Installing mod loader');
+      report(
+        t('Installing mod loader', '安装模组加载器', '安裝模組載入器'),
+        'Installing mod loader',
+      );
       const installerFile: InstallFile = {
         path: path.join(root, 'installers', `${name}-${artifact}-installer.jar`),
         urls: [`${base}/${artifact}/${name}-${artifact}-installer.jar`],
@@ -341,6 +356,7 @@ export async function installRuntime(
       const message = t(
         'Recreated the loader profile; custom settings require the original profile backup.',
         '已重建加载器配置；自定义配置需从原配置备份恢复。',
+        '已重建載入器設定；自定義設定需從原設定備份還原。',
       );
       report(message);
       services.output.append(message + '\n');

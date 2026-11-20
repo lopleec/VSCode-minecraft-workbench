@@ -30,6 +30,23 @@ test('extension language follows VS Code by default and manual choices override 
     assert.equal(t('English', '中文'), '中文');
     preference = 'auto';
     assert.equal(t('English', '中文'), 'English');
+    for (const locale of ['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-TW']) {
+      env.language = locale;
+      assert.equal(t('English', '简体中文', '繁體中文'), '繁體中文');
+      assert.equal(t('English', '中文'), '中文');
+    }
+    for (const locale of ['zh-CN', 'zh-SG', 'zh-Hans', 'zh']) {
+      env.language = locale;
+      assert.equal(t('English', '简体中文', '繁體中文'), '简体中文');
+    }
+    preference = 'zh-tw';
+    env.language = 'en';
+    assert.equal(t('English', '简体中文', '繁體中文'), '繁體中文');
+    preference = 'zh-cn';
+    env.language = 'zh-TW';
+    assert.equal(t('English', '简体中文', '繁體中文'), '简体中文');
+    preference = 'en';
+    assert.equal(t('English', '简体中文', '繁體中文'), 'English');
   } finally {
     workspace.getConfiguration = original;
     env.language = originalLanguage;
@@ -59,9 +76,11 @@ test('a language change is global, clears an overriding workspace value and reje
     assert.equal(t('English', '中文'), 'English');
     await setLanguage('zh-cn');
     assert.equal(t('English', '中文'), '中文');
+    await setLanguage('zh-tw');
+    assert.equal(t('English', '简体中文', '繁體中文'), '繁體中文');
     for (const invalid of ['unknown', ['en'], {}, true, undefined, null])
       await assert.rejects(setLanguage(invalid), /Invalid language/);
-    assert.equal(globalValue, 'zh-cn');
+    assert.equal(globalValue, 'zh-tw');
   } finally {
     workspace.getConfiguration = original;
   }
