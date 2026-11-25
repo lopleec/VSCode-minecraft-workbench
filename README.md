@@ -276,6 +276,11 @@ Remove tokens, proxy credentials, account details and personal paths from shared
 
 [MIT](LICENSE), Copyright © 2026 Lopleec. Bundled dependency licenses are included in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt).
 
+Code from the following PRs was adapted for v0.5.3; the original PRs were not merged directly. Thanks to their authors:
+
+- [@redstaroverplank](https://github.com/redstaroverplank) — PCL Forge and NeoForge compatibility ([PR #17](https://github.com/lopleec/VSCode-minecraft-workbench/pull/17)).
+- [@Scaredrock14413](https://github.com/Scaredrock14413) — Traditional Chinese localization ([PR #19](https://github.com/lopleec/VSCode-minecraft-workbench/pull/19)).
+
 Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://xmcl.app/en/core/), [Modrinth API](https://docs.modrinth.com/api/), and official [Fabric](https://docs.fabricmc.net/develop/getting-started/creating-a-project), [Forge](https://docs.minecraftforge.net/en/latest/gettingstarted/) and [NeoForge](https://docs.neoforged.net/docs/gettingstarted/) templates. Independent of Mojang, Microsoft, Modrinth and the loader projects. Game files, accounts and downloaded content retain their respective terms and licenses.
 
 ---
@@ -518,6 +523,11 @@ npm run package
 ### 许可与致谢
 
 [MIT License](LICENSE)，Copyright © 2026 Lopleec。依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
+
+0.5.3 采纳并调整了以下 PR 的部分代码，原 PR 未直接合并。感谢贡献者：
+
+- [@redstaroverplank](https://github.com/redstaroverplank) — PCL Forge、NeoForge 实例兼容（[PR #17](https://github.com/lopleec/VSCode-minecraft-workbench/pull/17)）。
+- [@Scaredrock14413](https://github.com/Scaredrock14413) — 繁体中文本地化（[PR #19](https://github.com/lopleec/VSCode-minecraft-workbench/pull/19)）。
 
 使用 VS Code API、XMCL、Modrinth API，以及 Fabric、Forge、NeoForge 官方模板。本项目独立于 Mojang、Microsoft、Modrinth 和各 Loader 项目。游戏文件、账户与下载内容仍适用各自条款和许可。
 

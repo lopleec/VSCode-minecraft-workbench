@@ -237,6 +237,11 @@ npm run package
 
 [MIT License](LICENSE)，Copyright © 2026 Lopleec。依赖许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 和 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
 
+0.5.3 采纳并调整了以下 PR 的部分代码，原 PR 未直接合并。感谢贡献者：
+
+- [@redstaroverplank](https://github.com/redstaroverplank) — PCL Forge、NeoForge 实例兼容（[PR #17](https://github.com/lopleec/VSCode-minecraft-workbench/pull/17)）。
+- [@Scaredrock14413](https://github.com/Scaredrock14413) — 繁体中文本地化（[PR #19](https://github.com/lopleec/VSCode-minecraft-workbench/pull/19)）。
+
 使用 VS Code API、XMCL、Modrinth API，以及 Fabric、Forge、NeoForge 官方模板。本项目独立于 Mojang、Microsoft、Modrinth 和各 Loader 项目。游戏文件、账户与下载内容仍适用各自条款和许可。
 
 ### 界面示例
