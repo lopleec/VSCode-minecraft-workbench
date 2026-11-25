@@ -125,6 +125,7 @@ test('device authorization shows ephemeral progress, polls, completes and keeps 
     ])
       assert.ok(!publicData.includes(secret));
   } finally {
+    ctx.mock.timers.reset();
     await f.close();
   }
 });
