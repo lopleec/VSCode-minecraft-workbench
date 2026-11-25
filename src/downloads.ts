@@ -245,7 +245,7 @@ export class Downloads {
   private async transfer(url: string, destination: string, options: DownloadOptions) {
     await fs.mkdir(path.dirname(destination), { recursive: true });
     const target = sourceUrl(url, this.options.sources, options.kind);
-    const attempts = Math.max(1, Math.min(9, (this.options.retries ?? 2) + 1));
+    const attempts = Math.max(target === url ? 1 : 2, Math.min(9, (this.options.retries ?? 2) + 1));
     for (let attempt = 0; attempt < attempts; attempt++) {
       options.signal?.throwIfAborted();
       const uri = attempt === attempts - 1 ? url : target;

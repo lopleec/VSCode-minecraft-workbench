@@ -34,8 +34,10 @@ export function sourceUrl(
   if (source === 'bmclapi') {
     const base = 'https://bmclapi2.bangbang93.com';
     if (url.hostname === 'resources.download.minecraft.net') return `${base}/assets${url.pathname}`;
+    if (url.hostname === 'libraries.minecraft.net')
+      return `${base}/maven${url.pathname}${url.search}`;
     if (
-      /^(libraries\.minecraft\.net|piston-meta\.mojang\.com|launchermeta\.mojang\.com|piston-data\.mojang\.com|launcher\.mojang\.com)$/.test(
+      /^(piston-meta\.mojang\.com|launchermeta\.mojang\.com|piston-data\.mojang\.com|launcher\.mojang\.com)$/.test(
         url.hostname,
       )
     )
@@ -46,6 +48,14 @@ export function sourceUrl(
       return `${base}/fabric-meta${url.pathname}${url.search}`;
     if (url.hostname === 'maven.minecraftforge.net')
       return `${base}/maven${url.pathname}${url.search}`;
+    if (url.hostname === 'maven.fabricmc.net') return `${base}/maven${url.pathname}${url.search}`;
+    if (url.hostname === 'maven.neoforged.net' && url.pathname.startsWith('/releases/'))
+      return `${base}/maven${url.pathname.slice('/releases'.length)}${url.search}`;
+    if (
+      url.hostname === 'maven.neoforged.net' &&
+      url.pathname.startsWith('/api/maven/details/releases/net/neoforged/')
+    )
+      return `${base}/neoforge/meta${url.pathname}${url.search}`;
     return original;
   }
   const base = new URL(source);

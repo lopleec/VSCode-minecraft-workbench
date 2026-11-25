@@ -3,6 +3,7 @@ import { Minecraft } from './minecraft';
 import { ServerEngine, ServerProfile } from './models';
 import { filename } from './files';
 import { manualServer } from './server-types';
+import { forgeMaven } from './versions';
 export { serverEngines } from './server-types';
 export interface ServerBuild {
   id: string;
@@ -135,14 +136,11 @@ export class ServerCatalog {
       };
     }
     if (engine === 'forge' || engine === 'neoforge') {
+      const { base, name } = forgeMaven(engine, server.minecraft);
       const full = filename(
-        engine === 'forge' ? `${server.minecraft}-${server.build}` : server.build!,
+        name === 'forge' ? `${server.minecraft}-${server.build}` : server.build!,
       );
-      const base =
-        engine === 'forge'
-          ? 'https://maven.minecraftforge.net/net/minecraftforge/forge'
-          : 'https://maven.neoforged.net/releases/net/neoforged/neoforge';
-      const url = `${base}/${full}/${engine === 'forge' ? 'forge' : 'neoforge'}-${full}-installer.jar`;
+      const url = `${base}/${full}/${name}-${full}-installer.jar`;
       const checksum = (await this.net.text(url + '.sha1', { signal })).trim().split(/\s+/)[0];
       if (!/^[a-f0-9]{40}$/i.test(checksum)) throw new Error('Invalid installer checksum');
       return { url, hash: checksum, installer: engine };

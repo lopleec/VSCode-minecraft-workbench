@@ -25,6 +25,17 @@ export function gameEnvironment(
     else env[name] = original;
   }
   const wayland = !!env.WAYLAND_DISPLAY || env.XDG_SESSION_TYPE === 'wayland';
+  const desktop = [env.XDG_CURRENT_DESKTOP, env.XDG_SESSION_DESKTOP, env.DESKTOP_SESSION].join(':');
+  const explicitDriver = env.SDL_VIDEO_DRIVER || env.SDL_VIDEODRIVER;
+  // GNOME provides no server-side Wayland decorations. Prefer its XWayland bridge when present.
+  if (
+    backend === 'auto' &&
+    wayland &&
+    /gnome|(?:^|:)ubuntu(?:$|:)/i.test(desktop) &&
+    env.DISPLAY &&
+    !explicitDriver
+  )
+    backend = 'x11';
   const x11 = env.SDL_VIDEO_DRIVER === 'x11' || env.SDL_VIDEODRIVER === 'x11';
   if (wayland && !x11 && env.GDK_BACKEND?.trim().toLowerCase() === 'x11') delete env.GDK_BACKEND;
   if (backend === 'x11' || backend === 'wayland') {

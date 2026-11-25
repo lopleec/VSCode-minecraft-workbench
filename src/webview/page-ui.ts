@@ -3,7 +3,7 @@ import type { Bootstrap, WorkbenchPage } from './protocol';
 
 export interface PageContext {
   state(): Bootstrap;
-  text(en: string, zh: string): string;
+  text(en: string, zh: string, zhTw?: string): string;
   request<T>(method: string, params?: Record<string, unknown>): Promise<T>;
   button(
     label: string,

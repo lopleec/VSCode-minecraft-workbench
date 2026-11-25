@@ -1,4 +1,5 @@
 import { h } from './dom';
+import { localize, type LanguagePreference } from '../language';
 import { renderServers } from './server-page';
 import { renderServerCreate } from './server-create-page';
 import { renderServer } from './server-detail-page';
@@ -53,7 +54,7 @@ let boot: Bootstrap;
 let initialState: Bootstrap | undefined;
 let initialNavigation: { page: WorkbenchPage; kind: ProjectKind } | undefined;
 let page: WorkbenchPage = 'discover';
-let agreementLanguage: 'auto' | 'en' | 'zh-cn' = 'auto';
+let agreementLanguage: LanguagePreference = 'auto';
 let kind: ProjectKind = 'mod';
 let query = '';
 let order = 'downloads';
@@ -94,7 +95,7 @@ let updateManaged: (() => void) | undefined;
 let syncMemoryControls: (() => void) | undefined;
 let debounce: ReturnType<typeof setTimeout>;
 const root = document.getElementById('app')!;
-const L = (en: string, zh: string) => (boot?.locale === 'zh-cn' ? zh : en);
+const L = (en: string, zh: string, zhTw?: string) => localize(boot?.locale ?? 'en', en, zh, zhTw);
 const currentInstance = () => boot.instances.find((i) => i.id === boot.selectedInstance);
 const currentTarget = () =>
   boot.mode === 'server'
@@ -201,7 +202,7 @@ function showError(error: unknown) {
   if (!area) return;
   area.replaceChildren(
     h('span', {}, message),
-    button(L('Dismiss', '关闭'), () => area.replaceChildren(), 'text-button'),
+    button(L('Dismiss', '关闭', '關閉'), () => area.replaceChildren(), 'text-button'),
   );
   area.className = 'notice error';
 }
@@ -231,12 +232,13 @@ async function action(name: string) {
           ? L(
               `${updates.length} updates available. Review the installed files below.`,
               `${updates.length} 个可用更新，可在下方逐个安装。`,
+              `${updates.length} 個可用更新，可在下方逐個安裝。`,
             )
-          : L('No updates available.', '暂无可用更新。');
+          : L('No updates available.', '暂无可用更新。', '暫無可用更新。');
       } else
         resultMessage = result.length
           ? result.join('\n')
-          : L('No conflicts found.', '未发现冲突。');
+          : L('No conflicts found.', '未发现冲突。', '未發現衝突。');
     }
   } else await call('action', { action: name });
   boot = await call<Bootstrap>('ready');
@@ -244,7 +246,7 @@ async function action(name: string) {
   if (resultMessage) notice(resultMessage);
 }
 function shell() {
-  document.documentElement.lang = boot.locale === 'zh-cn' ? 'zh-CN' : 'en';
+  document.documentElement.lang = boot.locale;
   document.body.dataset.density = boot.preferences.density;
   document.body.dataset.contentLayout = boot.preferences.layout || 'auto';
   const isServer = boot.mode === 'server';
@@ -252,26 +254,26 @@ function shell() {
   const server = boot.servers.find((s) => s.id === boot.selectedServer);
   const pages: [WorkbenchPage, string][] = isServer
     ? [
-        ['servers', L('Servers', '服务端')],
-        ['server', L('Console & settings', '控制台与设置')],
-        ['discover', L('Discover', '发现')],
-        ['installed', L('Installed', '已安装')],
+        ['servers', L('Servers', '服务端', '伺服器')],
+        ['server', L('Console & settings', '控制台与设置', '控制臺與設定')],
+        ['discover', L('Discover', '发现', '發現')],
+        ['installed', L('Installed', '已安装', '已安裝')],
       ]
     : boot.mode === 'developer'
-      ? [['projects', L('Projects', '项目')]]
+      ? [['projects', L('Projects', '项目', '專案')]]
       : [
-          ['instances', L('Instances', '实例')],
-          ['discover', L('Discover', '发现')],
-          ['installed', L('Installed', '已安装')],
-          ['instance', L('Instance settings', '实例设置')],
+          ['instances', L('Instances', '实例', '實例')],
+          ['discover', L('Discover', '发现', '發現')],
+          ['installed', L('Installed', '已安装', '已安裝')],
+          ['instance', L('Instance settings', '实例设置', '實例設定')],
         ];
   const modePicker = dropdown(
-    L('Mode', '模式'),
+    L('Mode', '模式', '模式'),
     boot.mode,
     [
-      ['launcher', L('Launcher', '启动')],
-      ['developer', L('Developer', '开发')],
-      ['server', L('Server', '开服')],
+      ['launcher', L('Launcher', '启动', '啟動')],
+      ['developer', L('Developer', '开发', '開發')],
+      ['server', L('Server', '开服', '架設伺服器')],
     ],
     async (mode) => {
       boot = await call<Bootstrap>('mode', { mode });
@@ -294,12 +296,16 @@ function shell() {
     !['discover', 'installed', 'instance', 'server', 'backups'].includes(page)
       ? undefined
       : dropdown(
-          isServer ? L('Active server', '当前服务端') : L('Active instance', '当前实例'),
+          isServer
+            ? L('Active server', '当前服务端', '當前伺服器')
+            : L('Active instance', '当前实例', '當前實例'),
           (isServer ? server?.id : instance?.id) || '',
           [
             [
               '',
-              isServer ? L('Select a server', '选择服务端') : L('Select an instance', '选择实例'),
+              isServer
+                ? L('Select a server', '选择服务端', '選擇伺服器')
+                : L('Select an instance', '选择实例', '選擇實例'),
             ],
             ...(isServer ? boot.servers : boot.instances).map(
               (i) => [i.id, `${i.name} · ${i.minecraft}`] as [string, string],
@@ -329,7 +335,7 @@ function shell() {
         modePicker,
         h(
           'nav',
-          { class: 'tabs', 'aria-label': L('Workbench pages', '工作台页面') },
+          { class: 'tabs', 'aria-label': L('Workbench pages', '工作台页面', '工作台頁面') },
           ...pages.map(([value, label]) =>
             button(
               label,
@@ -350,28 +356,28 @@ function shell() {
           ),
         ),
         dropdown(
-          L('Tools', '工具'),
+          L('Tools', '工具', '工具'),
           managementPages.includes(page) ? page : '',
           [
-            ['', L('Tools', '工具')],
+            ['', L('Tools', '工具', '工具')],
             ...managementPagesFor(boot.mode, boot.terracotta?.enabled).map(
               (value) =>
                 [
                   value,
                   (
                     {
-                      accounts: L('Accounts', '账户'),
+                      accounts: L('Accounts', '账户', '帳戶'),
                       java: 'Java',
-                      downloads: L('Tasks', '任务'),
-                      backups: L('World backups', '存档备份'),
-                      multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）'),
-                      settings: L('Settings', '设置'),
+                      downloads: L('Tasks', '任务', '工作'),
+                      backups: L('World backups', '存档备份', '存檔備份'),
+                      multiplayer: L('Terracotta (Beta)', '陶瓦联机（Beta）', 'Terracotta（Beta）'),
+                      settings: L('Settings', '设置', '設定'),
                     } as Record<string, string>
                   )[value],
                 ] as [string, string],
             ),
-            ['@output', L('Output', '输出')],
-            ['@exportLogs', L('Export launcher logs…', '导出启动器日志…')],
+            ['@output', L('Output', '输出', '輸出')],
+            ['@exportLogs', L('Export launcher logs…', '导出启动器日志…', '匯出啟動器日誌…')],
           ],
           async (value) => {
             if (!value) return;
@@ -398,7 +404,7 @@ function shell() {
           h(
             'label',
             { for: 'instance-picker', class: 'target-label' },
-            isServer ? L('Server', '服务端') : L('Instance', '实例'),
+            isServer ? L('Server', '服务端', '伺服器') : L('Instance', '实例', '實例'),
           ),
           picker,
         ),
@@ -419,7 +425,11 @@ function updateJobs() {
       ? [
           h('span', { class: 'spinner' }),
           h('span', { class: 'task-name' }, job.label),
-          h('span', { class: 'muted task-detail' }, job.detail || L('Working…', '处理中…')),
+          h(
+            'span',
+            { class: 'muted task-detail' },
+            job.detail || L('Working…', '处理中…', '處理中…'),
+          ),
         ]
       : []),
   );
@@ -431,17 +441,24 @@ function categories() {
   const options: [ProjectKind, string][] =
     boot.mode === 'server'
       ? serverKind
-        ? [[serverKind, serverKind === 'plugin' ? L('Plugins', '插件') : L('Mods', '模组')]]
+        ? [
+            [
+              serverKind,
+              serverKind === 'plugin'
+                ? L('Plugins', '插件', '擴充套件')
+                : L('Mods', '模组', '模組'),
+            ],
+          ]
         : []
       : [
-          ['mod', L('Mods', '模组')],
-          ['modpack', L('Modpacks', '整合包')],
-          ['resourcepack', L('Resource packs', '资源包')],
-          ['shader', L('Shaders', '光影包')],
+          ['mod', L('Mods', '模组', '模組')],
+          ['modpack', L('Modpacks', '整合包', '整合包')],
+          ['resourcepack', L('Resource packs', '资源包', '資源包')],
+          ['shader', L('Shaders', '光影包', '光影包')],
         ];
   return h(
     'div',
-    { class: 'segments', 'aria-label': L('Content type', '内容类型') },
+    { class: 'segments', 'aria-label': L('Content type', '内容类型', '內容類型') },
     ...options
       .filter(([value]) => page === 'discover' || value !== 'modpack')
       .map(([value, label]) =>
@@ -574,13 +591,13 @@ function render() {
   ) {
     find('main').append(
       empty(
-        L('Select a mod or plugin server', '请选择模组端或插件端'),
+        L('Select a mod or plugin server', '请选择模组端或插件端', '請選擇模組端或擴充套件端'),
         '',
         () => {
           page = 'servers';
           render();
         },
-        L('Servers', '服务端'),
+        L('Servers', '服务端', '伺服器'),
       ),
     );
     return;
@@ -592,7 +609,7 @@ function render() {
       { class: 'content-layout', id: 'layout' },
       h(
         'section',
-        { class: 'browser-pane', 'aria-label': L('Content list', '内容列表') },
+        { class: 'browser-pane', 'aria-label': L('Content list', '内容列表', '內容清單') },
         h('div', { class: 'browser-toolbar', id: 'browser-toolbar' }),
         h(
           'div',
@@ -603,7 +620,7 @@ function render() {
       h('aside', {
         class: 'detail-panel',
         id: 'detail',
-        'aria-label': L('Project details', '项目详情'),
+        'aria-label': L('Project details', '项目详情', '項目詳細資料'),
       }),
     ),
   );
@@ -616,11 +633,11 @@ function renderToolbar() {
   const search = h('input', {
     type: 'search',
     class: 'search-input',
-    'aria-label': L('Search content', '搜索内容'),
+    'aria-label': L('Search content', '搜索内容', '搜尋內容'),
     placeholder:
       page === 'discover'
-        ? L('Search Modrinth…', '搜索 Modrinth…')
-        : L('Filter installed files…', '筛选已安装文件…'),
+        ? L('Search Modrinth…', '搜索 Modrinth…', '搜尋 Modrinth…')
+        : L('Filter installed files…', '筛选已安装文件…', '篩選已安裝檔案…'),
     value: query,
     oninput: (event: Event) => {
       query = (event.target as HTMLInputElement).value;
@@ -639,14 +656,14 @@ function renderToolbar() {
         { class: 'search-row' },
         search,
         dropdown(
-          L('Sort by', '排序'),
+          L('Sort by', '排序', '排序'),
           order,
           [
-            ['downloads', L('Downloads', '下载量')],
-            ['relevance', L('Relevance', '相关度')],
-            ['follows', L('Followers', '关注数')],
-            ['updated', L('Recently updated', '最近更新')],
-            ['newest', L('Newest', '最新发布')],
+            ['downloads', L('Downloads', '下载量', '下載量')],
+            ['relevance', L('Relevance', '相关度', '相關度')],
+            ['follows', L('Followers', '关注数', '追蹤數')],
+            ['updated', L('Recently updated', '最近更新', '最近更新')],
+            ['newest', L('Newest', '最新发布', '最新發行')],
           ],
           (value) => {
             order = value;
@@ -660,8 +677,8 @@ function renderToolbar() {
         { class: 'filter-row' },
         check(
           boot.mode === 'server'
-            ? L('Compatible with server', '兼容当前服务端')
-            : L('Compatible with instance', '兼容当前实例'),
+            ? L('Compatible with server', '兼容当前服务端', '相容當前伺服器')
+            : L('Compatible with instance', '兼容当前实例', '相容當前實例'),
           onlyCompatible && !!currentTarget(),
           (value) => {
             onlyCompatible = value;
@@ -681,9 +698,17 @@ function renderToolbar() {
         'div',
         { class: 'search-row' },
         search,
-        button(L('Import files', '导入文件'), () => action('importContent'), 'secondary'),
+        button(
+          L('Import files', '导入文件', '匯入檔案'),
+          () => action('importContent'),
+          'secondary',
+        ),
         boot.mode === 'launcher' &&
-          button(L('Import modpack…', '导入整合包…'), () => action('importPack'), 'secondary'),
+          button(
+            L('Import modpack…', '导入整合包…', '匯入整合包…'),
+            () => action('importPack'),
+            'secondary',
+          ),
       ),
       h(
         'div',
@@ -692,8 +717,12 @@ function renderToolbar() {
         h(
           'div',
           { class: 'inline-actions' },
-          button(L('Check updates', '检查更新'), () => action('updates'), 'secondary'),
-          button(L('Check conflicts', '检查冲突'), () => action('conflicts'), 'secondary'),
+          button(L('Check updates', '检查更新', '檢查更新'), () => action('updates'), 'secondary'),
+          button(
+            L('Check conflicts', '检查冲突', '檢查衝突'),
+            () => action('conflicts'),
+            'secondary',
+          ),
           layoutPicker(),
         ),
       ),
@@ -703,12 +732,12 @@ function renderToolbar() {
 }
 function layoutPicker() {
   return dropdown(
-    L('Content layout', '内容布局'),
+    L('Content layout', '内容布局', '內容版面配置'),
     boot.preferences.layout || 'auto',
     [
-      ['auto', L('Auto layout', '自动布局')],
-      ['split', L('Side by side', '左右分栏')],
-      ['single', L('Single pane', '单栏')],
+      ['auto', L('Auto layout', '自动布局', '自動版面配置')],
+      ['split', L('Side by side', '左右分栏', '左右分欄')],
+      ['single', L('Single pane', '单栏', '單欄')],
     ],
     async (value) => {
       await call('settings.update', { key: 'contentLayout', value, scope: 'effective' });
@@ -724,13 +753,15 @@ function renderBatchActions() {
   if (kind !== 'mod') return;
   bar.replaceChildren(
     button(
-      L('Batch install…', '批量安装…'),
+      L('Batch install…', '批量安装…', '批量安裝…'),
       () => openBatch(),
       'secondary',
       !currentTarget() || targetRunning(),
     ),
     button(
-      selectingMods ? L('Done', '完成多选') : L('Select multiple', '多选安装'),
+      selectingMods
+        ? L('Done', '完成多选', '完成多選')
+        : L('Select multiple', '多选安装', '多選安裝'),
       () => {
         selectingMods = !selectingMods;
         if (!selectingMods) selectedMods.clear();
@@ -742,7 +773,7 @@ function renderBatchActions() {
     ...(selectingMods
       ? [
           button(
-            L('Select page', '选择当前页'),
+            L('Select page', '选择当前页', '選擇當前頁'),
             () => {
               for (const hit of hits) {
                 if (selectedMods.size >= 100) break;
@@ -756,7 +787,11 @@ function renderBatchActions() {
           ...(selectedMods.size > 0
             ? [
                 button(
-                  L(`Install selected (${selectedMods.size})`, `安装所选（${selectedMods.size}）`),
+                  L(
+                    `Install selected (${selectedMods.size})`,
+                    `安装所选（${selectedMods.size}）`,
+                    `安裝所選（${selectedMods.size}）`,
+                  ),
                   () => {
                     openBatch([...selectedMods]);
                   },
@@ -764,7 +799,7 @@ function renderBatchActions() {
                   !currentTarget() || targetRunning(),
                 ),
                 button(
-                  L('Clear selection', '清除选择'),
+                  L('Clear selection', '清除选择', '清除選擇'),
                   () => {
                     selectedMods.clear();
                     syncModSelection();
@@ -798,7 +833,7 @@ function openBatch(projects?: string[]) {
         selectedMods.clear();
         page = 'installed';
         render();
-        notice(L('Mods installed.', '模组已安装。'));
+        notice(L('Mods installed.', '模组已安装。', '模組已安裝。'));
       },
     });
   if (projects) review(projects);
@@ -808,7 +843,7 @@ function openBatch(projects?: string[]) {
 function installButton(projectId: string) {
   if (!currentTarget())
     return button(
-      L('Select target', '选择安装目标'),
+      L('Select target', '选择安装目标', '選擇安裝目標'),
       () => {
         page = boot.mode === 'server' ? 'servers' : 'instances';
         render();
@@ -821,24 +856,24 @@ function installButton(projectId: string) {
   const busy = installingProjects.has(key);
   const control = button(
     installed
-      ? L('Installed', '已安装')
+      ? L('Installed', '已安装', '已安裝')
       : busy
-        ? L('Installing…', '安装中…')
-        : L('Install', '安装'),
+        ? L('Installing…', '安装中…', '安裝中…')
+        : L('Install', '安装', '安裝'),
     async () => {
       installingProjects.add(key);
       control.disabled = true;
-      control.textContent = L('Installing…', '安装中…');
+      control.textContent = L('Installing…', '安装中…', '安裝中…');
       try {
         await call('quickInstall', { projectId });
         if (selectionTarget === targetKey) {
           installedProjects.add(projectId);
-          control.textContent = L('Installed', '已安装');
+          control.textContent = L('Installed', '已安装', '已安裝');
         }
       } finally {
         installingProjects.delete(key);
         if (!installedProjects.has(projectId)) {
-          control.textContent = L('Install', '安装');
+          control.textContent = L('Install', '安装', '安裝');
           control.disabled = targetRunning();
         }
       }
@@ -869,7 +904,7 @@ async function loadSearch(append: boolean) {
         'div',
         { class: 'loading', role: 'status' },
         h('span', { class: 'spinner' }),
-        L('Loading projects…', '加载项目…'),
+        L('Loading projects…', '加载项目…', '載入項目…'),
       ),
     );
   }
@@ -893,16 +928,18 @@ async function loadSearch(append: boolean) {
     find('result-count').textContent = L(
       `${number(totalHits)} projects`,
       `${number(totalHits)} 个项目`,
+      `${number(totalHits)} 個項目`,
     );
     const results = find('results');
     results.replaceChildren();
     if (!hits.length)
       results.append(
         empty(
-          L('No matching projects', '没有符合条件的项目'),
+          L('No matching projects', '没有符合条件的项目', '沒有符合條件的項目'),
           L(
             'Try another keyword or turn off the compatibility filter.',
             '尝试其他关键词，或关闭兼容性筛选。',
+            '嘗試其他關鍵詞，或關閉相容性篩選。',
           ),
         ),
       );
@@ -921,12 +958,14 @@ async function loadSearch(append: boolean) {
               hidden: !selectingMods,
               checked: selectedMods.has(hit.project_id),
               'data-mod': hit.project_id,
-              'aria-label': L(`Select ${hit.title}`, `选择 ${hit.title}`),
+              'aria-label': L(`Select ${hit.title}`, `选择 ${hit.title}`, `選擇 ${hit.title}`),
               onchange: (event: Event) => {
                 if ((event.target as HTMLInputElement).checked) {
                   if (selectedMods.size >= 100) {
                     (event.target as HTMLInputElement).checked = false;
-                    notice(L('Select up to 100 mods.', '最多选择 100 个模组。'));
+                    notice(
+                      L('Select up to 100 mods.', '最多选择 100 个模组。', '最多選擇 100 個模組。'),
+                    );
                     return;
                   }
                   selectedMods.add(hit.project_id);
@@ -952,7 +991,7 @@ async function loadSearch(append: boolean) {
             { class: 'installed-actions row-actions' },
             kind !== 'modpack' && installButton(hit.project_id),
             button(
-              L('Versions', '版本'),
+              L('Versions', '版本', '版本'),
               () => openProject(hit.project_id, 'versions'),
               'secondary row-action',
             ),
@@ -962,7 +1001,7 @@ async function loadSearch(append: boolean) {
     if (hits.length < totalHits)
       results.append(
         button(
-          L('Load more projects', '加载更多项目'),
+          L('Load more projects', '加载更多项目', '載入更多項目'),
           () => loadSearch(true),
           'secondary load-more',
         ),
@@ -972,8 +1011,10 @@ async function loadSearch(append: boolean) {
   } catch (error) {
     if (sequence === generation) {
       find('results').replaceChildren(
-        empty(L('Could not load projects', '无法加载项目'), String((error as Error).message), () =>
-          loadSearch(false),
+        empty(
+          L('Could not load projects', '无法加载项目', '無法載入項目'),
+          String((error as Error).message),
+          () => loadSearch(false),
         ),
       );
       showError(error);
@@ -991,14 +1032,18 @@ async function loadInstalled() {
     find('results').replaceChildren(
       empty(
         boot.mode === 'server'
-          ? L('Select a server', '选择服务端')
-          : L('Select an instance', '选择实例'),
-        L('Choose a target above to manage its files.', '在上方选择目标以管理文件。'),
+          ? L('Select a server', '选择服务端', '選擇伺服器')
+          : L('Select an instance', '选择实例', '選擇實例'),
+        L(
+          'Choose a target above to manage its files.',
+          '在上方选择目标以管理文件。',
+          '在上方選擇目標以管理檔案。',
+        ),
         () => {
           page = boot.mode === 'server' ? 'servers' : 'instances';
           render();
         },
-        boot.mode === 'server' ? L('Servers', '服务端') : L('Instances', '实例'),
+        boot.mode === 'server' ? L('Servers', '服务端', '伺服器') : L('Instances', '实例', '實例'),
       ),
     );
     return;
@@ -1008,7 +1053,7 @@ async function loadInstalled() {
       'div',
       { class: 'loading' },
       h('span', { class: 'spinner' }),
-      L('Loading installed files…', '加载已安装文件…'),
+      L('Loading installed files…', '加载已安装文件…', '載入已安裝檔案…'),
     ),
   );
   try {
@@ -1048,8 +1093,10 @@ function renderInstalled() {
   if (installedLoading) return;
   if (installedError) {
     find('results').replaceChildren(
-      empty(L('Could not load installed files', '无法加载已安装文件'), installedError, () =>
-        loadInstalled(),
+      empty(
+        L('Could not load installed files', '无法加载已安装文件', '無法載入已安裝檔案'),
+        installedError,
+        () => loadInstalled(),
       ),
     );
     return;
@@ -1060,22 +1107,28 @@ function renderInstalled() {
   for (const file of selectedFiles)
     if (!installed.some((entry) => entry.file === file)) selectedFiles.delete(file);
   renderInstalledBatch(filtered);
-  find('result-count').textContent = L(`${filtered.length} files`, `${filtered.length} 个文件`);
+  find('result-count').textContent = L(
+    `${filtered.length} files`,
+    `${filtered.length} 个文件`,
+    `${filtered.length} 個檔案`,
+  );
   const results = find('results');
   results.replaceChildren();
   if (!filtered.length)
     results.append(
       empty(
         query
-          ? L('No matching files', '没有匹配的文件')
-          : L('No content installed', '尚未安装内容'),
+          ? L('No matching files', '没有匹配的文件', '沒有匹配的檔案')
+          : L('No content installed', '尚未安装内容', '尚未安裝內容'),
         '',
         () => {
           if (!query) page = 'discover';
           query = '';
           render();
         },
-        query ? L('Clear filter', '清除筛选') : L('Browse Modrinth', '浏览 Modrinth'),
+        query
+          ? L('Clear filter', '清除筛选', '清除篩選')
+          : L('Browse Modrinth', '浏览 Modrinth', '瀏覽 Modrinth'),
       ),
     );
   for (const entry of filtered)
@@ -1089,7 +1142,7 @@ function renderInstalled() {
           checked: selectedFiles.has(entry.file),
           'data-installed': entry.file,
           disabled: managingContent || targetRunning(),
-          'aria-label': L(`Select ${entry.name}`, `选择 ${entry.name}`),
+          'aria-label': L(`Select ${entry.name}`, `选择 ${entry.name}`, `選擇 ${entry.name}`),
           onchange: (event: Event) => {
             if ((event.target as HTMLInputElement).checked) selectedFiles.add(entry.file);
             else selectedFiles.delete(entry.file);
@@ -1110,7 +1163,7 @@ function renderInstalled() {
                   'project-title',
                 )
               : h('strong', {}, entry.name),
-            !entry.enabled && badge(L('Disabled', '已禁用')),
+            !entry.enabled && badge(L('Disabled', '已禁用', '已停用')),
           ),
           h('p', { class: 'project-description' }, entry.description || entry.file),
           h('div', { class: 'metadata', title: entry.file }, entry.file),
@@ -1121,7 +1174,7 @@ function renderInstalled() {
           boot.mode === 'server' &&
             serverUpdates.has(entry.file) &&
             button(
-              L('Update', '更新'),
+              L('Update', '更新', '更新'),
               async () => {
                 await call('server.content', {
                   action: 'update',
@@ -1135,7 +1188,7 @@ function renderInstalled() {
               managingContent || targetRunning(),
             ),
           button(
-            entry.enabled ? L('Disable', '禁用') : L('Enable', '启用'),
+            entry.enabled ? L('Disable', '禁用', '停用') : L('Enable', '启用', '啟用'),
             async () => {
               await call('toggle', { file: entry.file });
               await loadInstalled();
@@ -1144,7 +1197,7 @@ function renderInstalled() {
             managingContent || targetRunning(),
           ),
           button(
-            L('Remove', '删除'),
+            L('Remove', '删除', '刪除'),
             async () => {
               await call('remove', { file: entry.file });
               await loadInstalled();
@@ -1176,7 +1229,13 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
       }>('manageContent', { action: operation, files: [...selectedFiles] });
       if (!result.cancelled && page === 'installed' && contextKey === selectionTarget) {
         selectedFiles.clear();
-        notice(L(`${result.changed} file(s) processed.`, `已处理 ${result.changed} 个文件。`));
+        notice(
+          L(
+            `${result.changed} file(s) processed.`,
+            `已处理 ${result.changed} 个文件。`,
+            `已處理 ${result.changed} 個檔案。`,
+          ),
+        );
         if (result.failed.length)
           showError(new Error(result.failed.map((f) => `${f.file}: ${f.message}`).join('\n')));
       }
@@ -1187,7 +1246,9 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
   };
   bar.replaceChildren(
     button(
-      selectingFiles ? L('Done', '完成多选') : L('Select multiple', '批量管理'),
+      selectingFiles
+        ? L('Done', '完成多选', '完成多選')
+        : L('Select multiple', '批量管理', '批量管理'),
       () => {
         selectingFiles = !selectingFiles;
         if (!selectingFiles) selectedFiles.clear();
@@ -1199,7 +1260,7 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
     ...(selectingFiles
       ? [
           button(
-            L('Select filtered', '选择筛选结果'),
+            L('Select filtered', '选择筛选结果', '選擇篩選結果'),
             () => {
               for (const item of filtered) selectedFiles.add(item.file);
               sync();
@@ -1208,7 +1269,7 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
             managingContent || !filtered.length,
           ),
           button(
-            L('Clear', '清除选择'),
+            L('Clear', '清除选择', '清除選擇'),
             () => {
               selectedFiles.clear();
               sync();
@@ -1219,14 +1280,18 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
           h(
             'span',
             { class: 'muted' },
-            L(`${selectedFiles.size} selected`, `已选择 ${selectedFiles.size} 个`),
+            L(
+              `${selectedFiles.size} selected`,
+              `已选择 ${selectedFiles.size} 个`,
+              `已選擇 ${selectedFiles.size} 個`,
+            ),
           ),
           ...(['enable', 'disable', 'remove'] as const).map((operation) =>
             button(
               {
-                enable: L('Enable', '启用'),
-                disable: L('Disable', '禁用'),
-                remove: L('Remove…', '删除…'),
+                enable: L('Enable', '启用', '啟用'),
+                disable: L('Disable', '禁用', '停用'),
+                remove: L('Remove…', '删除…', '刪除…'),
               }[operation],
               () => operate(operation),
               operation === 'remove' ? 'text-button danger' : 'secondary',
@@ -1237,7 +1302,12 @@ function renderInstalledBatch(filtered: InstalledEntry[]) {
       : []),
   );
 }
-function empty(title: string, body: string, retry?: () => unknown, label = L('Retry', '重试')) {
+function empty(
+  title: string,
+  body: string,
+  retry?: () => unknown,
+  label = L('Retry', '重试', '重試'),
+) {
   return h(
     'div',
     { class: 'empty-state' },
@@ -1259,7 +1329,7 @@ async function openProject(id: string, tab: 'about' | 'versions') {
       'div',
       { class: 'loading' },
       h('span', { class: 'spinner' }),
-      L('Loading project…', '加载项目…'),
+      L('Loading project…', '加载项目…', '載入項目…'),
     ),
   );
   try {
@@ -1280,7 +1350,7 @@ async function openProject(id: string, tab: 'about' | 'versions') {
     if (sequence === versionGeneration) {
       find('detail').replaceChildren(
         empty(
-          L('Could not load project', '无法加载项目'),
+          L('Could not load project', '无法加载项目', '無法載入項目'),
           error instanceof Error ? error.message : String(error),
           () => openProject(id, tab),
         ),
@@ -1297,7 +1367,7 @@ function renderDetail() {
       'div',
       { class: 'detail-heading' },
       button(
-        L('← Back', '← 返回'),
+        L('← Back', '← 返回', '← 返回'),
         () => {
           detail = undefined;
           plan = undefined;
@@ -1326,7 +1396,7 @@ function renderDetail() {
         h(
           'div',
           { class: 'metadata' },
-          `↓ ${number(project.downloads)} · ${number(project.followers)} ${L('followers', '关注')}`,
+          `↓ ${number(project.downloads)} · ${number(project.followers)} ${L('followers', '关注', '追蹤')}`,
         ),
       ),
     ),
@@ -1334,7 +1404,7 @@ function renderDetail() {
       'div',
       { class: 'detail-tabs' },
       button(
-        L('Overview', '简介'),
+        L('Overview', '简介', '簡介'),
         () => {
           detailTab = 'about';
           renderDetail();
@@ -1342,7 +1412,7 @@ function renderDetail() {
         detailTab === 'about' ? 'tab active' : 'tab',
       ),
       button(
-        L('Versions', '所有版本'),
+        L('Versions', '所有版本', '所有版本'),
         () => {
           detailTab = 'versions';
           renderDetail();
@@ -1364,22 +1434,22 @@ function renderDetail() {
       h(
         'section',
         { class: 'about-block' },
-        h('h2', {}, L('Supported loaders', '支持的加载器')),
+        h('h2', {}, L('Supported loaders', '支持的加载器', '支援的載入器')),
         h('p', {}, project.loaders.join(', ') || '—'),
       ),
       h(
         'section',
         { class: 'about-block' },
-        h('h2', {}, L('Game versions', '游戏版本')),
+        h('h2', {}, L('Game versions', '游戏版本', '遊戲版本')),
         h('p', { class: 'version-support' }, project.game_versions.join(', ')),
       ),
       h(
         'p',
         { class: 'muted' },
-        `${L('License', '许可')}: ${project.license?.name || project.license?.id || '—'}`,
+        `${L('License', '许可', '授權')}: ${project.license?.name || project.license?.id || '—'}`,
       ),
       button(
-        L('Browse versions', '浏览所有版本'),
+        L('Browse versions', '浏览所有版本', '瀏覽所有版本'),
         () => {
           detailTab = 'versions';
           renderDetail();
@@ -1402,8 +1472,8 @@ function renderVersionFilters() {
   const input = h('input', {
     type: 'search',
     value: versionQuery,
-    placeholder: L('Filter versions…', '筛选版本…'),
-    'aria-label': L('Filter versions', '筛选版本'),
+    placeholder: L('Filter versions…', '筛选版本…', '篩選版本…'),
+    'aria-label': L('Filter versions', '筛选版本', '篩選版本'),
     oninput: (event: Event) => {
       versionQuery = (event.target as HTMLInputElement).value;
       clearTimeout(debounce);
@@ -1420,7 +1490,7 @@ function renderVersionFilters() {
         ? []
         : [
             check(
-              L('Compatible only', '仅兼容版本'),
+              L('Compatible only', '仅兼容版本', '僅相容版本'),
               versionCompatible,
               (value) => {
                 versionCompatible = value;
@@ -1430,7 +1500,7 @@ function renderVersionFilters() {
             ),
           ]),
       button(
-        L('Show all versions', '查看全部版本'),
+        L('Show all versions', '查看全部版本', '查看全部版本'),
         () => {
           versionCompatible = false;
           versionGame = '';
@@ -1448,10 +1518,10 @@ function renderVersionFilters() {
       'div',
       { class: 'version-selects' },
       dropdown(
-        L('Game version', '游戏版本'),
+        L('Game version', '游戏版本', '遊戲版本'),
         versionGame,
         [
-          ['', L('All game versions', '全部游戏版本')],
+          ['', L('All game versions', '全部游戏版本', '全部遊戲版本')],
           ...versionGames.map((v) => [v, v] as [string, string]),
         ],
         (value) => {
@@ -1461,10 +1531,10 @@ function renderVersionFilters() {
         'version-game',
       ),
       dropdown(
-        L('Loader', '加载器'),
+        L('Loader', '加载器', '載入器'),
         versionLoader,
         [
-          ['', L('All loaders', '全部加载器')],
+          ['', L('All loaders', '全部加载器', '全部載入器')],
           ...versionLoaders.map((v) => [v, v] as [string, string]),
         ],
         (value) => {
@@ -1474,12 +1544,12 @@ function renderVersionFilters() {
         'version-loader',
       ),
       dropdown(
-        L('Release channel', '发布类型'),
+        L('Release channel', '发布类型', '發行類型'),
         versionChannel,
         [
-          ['release', L('Releases', '正式版')],
-          ['beta', L('Release + Beta', '正式版 + Beta')],
-          ['all', L('All channels', '全部类型')],
+          ['release', L('Releases', '正式版', '正式版')],
+          ['beta', L('Release + Beta', '正式版 + Beta', '正式版 + Beta')],
+          ['all', L('All channels', '全部类型', '全部類型')],
         ],
         (value) => {
           versionChannel = value;
@@ -1502,7 +1572,7 @@ async function loadVersions(append: boolean) {
     find('install-review').replaceChildren();
     find('versions-list').after(find('install-review'));
     find('versions-list').replaceChildren(
-      h('p', { class: 'loading' }, L('Loading versions…', '加载版本…')),
+      h('p', { class: 'loading' }, L('Loading versions…', '加载版本…', '載入版本…')),
     );
   }
   try {
@@ -1528,13 +1598,17 @@ async function loadVersions(append: boolean) {
     versions = append ? [...versions, ...result.versions] : result.versions;
     recommendedVersion = result.recommendedId;
     versionsTotal = result.total;
-    find('version-count').textContent = L(`${versionsTotal} versions`, `${versionsTotal} 个版本`);
+    find('version-count').textContent = L(
+      `${versionsTotal} versions`,
+      `${versionsTotal} 个版本`,
+      `${versionsTotal} 個版本`,
+    );
     renderVersions();
   } catch (error) {
     if (sequence === versionGeneration) {
       find('versions-list').replaceChildren(
         empty(
-          L('Could not load versions', '无法加载版本'),
+          L('Could not load versions', '无法加载版本', '無法載入版本'),
           error instanceof Error ? error.message : String(error),
           () => loadVersions(false),
         ),
@@ -1549,19 +1623,24 @@ function renderVersions() {
   if (!versions.length)
     list.append(
       empty(
-        L('No versions match these filters', '没有符合筛选条件的版本'),
+        L('No versions match these filters', '没有符合筛选条件的版本', '沒有符合篩選條件的版本'),
         L(
           'Use “Show all versions” to see every release.',
           '点击“查看全部版本”可显示所有发布记录。',
+          '點選“查看全部版本”可顯示所有發行記錄。',
         ),
       ),
     );
   let otherHeading = false;
   for (const v of versions) {
     if (recommendedVersion && v.id === recommendedVersion)
-      list.append(h('h3', { class: 'version-group-title' }, L('Recommended', '推荐版本')));
+      list.append(
+        h('h3', { class: 'version-group-title' }, L('Recommended', '推荐版本', '推薦版本')),
+      );
     else if (recommendedVersion && !otherHeading) {
-      list.append(h('h3', { class: 'version-group-title' }, L('Other versions', '其他版本')));
+      list.append(
+        h('h3', { class: 'version-group-title' }, L('Other versions', '其他版本', '其他版本')),
+      );
       otherHeading = true;
     }
     const row = button(
@@ -1581,7 +1660,7 @@ function renderVersions() {
             ? 'Alpha'
             : v.version_type === 'beta'
               ? 'Beta'
-              : L('Release', '正式版'),
+              : L('Release', '正式版', '正式版'),
           v.version_type || 'release',
         ),
       ),
@@ -1604,7 +1683,7 @@ function renderVersions() {
   if (versions.length < versionsTotal)
     list.append(
       button(
-        L('Load more versions', '加载更多版本'),
+        L('Load more versions', '加载更多版本', '載入更多版本'),
         () => loadVersions(true),
         'secondary load-more',
       ),
@@ -1619,7 +1698,7 @@ async function chooseVersion(id: string) {
       'div',
       { class: 'loading' },
       h('span', { class: 'spinner' }),
-      L('Resolving dependencies…', '查找前置依赖…'),
+      L('Resolving dependencies…', '查找前置依赖…', '尋找前置相依性…'),
     ),
   );
   try {
@@ -1642,17 +1721,17 @@ function renderPlan() {
   const files = selected.version.files;
   const primary = files.find((f) => f.primary) || files[0];
   const filePicker = dropdown(
-    L('Download file', '下载文件'),
+    L('Download file', '下载文件', '下載檔案'),
     primary?.filename || '',
     files.map((f) => [f.filename, f.filename]),
     () => {},
     'download-file',
   );
   const names: Record<string, string> = {
-    install: L('Install', '安装'),
-    update: L('Update', '更新'),
-    enable: L('Enable', '启用'),
-    installed: L('Installed', '已安装'),
+    install: L('Install', '安装', '安裝'),
+    update: L('Update', '更新', '更新'),
+    enable: L('Enable', '启用', '啟用'),
+    installed: L('Installed', '已安装', '已安裝'),
   };
   const dependencies = selected.plan.entries.filter((e) => e.required);
   const changes = dependencies.filter((e) => e.action !== 'installed').length;
@@ -1665,7 +1744,7 @@ function renderPlan() {
       h(
         'div',
         { class: 'dependency-heading' },
-        h('h3', {}, L('Dependencies', '前置依赖')),
+        h('h3', {}, L('Dependencies', '前置依赖', '前置相依性')),
         badge(String(dependencies.length)),
       ),
       ...dependencies.map((entry) =>
@@ -1677,15 +1756,23 @@ function renderPlan() {
         ),
       ),
       !dependencies.length &&
-        h('p', { class: 'muted' }, L('No required dependencies.', '没有必需前置。')),
+        h(
+          'p',
+          { class: 'muted' },
+          L('No required dependencies.', '没有必需前置。', '沒有必需前置。'),
+        ),
       !!selected.optionalNames.length &&
         h(
           'div',
           { class: 'optional-section' },
-          check(L('Include optional dependencies', '同时安装可选依赖'), optional, (value) => {
-            optional = value;
-            return chooseVersion(selected.version.id);
-          }),
+          check(
+            L('Include optional dependencies', '同时安装可选依赖', '同時安裝選用相依性'),
+            optional,
+            (value) => {
+              optional = value;
+              return chooseVersion(selected.version.id);
+            },
+          ),
           h('p', { class: 'muted' }, selected.optionalNames.map((p) => p.name).join(', ')),
         ),
       ...selected.plan.conflicts.map((message) =>
@@ -1693,10 +1780,14 @@ function renderPlan() {
       ),
       button(
         kind === 'modpack'
-          ? L('Create instance from pack', '从整合包创建实例')
+          ? L('Create instance from pack', '从整合包创建实例', '從整合包建立實例')
           : changes
-            ? L(`Install + ${changes} dependencies`, `安装及 ${changes} 个前置`)
-            : L('Install version', '安装此版本'),
+            ? L(
+                `Install + ${changes} dependencies`,
+                `安装及 ${changes} 个前置`,
+                `安裝及 ${changes} 個前置`,
+              )
+            : L('Install version', '安装此版本', '安裝此版本'),
         async () => {
           const button = document.querySelector<HTMLButtonElement>('#install-review .primary')!;
           button.disabled = true;
@@ -1706,7 +1797,7 @@ function renderPlan() {
               optional,
               filename: (find('download-file') as HTMLSelectElement).value,
             });
-            notice(L('Installation completed.', '安装完成。'));
+            notice(L('Installation completed.', '安装完成。', '安裝完成。'));
             boot = await call<Bootstrap>('ready');
           } finally {
             button.disabled = selected.plan.conflicts.length > 0;
@@ -1719,7 +1810,7 @@ function renderPlan() {
         h(
           'details',
           { class: 'changelog' },
-          h('summary', {}, L('Changelog', '更新日志')),
+          h('summary', {}, L('Changelog', '更新日志', '更新日誌')),
           h('div', { class: 'prose' }, ...markdown(selected.version.changelog)),
         ),
     ),
@@ -1791,13 +1882,14 @@ function renderInstance() {
   if (!instance) {
     main.append(
       empty(
-        L('No instance selected', '未选择实例'),
+        L('No instance selected', '未选择实例', '未選擇實例'),
         L(
           'Create or select an instance to configure its launch settings.',
           '创建或选择实例以配置启动设置。',
+          '建立或選擇實例以設定啟動設定。',
         ),
         () => action('createInstance'),
-        L('New instance', '新建实例'),
+        L('New instance', '新建实例', '新增實例'),
       ),
     );
     return;
@@ -1833,6 +1925,7 @@ function renderInstance() {
     memoryHint.textContent = L(
       `System memory: ${total} GiB. Automatic recommendation: ${memory.minMemory}–${memory.maxMemory} MB (${memory.percentage}% maximum, capped at 8 GiB).`,
       `系统内存：${total} GiB。自动推荐：${memory.minMemory}–${memory.maxMemory} MB（最大约 ${memory.percentage}%，上限 8 GiB）。`,
+      `系統記憶體：${total} GiB。自動推薦：${memory.minMemory}–${memory.maxMemory} MB（最大約 ${memory.percentage}%，上限 8 GiB）。`,
     );
   };
   globalMemory.onchange = syncMemoryControls;
@@ -1862,14 +1955,23 @@ function renderInstance() {
         'div',
         { class: 'inline-actions' },
         button(
-          running ? L('Stop', '停止') : L('Launch', '启动'),
+          running ? L('Stop', '停止', '停止') : L('Launch', '启动', '啟動'),
           () => action(running ? 'stop' : 'launch'),
           'primary',
         ),
-        button(L('Install / repair', '安装 / 修复'), () => action('install'), 'secondary', running),
-        button(L('Open directory', '打开实例目录'), () => action('directory'), 'secondary'),
         button(
-          L('Move instance…', '移动实例…'),
+          L('Install / repair', '安装 / 修复', '安裝 / 修復'),
+          () => action('install'),
+          'secondary',
+          running,
+        ),
+        button(
+          L('Open directory', '打开实例目录', '開啟實例目錄'),
+          () => action('directory'),
+          'secondary',
+        ),
+        button(
+          L('Move instance…', '移动实例…', '移動實例…'),
           () => action('move'),
           'secondary',
           running || !!instance.linked,
@@ -1879,11 +1981,11 @@ function renderInstance() {
     h(
       'div',
       { class: 'session-info' },
-      h('span', {}, `${L('Last played', '上次启动')}: ${date(instance.lastPlayed)}`),
+      h('span', {}, `${L('Last played', '上次启动', '上次啟動')}: ${date(instance.lastPlayed)}`),
       h(
         'span',
         {},
-        `${L('Playtime', '游戏时长')}: ${Math.floor((instance.playtimeSeconds || 0) / 3600)}h ${Math.floor(((instance.playtimeSeconds || 0) % 3600) / 60)}m`,
+        `${L('Playtime', '游戏时长', '遊戲時長')}: ${Math.floor((instance.playtimeSeconds || 0) / 3600)}h ${Math.floor(((instance.playtimeSeconds || 0) % 3600) / 60)}m`,
       ),
     ),
     form,
@@ -1892,18 +1994,18 @@ function renderInstance() {
     h(
       'fieldset',
       { disabled: running },
-      h('legend', {}, L('General', '基本设置')),
+      h('legend', {}, L('General', '基本设置', '基本設定')),
       h(
         'div',
         { class: 'form-grid' },
-        field(L('Instance name', '实例名称'), formInput('name', instance.name)),
-        field(L('Group', '分组'), formInput('group', instance.group || '')),
+        field(L('Instance name', '实例名称', '實例名稱'), formInput('name', instance.name)),
+        field(L('Group', '分组', '分組'), formInput('group', instance.group || '')),
         field(
-          L('Minecraft language', 'Minecraft 语言'),
+          L('Minecraft language', 'Minecraft 语言', 'Minecraft 語言'),
           formSelect('gameLanguage', instance.gameLanguage || '', [
-            ['', L('Use global setting', '使用全局设置')],
-            ['auto', L('Follow extension language', '跟随扩展语言')],
-            ['preserve', L('Keep game language', '保留游戏内语言')],
+            ['', L('Use global setting', '使用全局设置', '使用全域設定')],
+            ['auto', L('Follow extension language', '跟随扩展语言', '跟隨擴充套件語言')],
+            ['preserve', L('Keep game language', '保留游戏内语言', '保留遊戲內語言')],
             ['en_us', 'English (US)'],
             ['zh_cn', '简体中文'],
             ['zh_tw', '繁體中文'],
@@ -1914,15 +2016,19 @@ function renderInstance() {
           ]),
         ),
         field(
-          L('Account', '账户'),
+          L('Account', '账户', '帳戶'),
           formSelect('accountId', instance.accountId || '', [
-            ['', L('Use active account', '使用当前账户')],
+            ['', L('Use active account', '使用当前账户', '使用當前帳戶')],
             ...boot.accounts.map((a) => [a.id, a.name] as [string, string]),
           ]),
         ),
       ),
       button(
-        L('Change Minecraft / loader version…', '更改 Minecraft / 加载器版本…'),
+        L(
+          'Change Minecraft / loader version…',
+          '更改 Minecraft / 加载器版本…',
+          '更改 Minecraft / 載入器版本…',
+        ),
         () => action('configure'),
         'text-button',
       ),
@@ -1930,38 +2036,47 @@ function renderInstance() {
     h(
       'fieldset',
       { disabled: running },
-      h('legend', {}, L('Java & memory', 'Java 与内存')),
+      h('legend', {}, L('Java & memory', 'Java 与内存', 'Java 與記憶體')),
       field(
-        L('Java executable', 'Java 可执行文件'),
-        formInput('java', instance.java || '', 'text', L('Automatic', '自动选择')),
+        L('Java executable', 'Java 可执行文件', 'Java 執行檔'),
+        formInput('java', instance.java || '', 'text', L('Automatic', '自动选择', '自動選擇')),
         L(
           'Instance Java takes priority. Leave empty for the global default or automatic selection.',
           '实例 Java 优先；留空使用全局默认或自动选择。',
+          '實例 Java 優先；留空使用全域預設或自動選擇。',
         ),
       ),
       h(
         'div',
         { class: 'inline-actions' },
-        button(L('Detect Java', '检测 Java'), () => action('detectJava'), 'text-button'),
-        button(L('Download JDK', '下载 JDK'), () => action('downloadJava'), 'text-button'),
+        button(
+          L('Detect Java', '检测 Java', '偵測 Java'),
+          () => action('detectJava'),
+          'text-button',
+        ),
+        button(
+          L('Download JDK', '下载 JDK', '下載 JDK'),
+          () => action('downloadJava'),
+          'text-button',
+        ),
       ),
       h(
         'label',
         { class: 'check' },
         globalMemory,
-        L('Use global memory settings', '使用全局内存设置'),
+        L('Use global memory settings', '使用全局内存设置', '使用全域記憶體設定'),
       ),
       memoryHint,
       h(
         'div',
         { class: 'form-grid' },
-        field(L('Minimum memory (MB)', '最小内存（MB）'), minimum),
-        field(L('Maximum memory (MB)', '最大内存（MB）'), maximum),
+        field(L('Minimum memory (MB)', '最小内存（MB）', '最小記憶體（MB）'), minimum),
+        field(L('Maximum memory (MB)', '最大内存（MB）', '最大記憶體（MB）'), maximum),
         field(
-          L('Garbage collector', '垃圾回收器'),
+          L('Garbage collector', '垃圾回收器', '記憶體回收器'),
           formSelect('gc', instance.gc || '', [
-            ['', L('Use global setting', '使用全局设置')],
-            ['default', L('JVM default', 'JVM 默认')],
+            ['', L('Use global setting', '使用全局设置', '使用全域設定')],
+            ['default', L('JVM default', 'JVM 默认', 'JVM 預設')],
             ['g1', 'G1'],
             ['zgc', 'ZGC'],
           ]),
@@ -1971,22 +2086,22 @@ function renderInstance() {
     h(
       'fieldset',
       { disabled: running },
-      h('legend', {}, L('Game window & server', '游戏窗口与服务器')),
+      h('legend', {}, L('Game window & server', '游戏窗口与服务器', '遊戲視窗與伺服器')),
       h(
         'label',
         { class: 'check' },
         h('input', { type: 'checkbox', name: 'customResolution', checked: !!instance.resolution }),
-        L('Use custom window settings', '使用独立窗口设置'),
+        L('Use custom window settings', '使用独立窗口设置', '使用獨立視窗設定'),
       ),
       h(
         'div',
         { class: 'form-grid' },
         field(
-          L('Width', '宽度'),
+          L('Width', '宽度', '寬度'),
           formInput('width', instance.resolution?.width || boot.defaults.width, 'number'),
         ),
         field(
-          L('Height', '高度'),
+          L('Height', '高度', '高度'),
           formInput('height', instance.resolution?.height || boot.defaults.height, 'number'),
         ),
       ),
@@ -1998,36 +2113,36 @@ function renderInstance() {
           name: 'fullscreen',
           checked: instance.resolution?.fullscreen ?? boot.defaults.fullscreen,
         }),
-        L('Fullscreen', '全屏'),
+        L('Fullscreen', '全屏', '全螢幕'),
       ),
       field(
-        L('Join server on launch', '启动后加入服务器'),
+        L('Join server on launch', '启动后加入服务器', '啟動後加入伺服器'),
         formInput('server', instance.server || '', 'text', 'server.example:25565'),
-        L('Leave empty to open the main menu.', '留空进入主菜单。'),
+        L('Leave empty to open the main menu.', '留空进入主菜单。', '留空進入主菜單。'),
       ),
     ),
     h(
       'fieldset',
       { disabled: running },
-      h('legend', {}, L('Arguments & backups', '参数与备份')),
+      h('legend', {}, L('Arguments & backups', '参数与备份', '引數與備份')),
       field(
-        L('JVM arguments', 'JVM 参数'),
+        L('JVM arguments', 'JVM 参数', 'JVM 引數'),
         h('textarea', { name: 'jvmArgs', rows: 3 }, (instance.jvmArgs || []).join('\n')),
-        L('One argument per line.', '每行一个参数。'),
+        L('One argument per line.', '每行一个参数。', '每行一個引數。'),
       ),
       field(
-        L('Game arguments', '游戏参数'),
+        L('Game arguments', '游戏参数', '遊戲引數'),
         h('textarea', { name: 'gameArgs', rows: 3 }, (instance.gameArgs || []).join('\n')),
       ),
       field(
-        L('Back up worlds before launch', '启动前备份存档'),
+        L('Back up worlds before launch', '启动前备份存档', '啟動前備份存檔'),
         formSelect(
           'backupBeforeLaunch',
           instance.backupBeforeLaunch === undefined ? '' : String(instance.backupBeforeLaunch),
           [
-            ['', L('Use global setting', '使用全局设置')],
-            ['true', L('Enabled', '启用')],
-            ['false', L('Disabled', '禁用')],
+            ['', L('Use global setting', '使用全局设置', '使用全域設定')],
+            ['true', L('Enabled', '启用', '啟用')],
+            ['false', L('Disabled', '禁用', '停用')],
           ],
         ),
       ),
@@ -2038,29 +2153,31 @@ function renderInstance() {
       h(
         'button',
         { class: 'primary', type: 'submit', disabled: running },
-        L('Save instance settings', '保存实例设置'),
+        L('Save instance settings', '保存实例设置', '儲存實例設定'),
       ),
       h(
         'span',
         { class: 'muted' },
-        running ? L('Stop the game to edit settings.', '停止游戏后可修改设置。') : '',
+        running
+          ? L('Stop the game to edit settings.', '停止游戏后可修改设置。', '停止遊戲後可修改設定。')
+          : '',
       ),
     ),
     h(
       'section',
       { class: 'maintenance' },
-      h('h2', {}, L('Manage instance', '管理实例')),
+      h('h2', {}, L('Manage instance', '管理实例', '管理實例')),
       h(
         'div',
         { class: 'maintenance-grid' },
         ...(
           [
-            ['backups', L('World backups', '存档备份')],
-            ['log', L('Latest log', '最新日志')],
-            ['clone', L('Duplicate instance', '复制实例')],
-            ['exportPack', L('Export .mrpack', '导出整合包')],
-            ['exportNative', L('Export instance ZIP', '导出实例 ZIP')],
-            ['conflicts', L('Check mod conflicts', '检查模组冲突')],
+            ['backups', L('World backups', '存档备份', '存檔備份')],
+            ['log', L('Latest log', '最新日志', '最新日誌')],
+            ['clone', L('Duplicate instance', '复制实例', '複製實例')],
+            ['exportPack', L('Export .mrpack', '导出整合包', '匯出整合包')],
+            ['exportNative', L('Export instance ZIP', '导出实例 ZIP', '匯出實例 ZIP')],
+            ['conflicts', L('Check mod conflicts', '检查模组冲突', '檢查模組衝突')],
           ] as [string, string][]
         ).map(([key, label]) =>
           button(
@@ -2078,7 +2195,9 @@ function renderInstance() {
       h(
         'h2',
         {},
-        instance.linked ? L('Remove instance', '移除实例') : L('Delete instance', '删除实例'),
+        instance.linked
+          ? L('Remove instance', '移除实例', '移除實例')
+          : L('Delete instance', '删除实例', '刪除實例'),
       ),
       h(
         'p',
@@ -2087,16 +2206,18 @@ function renderInstance() {
           ? L(
               'Removes this registration and keeps the original game files.',
               '只移除此登记，保留原有游戏文件。',
+              '只移除此登記，保留原有遊戲檔案。',
             )
           : L(
               'Moves the instance folder to Trash when supported.',
               '系统支持时，将实例目录移到废纸篓。',
+              '系統支援時，將實例目錄移到廢紙簍。',
             ),
       ),
       button(
         instance.linked
-          ? L('Remove from Workbench…', '从工作台移除…')
-          : L('Delete instance…', '删除实例…'),
+          ? L('Remove from Workbench…', '从工作台移除…', '從工作台移除…')
+          : L('Delete instance…', '删除实例…', '刪除實例…'),
         () => action('delete'),
         'secondary danger',
         running,
@@ -2141,7 +2262,7 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
   });
   boot = await call<Bootstrap>('ready');
   syncMemoryControls?.();
-  notice(L('Instance settings saved.', '实例设置已保存。'));
+  notice(L('Instance settings saved.', '实例设置已保存。', '實例設定已儲存。'));
 }
 window.addEventListener('message', (event: MessageEvent) => {
   const message = event.data;
@@ -2237,11 +2358,11 @@ void call<Bootstrap>('ready')
           query?: string;
           order?: string;
           onlyCompatible?: boolean;
-          agreementLanguage?: 'auto' | 'en' | 'zh-cn';
+          agreementLanguage?: LanguagePreference;
         }
       | undefined;
     if (saved) {
-      if (['auto', 'en', 'zh-cn'].includes(String(saved.agreementLanguage)))
+      if (['auto', 'en', 'zh-cn', 'zh-tw'].includes(String(saved.agreementLanguage)))
         agreementLanguage = saved.agreementLanguage!;
       query = saved.query || '';
       order = saved.order || boot.preferences.order;

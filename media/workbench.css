@@ -1330,3 +1330,29 @@ body[data-density='compact'] .project-icon {
     flex-basis: 100%;
   }
 }
+.sign-in-steps {
+  margin: 4px 0 16px;
+  padding-left: 20px;
+}
+.sign-in-steps li + li {
+  margin-top: 6px;
+}
+.sign-in-status:empty {
+  display: none;
+}
+.sign-in-status {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+}
+.sign-in-status p {
+  margin: 0;
+}
+.sign-in-status > button {
+  justify-self: start;
+}
+.sign-in-code {
+  max-width: 240px;
+  font-family: var(--vscode-editor-font-family);
+  letter-spacing: 2px;
+}

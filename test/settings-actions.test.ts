@@ -93,7 +93,12 @@ test('settings expose localized names, groups and enum choices in the extension 
     >;
     assert.equal(result.javaPath.label, '默认 Java 路径');
     assert.match(result.javaPath.group, /Java/);
-    assert.deepEqual(result.language.enumItemLabels, ['English', '简体中文', '跟随 VS Code']);
+    assert.deepEqual(result.language.enumItemLabels, [
+      'English',
+      '简体中文',
+      '繁体中文',
+      '跟随 VS Code',
+    ]);
     assert.equal(result.contentReleaseChannel.enumItemLabels?.[0], '正式版');
     for (const entry of Object.values(result)) {
       assert.ok(entry.label && !entry.label.startsWith('label.'));

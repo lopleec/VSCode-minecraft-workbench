@@ -13,21 +13,21 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
     groupsKey = '';
   const search = input('instanceSearch');
   search.type = 'search';
-  search.placeholder = L('Filter instances…', '筛选实例…');
-  search.setAttribute('aria-label', L('Filter instances', '筛选实例'));
+  search.placeholder = L('Filter instances…', '筛选实例…', '篩選實例…');
+  search.setAttribute('aria-label', L('Filter instances', '筛选实例', '篩選實例'));
   const group = select('instanceGroup', '@all', []);
-  group.setAttribute('aria-label', L('Instance group', '实例分组'));
+  group.setAttribute('aria-label', L('Instance group', '实例分组', '實例分組'));
   const sort = select('instanceSort', 'name', [
-    ['name', L('Name', '名称')],
-    ['played', L('Last played', '上次启动')],
-    ['version', L('Minecraft version', '游戏版本')],
+    ['name', L('Name', '名称', '名稱')],
+    ['played', L('Last played', '上次启动', '上次啟動')],
+    ['version', L('Minecraft version', '游戏版本', '遊戲版本')],
   ]);
-  sort.setAttribute('aria-label', L('Sort instances', '实例排序'));
+  sort.setAttribute('aria-label', L('Sort instances', '实例排序', '實例排序'));
   const actions = h('div', { class: 'inline-actions instance-selection' });
   const groupActions = h('div', { class: 'inline-actions' });
   const count = h('span', { class: 'muted', role: 'status' });
   const toggle = ctx.button(
-    L('Select multiple', '批量管理'),
+    L('Select multiple', '批量管理', '批量管理'),
     () => {
       selecting = !selecting;
       selected.clear();
@@ -36,14 +36,22 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
     'secondary',
   );
   main.append(
-    heading(L('Instances', '实例')),
+    heading(L('Instances', '实例', '實例')),
     h(
       'div',
       { class: 'inline-actions page-actions' },
-      ctx.button(L('New instance', '新建实例'), () => ctx.navigate('create'), 'primary'),
-      ctx.button(L('Import instance', '导入实例'), () => ctx.navigate('import'), 'secondary'),
       ctx.button(
-        L('Import modpack', '导入整合包'),
+        L('New instance', '新建实例', '新增實例'),
+        () => ctx.navigate('create'),
+        'primary',
+      ),
+      ctx.button(
+        L('Import instance', '导入实例', '匯入實例'),
+        () => ctx.navigate('import'),
+        'secondary',
+      ),
+      ctx.button(
+        L('Import modpack', '导入整合包', '匯入整合包'),
         () => ctx.request('action', { action: 'importPack' }),
         'secondary',
       ),
@@ -93,7 +101,11 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         selected.clear();
         result.failed.forEach((error) => selected.add(error.id));
         ctx.notify(
-          L(`${result.changed} instance(s) processed.`, `已处理 ${result.changed} 个实例。`),
+          L(
+            `${result.changed} instance(s) processed.`,
+            `已处理 ${result.changed} 个实例。`,
+            `已處理 ${result.changed} 個實例。`,
+          ),
         );
         if (result.failed.length)
           ctx.error(
@@ -109,14 +121,20 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
     const visible = filtered();
     for (const node of rows.querySelectorAll<HTMLInputElement>('input[data-instance]'))
       node.checked = selected.has(node.dataset.instance!);
-    toggle.textContent = selecting ? L('Done', '完成多选') : L('Select multiple', '批量管理');
+    toggle.textContent = selecting
+      ? L('Done', '完成多选', '完成多選')
+      : L('Select multiple', '批量管理', '批量管理');
     toggle.disabled = working;
     search.disabled = group.disabled = sort.disabled = working;
-    count.textContent = L(`${visible.length} instances`, `${visible.length} 个实例`);
+    count.textContent = L(
+      `${visible.length} instances`,
+      `${visible.length} 个实例`,
+      `${visible.length} 個實例`,
+    );
     actions.hidden = !selecting;
     actions.replaceChildren(
       ctx.button(
-        L('Select filtered', '选择筛选结果'),
+        L('Select filtered', '选择筛选结果', '選擇篩選結果'),
         () => {
           visible.forEach((instance) => selected.add(instance.id));
           updateSelection();
@@ -125,7 +143,7 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         working || !visible.length,
       ),
       ctx.button(
-        L('Clear selection', '取消选择'),
+        L('Clear selection', '取消选择', '取消選擇'),
         () => {
           selected.clear();
           updateSelection();
@@ -133,22 +151,31 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         'secondary',
         working || !selected.size,
       ),
-      h('span', { class: 'muted' }, L(`${selected.size} selected`, `已选择 ${selected.size} 个`)),
+      h(
+        'span',
+        { class: 'muted' },
+        L(`${selected.size} selected`, `已选择 ${selected.size} 个`, `已選擇 ${selected.size} 個`),
+      ),
       ctx.button(
-        L('Move to group…', '移至分组…'),
+        L('Move to group…', '移至分组…', '移至分組…'),
         () => operate('group'),
         'secondary',
         working || !selected.size,
       ),
-      ctx.button(L('Stop', '停止'), () => operate('stop'), 'secondary', working || !selected.size),
       ctx.button(
-        L('Repair', '修复'),
+        L('Stop', '停止', '停止'),
+        () => operate('stop'),
+        'secondary',
+        working || !selected.size,
+      ),
+      ctx.button(
+        L('Repair', '修复', '修復'),
         () => operate('repair'),
         'secondary',
         working || !selected.size,
       ),
       ctx.button(
-        L('Remove…', '删除…'),
+        L('Remove…', '删除…', '刪除…'),
         () => operate('remove'),
         'text-button danger',
         working || !selected.size,
@@ -163,7 +190,7 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         .map((instance) => instance.id);
       groupActions.append(
         ctx.button(
-          L('Rename group…', '重命名分组…'),
+          L('Rename group…', '重命名分组…', '重命名分組…'),
           async () => {
             await ctx.request('launcher.renameGroup', { group: name });
             await ctx.refresh();
@@ -173,7 +200,7 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
           working,
         ),
         ctx.button(
-          L('Ungroup all', '取消此分组'),
+          L('Ungroup all', '取消此分组', '取消此分組'),
           () => operate('group', ids, { group: '' }),
           'text-button',
           working,
@@ -193,7 +220,11 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         checked: selected.has(instance.id),
         disabled: working,
         'data-instance': instance.id,
-        'aria-label': L(`Select ${instance.name}`, `选择 ${instance.name}`),
+        'aria-label': L(
+          `Select ${instance.name}`,
+          `选择 ${instance.name}`,
+          `選擇 ${instance.name}`,
+        ),
         onchange: (event: Event) => {
           if ((event.target as HTMLInputElement).checked) selected.add(instance.id);
           else selected.delete(instance.id);
@@ -218,23 +249,23 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
           'span',
           { class: 'muted' },
           status === 'installing'
-            ? L('Installing', '安装中')
+            ? L('Installing', '安装中', '安裝中')
             : status === 'starting'
-              ? L('Starting', '启动中')
+              ? L('Starting', '启动中', '啟動中')
               : status === 'running'
-                ? L('Running', '运行中')
+                ? L('Running', '运行中', '執行中')
                 : instance.installed
-                  ? L('Ready', '已安装')
-                  : L('Not installed', '未安装'),
+                  ? L('Ready', '已安装', '已安裝')
+                  : L('Not installed', '未安装', '未安裝'),
         ),
         ctx.button(
-          L('Open', '打开目录'),
+          L('Open', '打开目录', '開啟目錄'),
           () => ctx.request('action', { action: 'directory', instanceId: instance.id }),
           'secondary',
           working,
         ),
         ctx.button(
-          L('Configure', '配置'),
+          L('Configure', '配置', '設定'),
           async () => {
             await ctx.request('selectInstance', { instanceId: instance.id });
             await ctx.navigate('instance');
@@ -244,10 +275,10 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         ),
         ctx.button(
           status !== 'stopped'
-            ? L('Stop', '停止')
+            ? L('Stop', '停止', '停止')
             : instance.installed
-              ? L('Launch', '启动')
-              : L('Install', '安装'),
+              ? L('Launch', '启动', '啟動')
+              : L('Install', '安装', '安裝'),
           async () => {
             await ctx.request('selectInstance', { instanceId: instance.id });
             if (status !== 'stopped')
@@ -272,8 +303,8 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
       groupsKey = key;
       const previous = group.value || '@all';
       group.replaceChildren(
-        h('option', { value: '@all' }, L('All groups', '所有分组')),
-        h('option', { value: '@none' }, L('Ungrouped', '未分组')),
+        h('option', { value: '@all' }, L('All groups', '所有分组', '所有分組')),
+        h('option', { value: '@none' }, L('Ungrouped', '未分组', '未分組')),
         ...names.map((name) => h('option', { value: `group:${name}` }, name)),
       );
       group.value = [...group.options].some((option) => option.value === previous)
@@ -289,7 +320,7 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
         const section = h(
           'details',
           { class: 'instance-group', open: !collapsed.has(name) },
-          h('summary', {}, `${name || L('Ungrouped', '未分组')} (${values.length})`),
+          h('summary', {}, `${name || L('Ungrouped', '未分组', '未分組')} (${values.length})`),
           ...values.map(row),
         );
         section.ontoggle = () => {
@@ -303,8 +334,8 @@ export function renderInstances(main: HTMLElement, ctx: PageContext) {
       rows.append(
         blank(
           state.instances.length
-            ? L('No matching instances', '没有匹配的实例')
-            : L('No instances', '暂无实例'),
+            ? L('No matching instances', '没有匹配的实例', '沒有匹配的實例')
+            : L('No instances', '暂无实例', '暫無實例'),
         ),
       );
     updateSelection();

@@ -9,6 +9,7 @@ import { Network } from '../src/network';
 import { MockAgent } from 'undici';
 import { writeJson } from '../src/files';
 import { resourceOf, sourceUrl } from '../src/sources';
+import { Downloads } from '../src/downloads';
 
 test('origin-scoped credentials cover metadata and parallel downloads without leaking through redirects', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-origin-headers-'));
@@ -198,6 +199,63 @@ test('download resumes, handles ignored ranges, follows redirects and validates 
   } finally {
     await net.close();
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('BMCLAPI Maven routes cover NeoForge, Forge, Fabric and shared libraries', () => {
+  for (const [original, expected] of [
+    [
+      'https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.250/neoforge-21.1.250-installer.jar',
+      '/maven/net/neoforged/neoforge/21.1.250/neoforge-21.1.250-installer.jar',
+    ],
+    [
+      'https://maven.neoforged.net/releases/net/neoforged/forge/maven-metadata.xml',
+      '/maven/net/neoforged/forge/maven-metadata.xml',
+    ],
+    [
+      'https://maven.minecraftforge.net/net/minecraftforge/forge/maven-metadata.xml',
+      '/maven/net/minecraftforge/forge/maven-metadata.xml',
+    ],
+    [
+      'https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.16.10/fabric-loader-0.16.10.jar',
+      '/maven/net/fabricmc/fabric-loader/0.16.10/fabric-loader-0.16.10.jar',
+    ],
+    ['https://libraries.minecraft.net/org/lwjgl/lwjgl.jar', '/maven/org/lwjgl/lwjgl.jar'],
+  ]) {
+    assert.equal(
+      sourceUrl(original, { [resourceOf(original)]: 'bmclapi' }),
+      'https://bmclapi2.bangbang93.com' + expected,
+    );
+  }
+});
+
+test('failed mirrors fall back to the verified origin even when retries are disabled', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'mc-mirror-fallback-'));
+  const agent = new MockAgent();
+  agent.disableNetConnect();
+  const bytes = Buffer.from('verified loader');
+  const hash = createHash('sha1').update(bytes).digest('hex');
+  const origin = 'https://maven.neoforged.net';
+  const artifact = '/releases/net/neoforged/neoforge/21.1.250/neoforge-21.1.250-installer.jar';
+  agent
+    .get('https://bmclapi2.bangbang93.com')
+    .intercept({ path: artifact.replace('/releases/', '/maven/') })
+    .replyWithError(Object.assign(new Error('Timed out'), { code: 'ETIMEDOUT' }));
+  agent.get(origin).intercept({ path: artifact }).reply(200, bytes);
+  const downloads = new Downloads(agent, {
+    proxy: '',
+    concurrency: 2,
+    sources: { loader: 'bmclapi' },
+    retries: 0,
+  });
+  try {
+    const target = path.join(root, 'installer.jar');
+    await downloads.download(origin + artifact, target, { hash, size: bytes.length });
+    assert.deepEqual(await fs.readFile(target), bytes);
+    agent.assertNoPendingInterceptors();
+  } finally {
+    await agent.close();
     await fs.rm(root, { recursive: true, force: true });
   }
 });

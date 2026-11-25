@@ -49,6 +49,7 @@ export class Network {
         if (!['socks:', 'socks5:', 'socks5h:'].includes(proxy.protocol))
           throw new Error('Use SOCKS5 or SOCKS5h');
         this.dispatcher = new Agent({
+          connections: options.concurrency,
           connect: (opts, callback) => {
             void (async () => {
               let host = opts.hostname;
@@ -85,7 +86,11 @@ export class Network {
         });
       } else
         this.dispatcher = options.proxy
-          ? new ProxyAgent(options.proxy)
+          ? new ProxyAgent({
+              uri: options.proxy,
+              connections: options.concurrency,
+              connect: { timeout: options.timeout || 30000 },
+            })
           : new Agent({
               connections: options.concurrency,
               connect: { timeout: options.timeout || 30000 },

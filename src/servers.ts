@@ -18,6 +18,7 @@ import { ServerBackups } from './server-backups';
 import { manualServer } from './server-types';
 import { reserveNamedDirectory } from './game-paths';
 import { config, t, trusted } from './config';
+import { forgeMaven } from './versions';
 import {
   exists,
   filename,
@@ -95,7 +96,11 @@ export class Servers implements vscode.Disposable {
   assertIdle(server: ServerProfile) {
     if (this.busy.has(server.id) || this.running.has(server.id))
       throw new Error(
-        t('Stop the server before changing its files.', '请先停止服务端，再修改文件。'),
+        t(
+          'Stop the server before changing its files.',
+          '请先停止服务端，再修改文件。',
+          '請先停止伺服器，再修改檔案。',
+        ),
       );
   }
   private async lock(server: ServerProfile) {
@@ -129,6 +134,7 @@ export class Servers implements vscode.Disposable {
           t(
             'This server is in use in another VS Code window.',
             '另一个 VS Code 窗口正在使用此服务端。',
+            '另一個 VS Code 視窗正在使用此伺服器。',
           ),
         );
       }
@@ -167,7 +173,9 @@ export class Servers implements vscode.Disposable {
       ? builds.find((b) => b.id === value.build)
       : builds.find((b) => b.stable);
     if (builds.length && !build)
-      throw new Error(t('Select a server build.', '请选择服务端构建版本。'));
+      throw new Error(
+        t('Select a server build.', '请选择服务端构建版本。', '請選擇伺服器建置版本。'),
+      );
     if (engine !== 'vanilla' && !manualServer(engine) && !build)
       throw new Error('No compatible server builds');
     const parent = String(
@@ -262,7 +270,9 @@ export class Servers implements vscode.Disposable {
           : 'server.jar';
       await rejectSymlinkParents(server.directory, path.join(server.directory, jar));
       if (!(await exists(path.join(server.directory, jar))))
-        throw new Error(t('Import a server JAR first.', '请先导入服务端 JAR。'));
+        throw new Error(
+          t('Import a server JAR first.', '请先导入服务端 JAR。', '請先匯入伺服器 JAR。'),
+        );
       server.launchArgs = ['-jar', jar, 'nogui'];
     } else {
       if (server.imported && server.engine !== 'vanilla' && !server.build)
@@ -270,6 +280,7 @@ export class Servers implements vscode.Disposable {
           t(
             'Choose a server version and build before reinstalling. Existing files can be started directly.',
             '重新安装前请选择服务端版本和构建。已有文件可直接启动。',
+            '重新安裝前請選擇伺服器版本和建置。已有檔案可直接啟動。',
           ),
         );
       const artifact = await this.catalog.artifact(server, signal);
@@ -301,7 +312,7 @@ export class Servers implements vscode.Disposable {
             `--install-dir="${server.directory}"`,
           ];
         report(
-          t('Installing server dependencies…', '安装服务端依赖…'),
+          t('Installing server dependencies…', '安装服务端依赖…', '安裝伺服器相依性…'),
           'Installing server dependencies…',
         );
         const installing = exec(java.path, args, {
@@ -322,9 +333,12 @@ export class Servers implements vscode.Disposable {
         if (artifact.installer === 'quilt')
           server.launchArgs = ['-jar', 'quilt-server-launch.jar', 'nogui'];
         else {
-          const artifactName = server.engine === 'forge' ? 'forge' : 'neoforge';
+          const artifactName = forgeMaven(
+            server.engine === 'forge' ? 'forge' : 'neoforge',
+            server.minecraft,
+          ).name;
           const full =
-            server.engine === 'forge' ? `${server.minecraft}-${server.build}` : server.build!;
+            artifactName === 'forge' ? `${server.minecraft}-${server.build}` : server.build!;
           const arg = path.posix.join(
             'libraries',
             server.engine === 'forge' ? 'net/minecraftforge' : 'net/neoforged',
@@ -363,7 +377,7 @@ export class Servers implements vscode.Disposable {
   async install(server: ServerProfile): Promise<JavaRuntime> {
     return this.exclusive(server, () =>
       this.jobs.run(
-        [`Install ${server.name}`, `安装 ${server.name}`],
+        [`Install ${server.name}`, `安装 ${server.name}`, `安裝 ${server.name}`],
         (signal, report) => this.installCore(server, signal, report),
         () => this.install(server),
       ),
@@ -402,10 +416,11 @@ export class Servers implements vscode.Disposable {
           t(
             'Accept the Minecraft EULA for this server before starting it.',
             '请先为此服务端确认 Minecraft EULA。',
+            '請先為此伺服器確認 Minecraft EULA。',
           ),
         );
       const java = await this.jobs.run(
-        [`Prepare ${server.name}`, `准备 ${server.name}`],
+        [`Prepare ${server.name}`, `准备 ${server.name}`, `準備 ${server.name}`],
         async (signal, report) =>
           server.installed
             ? this.prepareJava(server, signal, report)
@@ -471,7 +486,11 @@ export class Servers implements vscode.Disposable {
         this.jobs.output.info(`[${server.name}] Server exited (${code ?? 'signal'}).`);
         this.append(
           server,
-          t(`Server exited (${code ?? 'signal'}).`, `服务端已退出（${code ?? '信号'}）。`),
+          t(
+            `Server exited (${code ?? 'signal'}).`,
+            `服务端已退出（${code ?? '信号'}）。`,
+            `伺服器已退出（${code ?? '信號'}）。`,
+          ),
         );
         void finish();
       });
@@ -519,7 +538,13 @@ export class Servers implements vscode.Disposable {
       throw new Error('Enter a single server command');
     const session = this.running.get(server.id);
     if (!session || session.phase === 'stopping' || !session.process.stdin?.writable)
-      throw new Error(t('The server is not accepting commands.', '服务端当前无法接收命令。'));
+      throw new Error(
+        t(
+          'The server is not accepting commands.',
+          '服务端当前无法接收命令。',
+          '伺服器當前無法接收命令。',
+        ),
+      );
     await new Promise<void>((resolve, reject) =>
       session.process.stdin!.write(command.replace(/^\//, '') + '\n', (error) =>
         error ? reject(error) : resolve(),
@@ -547,6 +572,7 @@ export class Servers implements vscode.Disposable {
         t(
           'Server is still saving or stopping. Check the console; force stop is available separately.',
           '服务端仍在保存或停止，请查看控制台；可另行强制停止。',
+          '伺服器仍在儲存或停止，請查看控制臺；可另行強制停止。',
         ),
       );
   }
@@ -577,6 +603,7 @@ export async function checkPort(port: number, host: string) {
           t(
             `Cannot bind ${host}:${port}: ${error.message}`,
             `无法绑定 ${host}:${port}：${error.message}`,
+            `無法繫結 ${host}:${port}：${error.message}`,
           ),
         ),
       ),

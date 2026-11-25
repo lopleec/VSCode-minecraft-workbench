@@ -21,11 +21,12 @@ export interface ImportCandidate {
   directory: string;
   runtimeDirectory?: string;
   versionId?: string;
-  format: 'standard' | 'multimc' | 'modrinth' | 'workbench';
+  format: 'standard' | 'multimc' | 'modrinth' | 'workbench' | 'sjmcl';
   resourceDirectories?: string[];
   minMemory?: number;
   maxMemory?: number;
   java?: string;
+  resolution?: Instance['resolution'];
   warnings: string[];
 }
 export interface ImportScan {
@@ -36,7 +37,7 @@ export interface ImportScan {
 export function parseIni(text: string): Record<string, string> {
   const values: Record<string, string> = Object.create(null);
   for (const line of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
-    const match = /^\s*([^#;=\[\]][^=]*?)\s*=\s*(.*?)\s*$/.exec(line);
+    const match = /^\s*([^#;:=\[\]]+?)\s*[=:]\s*(.*?)\s*$/.exec(line);
     if (match) {
       let value = match[2];
       if (value.startsWith('"') && value.endsWith('"')) {
@@ -61,15 +62,26 @@ async function json(file: string): Promise<Json | undefined> {
     throw new Error('Invalid instance metadata.');
   return value;
 }
+function forgeLoaderVersion(version: string, minecraft: string): string {
+  return version.startsWith(minecraft + '-') ? version.slice(minecraft.length + 1) : version;
+}
 export function loaderInfo(
   libraries: Json[],
   minecraft: string,
+  profiles: Json[] = [],
 ): { loader: Loader; loaderVersion?: string } {
+  const patched = patchLoaderInfo(profiles, minecraft);
+  const argument = argumentLoaderInfo(profiles);
+  if (patched?.loaderVersion) return patched;
+  if (argument?.loader === 'neoforge') return argument;
   for (const [group, loader] of [
     ['org.quiltmc:quilt-loader:', 'quilt'],
     ['net.fabricmc:fabric-loader:', 'fabric'],
     ['net.neoforged:neoforge:', 'neoforge'],
+    ['net.neoforged:forge:', 'neoforge'],
     ['net.minecraftforge:forge:', 'forge'],
+    ['net.minecraftforge:fmlloader:', 'forge'],
+    ['net.minecraftforge:fmlearlydisplay:', 'forge'],
   ] as const) {
     const found = [...libraries]
       .reverse()
@@ -78,14 +90,70 @@ export function loaderInfo(
       const version = found.name.slice(group.length).split(':')[0];
       return {
         loader,
-        loaderVersion:
-          loader === 'forge'
-            ? version.replace(new RegExp(`^${minecraft.replaceAll('.', '\\.')}[-]`), '')
-            : version,
+        loaderVersion: forgeLoaderVersion(version, minecraft),
       };
     }
   }
-  return { loader: 'vanilla' };
+  return patched || argument || { loader: 'vanilla' };
+}
+const patchLoaders: Record<string, Loader> = {
+  fabric: 'fabric',
+  quilt: 'quilt',
+  forge: 'forge',
+  neoforge: 'neoforge',
+};
+function patchLoaderInfo(
+  chain: Json[],
+  minecraft: string,
+): { loader: Loader; loaderVersion?: string } | undefined {
+  for (const profile of chain) {
+    if (!Array.isArray(profile.patches)) continue;
+    for (const patch of [...profile.patches].sort(
+      (a, b) => (b?.priority || 0) - (a?.priority || 0),
+    )) {
+      const loader = typeof patch?.id === 'string' ? patchLoaders[patch.id] : undefined;
+      if (!loader) continue;
+      return {
+        loader,
+        loaderVersion:
+          typeof patch.version === 'string'
+            ? loader === 'forge'
+              ? forgeLoaderVersion(patch.version, minecraft)
+              : patch.version
+            : undefined,
+      };
+    }
+  }
+}
+function pclLoaderInfo(
+  pcl: Record<string, string>,
+): { loader: Loader; loaderVersion?: string } | undefined {
+  for (const [key, loader] of [
+    ['VersionNeoForge', 'neoforge'],
+    ['VersionForge', 'forge'],
+    ['VersionFabric', 'fabric'],
+    ['VersionQuilt', 'quilt'],
+  ] as const) {
+    if (pcl[key] && !/^(false|0)$/i.test(pcl[key])) return { loader, loaderVersion: pcl[key] };
+  }
+}
+function fmlVersion(profiles: Json[], argument: string): string | undefined {
+  for (const profile of profiles) {
+    const args = profile.arguments?.game;
+    if (!Array.isArray(args)) continue;
+    const index = args.indexOf(argument);
+    if (index >= 0 && typeof args[index + 1] === 'string') return args[index + 1];
+  }
+}
+function argumentLoaderInfo(chain: Json[]): { loader: Loader; loaderVersion?: string } | undefined {
+  const profiles = [
+    ...chain,
+    ...chain.flatMap((profile) => (Array.isArray(profile.patches) ? profile.patches : [])),
+  ];
+  const neoforge = fmlVersion(profiles, '--fml.neoForgeVersion');
+  if (neoforge) return { loader: 'neoforge', loaderVersion: neoforge };
+  const forge = fmlVersion(profiles, '--fml.forgeVersion');
+  if (forge) return { loader: 'forge', loaderVersion: forge };
 }
 function gameVersion(chain: Json[]): string {
   for (const profile of chain) {
@@ -131,14 +199,44 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
     }
   }
   const folder = path.join(root, 'versions', filename(id));
-  const libraries = [...chain].reverse().flatMap((p) => normalizeProfile(p).libraries || []);
-  const info = loaderInfo(libraries, minecraft);
+  const sjmcl = await json(path.join(folder, 'sjmclcfg.json'));
+  if (sjmcl && minecraft === id && typeof sjmcl.version === 'string')
+    minecraft = filename(sjmcl.version);
   const settings = await json(path.join(folder, 'hmclversion.cfg'));
   const pcl = parseIni(await text(path.join(folder, 'PCL', 'Setup.ini')));
+  const libraries = [...chain].reverse().flatMap((p) => normalizeProfile(p).libraries || []);
+  const detected = [
+    loaderInfo(libraries, minecraft, chain),
+    sjmcl &&
+    ['fabric', 'quilt', 'forge', 'neoforge'].includes(
+      String(sjmcl.modLoader?.loaderType).toLowerCase(),
+    )
+      ? {
+          loader: String(sjmcl.modLoader.loaderType).toLowerCase() as Loader,
+          loaderVersion: String(sjmcl.modLoader.version || '') || undefined,
+        }
+      : undefined,
+    pclLoaderInfo(pcl),
+  ];
+  const info: { loader: Loader; loaderVersion?: string } = detected.find(
+    (item) => item && item.loader !== 'vanilla',
+  ) ?? { loader: 'vanilla' };
+  if (!info.loaderVersion) {
+    const version = detected.find(
+      (item) => item?.loader === info.loader && item.loaderVersion,
+    )?.loaderVersion;
+    if (version) info.loaderVersion = version;
+  }
   const isolated = await Promise.all(
     ['mods', 'saves', 'options.txt', 'config'].map((p) => exists(path.join(folder, p))),
   );
   let directory = isolated.some(Boolean) ? folder : root;
+  if (sjmcl && !isolated.some(Boolean)) {
+    const shared = await Promise.all(
+      ['mods', 'saves', 'options.txt', 'config'].map((p) => exists(path.join(root, p))),
+    );
+    if (!shared.some(Boolean)) directory = folder;
+  }
   if (settings?.gameDirType === 0 || settings?.gameDirType === 'ROOT_FOLDER') directory = root;
   if (settings?.gameDirType === 1 || settings?.gameDirType === 'VERSION_FOLDER') directory = folder;
   if (settings?.gameDirType === 2 || settings?.gameDirType === 'CUSTOM') {
@@ -150,17 +248,48 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
   if (pcl.VersionArgumentIndie === '2' || pcl.VersionArgumentIndieV2?.toLowerCase() === 'false')
     directory = root;
   if (await exists(path.join(folder, 'modpack.cfg'))) directory = folder;
+  const gameConfig = sjmcl?.useSpecGameConfig === true ? sjmcl.specGameConfig : undefined;
+  if (typeof gameConfig?.versionIsolation === 'boolean')
+    directory = gameConfig.versionIsolation ? folder : root;
   if (typeof override?.gameDir === 'string') directory = path.resolve(root, override.gameDir);
   directory = await fs.realpath(directory);
   const warnings: string[] = [];
+  const requestedJava =
+    gameConfig?.gameJava?.auto === false ? gameConfig.gameJava.execPath : undefined;
+  const java =
+    typeof requestedJava === 'string' &&
+    path.isAbsolute(requestedJava) &&
+    (await exists(requestedJava))
+      ? requestedJava
+      : undefined;
+  if (requestedJava && !java)
+    warnings.push(
+      'The configured Java path is unavailable; global or automatic Java selection will be used.',
+    );
+  const memory =
+    gameConfig?.performance?.autoMemAllocation === false
+      ? gameConfig.performance.maxMemAllocation
+      : undefined;
+  const resolution = gameConfig?.gameWindow?.resolution;
   return candidate({
-    name: override?.name || id,
+    name:
+      override?.name || (typeof sjmcl?.name === 'string' && sjmcl.name.trim() ? sjmcl.name : id),
     minecraft,
     ...info,
     directory,
     runtimeDirectory: root,
     versionId: id,
-    format: 'standard',
+    format: sjmcl ? 'sjmcl' : 'standard',
+    java,
+    maxMemory: Number.isInteger(memory) && memory >= 128 && memory <= 1048576 ? memory : undefined,
+    resolution:
+      resolution &&
+      [resolution.width, resolution.height].every(
+        (v) => Number.isInteger(v) && v >= 320 && v <= 16384,
+      ) &&
+      typeof resolution.fullscreen === 'boolean'
+        ? resolution
+        : undefined,
     warnings,
   });
 }
@@ -217,9 +346,7 @@ async function multiMC(folder: string): Promise<ImportCandidate | undefined> {
     name: settings.name || path.basename(folder),
     minecraft: filename(game.version),
     loader,
-    loaderVersion: mods[0]
-      ? String(mods[0].version).replace(new RegExp(`^${game.version.replaceAll('.', '\\.')}-`), '')
-      : undefined,
+    loaderVersion: mods[0] ? forgeLoaderVersion(String(mods[0].version), game.version) : undefined,
     directory,
     format: 'multimc',
     resourceDirectories: [path.dirname(path.dirname(folder)), folder],
@@ -362,6 +489,7 @@ export async function copyGameFiles(
     'mmc-pack.json',
     'PCL',
     'hmclversion.cfg',
+    'sjmclcfg.json',
   ]);
   await fs.mkdir(destination, { recursive: true });
   const relative = path.relative(await fs.realpath(source), await fs.realpath(destination));
@@ -423,6 +551,7 @@ export class InstanceImporter {
         java: source.java,
         minMemory: source.minMemory,
         maxMemory: source.maxMemory,
+        resolution: source.resolution,
         ...overrides,
       },
       this.store.state.accounts,

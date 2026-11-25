@@ -142,6 +142,7 @@ export function verifyExtensionPackage(
       t(
         `This update requires VS Code ${manifest.engines?.vscode || 'a newer version'}.`,
         `此更新需要 VS Code ${manifest.engines?.vscode || '较新版本'}。`,
+        `此更新需要 VS Code ${manifest.engines?.vscode || '較新版本'}。`,
       ),
     );
 }
@@ -197,7 +198,11 @@ export class ExtensionUpdates {
   private async checkLatest(signal: AbortSignal) {
     if (!this.enabled) {
       void vscode.window.showInformationMessage(
-        t('Extension update checks are disabled in Settings.', '插件更新检查已在设置中关闭。'),
+        t(
+          'Extension update checks are disabled in Settings.',
+          '插件更新检查已在设置中关闭。',
+          '擴充套件更新檢查已在設定中關閉。',
+        ),
       );
       return;
     }
@@ -208,22 +213,25 @@ export class ExtensionUpdates {
     if (this.source !== 'vsix') {
       const action =
         this.source === 'gallery'
-          ? t('Open Extensions', '打开扩展')
-          : t('Open GitHub Releases', '打开 GitHub Releases');
+          ? t('Open Extensions', '打开扩展', '開啟擴充套件')
+          : t('Open GitHub Releases', '打开 GitHub Releases', '開啟 GitHub Releases');
       const result = await vscode.window.showInformationMessage(
         this.source === 'gallery'
           ? t(
               'This installation is managed by Marketplace. Use VS Code to check for updates.',
               '此安装由 Marketplace 管理，请使用 VS Code 检查更新。',
+              '此安裝由 Marketplace 管理，請使用 VS Code 檢查更新。',
             )
           : this.source === 'development'
             ? t(
                 'Extension updates are unavailable in development builds.',
                 '开发构建不执行插件更新。',
+                '開發建置不執行擴充套件更新。',
               )
             : t(
                 'The installation source could not be identified. Download a VSIX manually from GitHub.',
                 '无法识别安装来源，可前往 GitHub 手动下载 VSIX。',
+                '無法識別安裝來源，可前往 GitHub 手動下載 VSIX。',
               ),
         action,
       );
@@ -235,7 +243,7 @@ export class ExtensionUpdates {
       return;
     }
     const release = await this.jobs.run(
-      ['Check for extension updates', '检查插件更新'],
+      ['Check for extension updates', '检查插件更新', '檢查擴充套件更新'],
       async (jobSignal) => {
         const requestSignal = AbortSignal.any([signal, jobSignal]);
         const release = extensionRelease(
@@ -264,13 +272,14 @@ export class ExtensionUpdates {
         t(
           `Minecraft Workbench ${extensionVersion} is up to date.`,
           `Minecraft Workbench ${extensionVersion} 已是最新版本。`,
+          `Minecraft Workbench ${extensionVersion} 已是最新版本。`,
         ),
       );
       return;
     }
-    const install = t('Download and install', '下载并安装'),
-      download = t('Download VSIX', '下载 VSIX'),
-      notes = t('Release notes', '更新说明');
+    const install = t('Download and install', '下载并安装', '下載並安裝'),
+      download = t('Download VSIX', '下载 VSIX', '下載 VSIX'),
+      notes = t('Release notes', '更新说明', '更新說明');
     const canInstall = !!release.checksum && !vscode.env.remoteName;
     const result = await waitFor(
       Promise.resolve(
@@ -278,6 +287,7 @@ export class ExtensionUpdates {
           t(
             `Minecraft Workbench ${release.version} is available (installed: ${extensionVersion}).`,
             `Minecraft Workbench ${release.version} 可用（已安装 ${extensionVersion}）。`,
+            `Minecraft Workbench ${release.version} 可用（已安裝 ${extensionVersion}）。`,
           ),
           ...(canInstall ? [install, download, notes] : [download, notes]),
         ),
@@ -295,6 +305,7 @@ export class ExtensionUpdates {
         t(
           'Stop running games and servers before updating the extension.',
           '请先停止正在运行的游戏和服务端，再更新插件。',
+          '請先停止正在執行的遊戲和伺服器，再更新擴充套件。',
         ),
       );
       return;
@@ -310,6 +321,7 @@ export class ExtensionUpdates {
         [
           `Update Minecraft Workbench to ${release.version}`,
           `将 Minecraft Workbench 更新至 ${release.version}`,
+          `將 Minecraft Workbench 更新至 ${release.version}`,
         ],
         async (jobSignal, report) => {
           const signal = AbortSignal.any([featureSignal, jobSignal]);
@@ -330,6 +342,7 @@ export class ExtensionUpdates {
                 t(
                   'Stop running games and servers before updating the extension.',
                   '请先停止正在运行的游戏和服务端，再更新插件。',
+                  '請先停止正在執行的遊戲和伺服器，再更新擴充套件。',
                 ),
               );
             await vscode.commands.executeCommand(
@@ -349,12 +362,13 @@ export class ExtensionUpdates {
         (error as Error).message === '已取消'
       )
         return;
-      const open = t('Open release page', '打开下载页');
+      const open = t('Open release page', '打开下载页', '開啟下載頁');
       if (
         (await vscode.window.showErrorMessage(
           t(
             'The update could not be installed. You can download it from the release page.',
             '更新未能安装，可前往发布页下载。',
+            '更新未能安裝，可前往發行頁下載。',
           ),
           open,
         )) === open
@@ -368,12 +382,13 @@ export class ExtensionUpdates {
     if (this.enabled && !featureSignal.aborted) void this.offerReload().catch(() => {});
   }
   private async offerReload() {
-    const reload = t('Reload window', '重新加载窗口');
+    const reload = t('Reload window', '重新加载窗口', '重新載入視窗');
     if (
       (await vscode.window.showInformationMessage(
         t(
           'Update installed. Reload the window when ready.',
           '更新已安装，可在准备好后重新加载窗口。',
+          '更新已安裝，可在準備好後重新載入視窗。',
         ),
         reload,
       )) === reload
@@ -384,6 +399,7 @@ export class ExtensionUpdates {
           t(
             'Stop running games and servers before reloading.',
             '请先停止正在运行的游戏和服务端，再重新加载。',
+            '請先停止正在執行的遊戲和伺服器，再重新載入。',
           ),
         );
     }

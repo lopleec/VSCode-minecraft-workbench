@@ -83,6 +83,7 @@ export async function inspectServer(source: string, signal?: AbortSignal): Promi
   for (const [group, engine] of [
     ['net/minecraftforge/forge', 'forge'],
     ['net/neoforged/neoforge', 'neoforge'],
+    ['net/neoforged/forge', 'neoforge'],
   ] as const) {
     const folder = path.join(directory, 'libraries', group);
     const versions = (await fs.readdir(folder).catch(() => [])).sort((a, b) =>
@@ -100,12 +101,17 @@ export async function inspectServer(source: string, signal?: AbortSignal): Promi
       preview.engine = engine;
       preview.argumentFile = path.relative(directory, args);
       const forge = /^(.+)-(\d{2,}\..+)$/.exec(version);
-      preview.build = engine === 'forge' ? forge?.[2] || version : version;
-      preview.minecraft =
-        engine === 'forge'
-          ? forge?.[1] || versionIn(version)
-          : /^(20|21)\.(\d+)\./.test(version)
-            ? `1.${version.split('.')[0]}${Number(version.split('.')[1]) ? '.' + version.split('.')[1] : ''}`
+      const legacy = group.endsWith('/forge');
+      preview.build = legacy ? forge?.[2] || version : version;
+      preview.minecraft = legacy
+        ? forge?.[1] || versionIn(version)
+        : /^(20|21)\.(\d+)\./.test(version)
+          ? `1.${version.split('.')[0]}${Number(version.split('.')[1]) ? '.' + version.split('.')[1] : ''}`
+          : /^(2[6-9]|[3-9]\d)\.\d+\.\d+\./.test(version)
+            ? version
+                .split('.')
+                .slice(0, Number(version.split('.')[2]) ? 3 : 2)
+                .join('.')
             : '';
       return preview;
     }

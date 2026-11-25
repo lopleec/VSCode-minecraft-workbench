@@ -66,6 +66,8 @@ test('Forge and NeoForge server imports reuse the platform argument file without
       ['forge', 'net/minecraftforge/forge', '26.4-snapshot-3-65.0.5', '26.4-snapshot-3', '65.0.5'],
       ['neoforge', 'net/neoforged/neoforge', '21.0.160', '1.21', '21.0.160'],
       ['neoforge', 'net/neoforged/neoforge', '21.1.100', '1.21.1', '21.1.100'],
+      ['neoforge', 'net/neoforged/forge', '1.20.1-47.1.106', '1.20.1', '47.1.106'],
+      ['neoforge', 'net/neoforged/neoforge', '26.3.0.10', '26.3', '26.3.0.10'],
     ]) {
       const directory = path.join(root, engine + '-' + version);
       const file = path.join(

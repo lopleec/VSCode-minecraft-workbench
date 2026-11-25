@@ -8,12 +8,12 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
   const rows = h('div', { class: 'management-list' });
   body.append(
-    heading(L('Mod projects', '模组项目')),
+    heading(L('Mod projects', '模组项目', '模組專案')),
     h(
       'div',
       { class: 'inline-actions page-actions' },
       ctx.button(
-        L('Import Gradle project', '导入 Gradle 项目'),
+        L('Import Gradle project', '导入 Gradle 项目', '匯入 Gradle 專案'),
         async () => {
           await ctx.request('action', { action: 'importProject' });
           await ctx.refresh();
@@ -48,10 +48,10 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
   const submit = h(
     'button',
     { type: 'submit', class: 'primary', disabled: true },
-    L('Create project', '创建项目'),
+    L('Create project', '创建项目', '建立專案'),
   );
   const form = h('form', { class: 'management-form' });
-  const gameField = field(L('Minecraft version', 'Minecraft 版本'), game);
+  const gameField = field(L('Minecraft version', 'Minecraft 版本', 'Minecraft 版本'), game);
   gameField.hidden = true;
   let templateSequence = 0,
     idEdited = false,
@@ -80,7 +80,7 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
     template.replaceChildren();
     template.disabled = true;
     submit.disabled = true;
-    templateStatus.textContent = L('Loading official templates…', '加载官方模板…');
+    templateStatus.textContent = L('Loading official templates…', '加载官方模板…', '載入官方範本…');
     gameField.hidden = loader.value !== 'forge';
     try {
       if (loader.value === 'forge' && !game.options.length) {
@@ -112,10 +112,12 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
         ? L(
             'The template supplies its compatible Minecraft, loader and Gradle versions.',
             '模板包含对应的 Minecraft、Loader 和 Gradle 版本。',
+            '範本包含對應的 Minecraft、Loader 和 Gradle 版本。',
           )
         : L(
             'No official template is available for this selection.',
             '当前选择没有可用的官方模板。',
+            '當前選擇沒有可用的官方範本。',
           );
     } catch (error) {
       if (sequence === templateSequence) templateStatus.textContent = (error as Error).message;
@@ -127,22 +129,22 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
     h(
       'fieldset',
       {},
-      h('legend', {}, L('New mod project', '新建模组项目')),
+      h('legend', {}, L('New mod project', '新建模组项目', '新增模組專案')),
       h(
         'div',
         { class: 'form-grid' },
-        field(L('Mod name', '模组名称'), name),
-        field(L('Mod ID', '模组 ID'), modId),
+        field(L('Mod name', '模组名称', '模組名稱'), name),
+        field(L('Mod ID', '模组 ID', '模組 ID'), modId),
       ),
-      field(L('Java package', 'Java 包名'), packageName),
+      field(L('Java package', 'Java 包名', 'Java 包名'), packageName),
       field(
-        L('Project parent directory', '项目父目录'),
+        L('Project parent directory', '项目父目录', '項目上層目錄'),
         h(
           'div',
           { class: 'input-action' },
           parent,
           ctx.button(
-            L('Browse…', '浏览…'),
+            L('Browse…', '浏览…', '瀏覽…'),
             async () => {
               const value = await ctx.request<string | undefined>('launcher.pickDirectory');
               if (value) parent.value = value;
@@ -151,15 +153,20 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
           ),
         ),
       ),
-      h('div', { class: 'form-grid' }, field(L('Loader', '加载器'), loader), gameField),
-      field(L('Template version', '模板版本'), template),
+      h('div', { class: 'form-grid' }, field(L('Loader', '加载器', '載入器'), loader), gameField),
+      field(L('Template version', '模板版本', '範本版本'), template),
       templateStatus,
-      h('label', { class: 'check' }, open, L('Open the project after creation', '创建后打开项目')),
+      h(
+        'label',
+        { class: 'check' },
+        open,
+        L('Open the project after creation', '创建后打开项目', '建立後開啟專案'),
+      ),
       h(
         'div',
         { class: 'save-row' },
         submit,
-        ctx.button(L('Reload templates', '重新加载模板'), templates, 'secondary'),
+        ctx.button(L('Reload templates', '重新加载模板', '重新載入範本'), templates, 'secondary'),
       ),
     ),
   );
@@ -178,7 +185,7 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
       });
       await ctx.refresh();
       update();
-      ctx.notify(L('Project created.', '项目已创建。'));
+      ctx.notify(L('Project created.', '项目已创建。', '項目已建立。'));
     }).catch(ctx.error);
   };
   body.append(form);
@@ -189,21 +196,21 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
     if (key === projectsKey) return;
     projectsKey = key;
     const actions: [string, string][] = [
-      ['attach', L('Attach debugger', '连接调试器')],
-      ['stop', L('Stop Gradle task', '停止 Gradle 任务')],
-      ['sources', L('Generate sources / IDE runs', '生成源码 / IDE 配置')],
-      ['clean', L('Clean', '清理构建')],
-      ['artifacts', L('Show artifacts', '显示构建产物')],
-      ['directory', L('Open directory', '打开目录')],
-      ['refresh', L('Reload project metadata', '重新读取项目元数据')],
-      ['remove', L('Remove from list', '从列表移除')],
+      ['attach', L('Attach debugger', '连接调试器', '連接偵錯器')],
+      ['stop', L('Stop Gradle task', '停止 Gradle 任务', '停止 Gradle 工作')],
+      ['sources', L('Generate sources / IDE runs', '生成源码 / IDE 配置', '生成原始碼 / IDE 設定')],
+      ['clean', L('Clean', '清理构建', '清理建置')],
+      ['artifacts', L('Show artifacts', '显示构建产物', '顯示建置產物')],
+      ['directory', L('Open directory', '打开目录', '開啟目錄')],
+      ['refresh', L('Reload project metadata', '重新读取项目元数据', '重新讀取項目中繼資料')],
+      ['remove', L('Remove from list', '从列表移除', '從清單移除')],
     ];
     rows.replaceChildren(
       ...ctx.state().projects.map((project) => {
         const action = select('projectAction', 'attach', actions);
         action.setAttribute(
           'aria-label',
-          L(`Action for ${project.name}`, `${project.name} 的操作`),
+          L(`Action for ${project.name}`, `${project.name} 的操作`, `${project.name} 的操作`),
         );
         return h(
           'article',
@@ -224,24 +231,24 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
             'div',
             { class: 'inline-actions' },
             ctx.button(
-              L('Open', '打开'),
+              L('Open', '打开', '開啟'),
               () => ctx.request('launcher.projectAction', { id: project.id, action: 'open' }),
               'secondary',
             ),
             ...(['build', 'runClient', 'debug'] as const).map((action) =>
               ctx.button(
                 action === 'build'
-                  ? L('Build', '构建')
+                  ? L('Build', '构建', '建置')
                   : action === 'runClient'
-                    ? L('Run client', '运行客户端')
-                    : L('Run for debugging', '运行以调试'),
+                    ? L('Run client', '运行客户端', '執行用戶端')
+                    : L('Run for debugging', '运行以调试', '執行以偵錯'),
                 () => ctx.request('launcher.projectAction', { id: project.id, action }),
                 'secondary',
               ),
             ),
             action,
             ctx.button(
-              L('Run action', '执行操作'),
+              L('Run action', '执行操作', '執行操作'),
               async () => {
                 await ctx.request('launcher.projectAction', {
                   id: project.id,
@@ -256,7 +263,8 @@ export function renderProjects(body: HTMLElement, ctx: PageContext) {
         );
       }),
     );
-    if (!ctx.state().projects.length) rows.append(blank(L('No mod projects', '暂无模组项目')));
+    if (!ctx.state().projects.length)
+      rows.append(blank(L('No mod projects', '暂无模组项目', '暫無模組專案')));
   }
   update();
   return update;

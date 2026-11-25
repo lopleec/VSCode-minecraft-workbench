@@ -27,15 +27,19 @@ export class ImportSession {
       let directory = source;
       const stat = await fs.stat(source);
       if (stat.isFile()) {
-        if (!/\.zip$/i.test(source))
-          throw new Error('Select a Minecraft folder or a ZIP instance export.');
-        if (stat.size > 512 * 1024 ** 2)
-          throw new Error('Extract archives larger than 512 MB before importing.');
-        const parent = path.join(this.store.root, 'cache', 'imports');
-        await fs.mkdir(parent, { recursive: true });
-        this.stage = await fs.mkdtemp(path.join(parent, 'import-'));
-        await extractZip(source, this.stage, 0, undefined, signal);
-        directory = this.stage;
+        if (path.basename(source).toLowerCase() === 'sjmclcfg.json') {
+          directory = path.dirname(source);
+        } else {
+          if (!/\.zip$/i.test(source))
+            throw new Error('Select a Minecraft folder or a ZIP instance export.');
+          if (stat.size > 512 * 1024 ** 2)
+            throw new Error('Extract archives larger than 512 MB before importing.');
+          const parent = path.join(this.store.root, 'cache', 'imports');
+          await fs.mkdir(parent, { recursive: true });
+          this.stage = await fs.mkdtemp(path.join(parent, 'import-'));
+          await extractZip(source, this.stage, 0, undefined, signal);
+          directory = this.stage;
+        }
       }
       this.scan = await scanInstances(directory, signal);
       this.source = directory;

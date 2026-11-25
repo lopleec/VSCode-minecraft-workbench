@@ -56,7 +56,7 @@ export interface Instance {
   runtimeDirectory?: string;
   containerDirectory?: string;
   layout?: 'multimc' | 'standard';
-  sourceFormat?: 'standard' | 'multimc' | 'modrinth' | 'workbench';
+  sourceFormat?: 'standard' | 'multimc' | 'modrinth' | 'workbench' | 'sjmcl';
   linked?: boolean;
   preserveVersion?: boolean;
   resourceDirectories?: string[];

@@ -55,7 +55,11 @@ async function copyDirectory(
       await fs.utimes(to, stat.atime, stat.mtime);
     } else
       throw new Error(
-        t('Unsupported file in instance directory.', '实例目录包含不支持的文件类型。'),
+        t(
+          'Unsupported file in instance directory.',
+          '实例目录包含不支持的文件类型。',
+          '實例目錄包含不支援的檔案類型。',
+        ),
       );
   }
 }
@@ -73,6 +77,7 @@ export async function moveInstance(
       t(
         'Duplicate this linked instance before moving its files.',
         '请先复制原地管理的实例，再移动文件。',
+        '請先複製原地管理的實例，再移動檔案。',
       ),
     );
   const source = path.resolve(instance.containerDirectory || instance.directory);
@@ -89,13 +94,20 @@ export async function moveInstance(
       t(
         'Other instances use files inside this directory. Duplicate this instance before moving it.',
         '其他实例正在复用此目录内的文件，请先复制此实例再移动。',
+        '其他實例正在重複使用此目錄內的檔案，請先複製此實例再移動。',
       ),
     );
   const realSource = await fs.realpath(source),
     realParent = await fs.realpath(parent);
   if (realParent === path.dirname(realSource)) return false;
   if (inside(realSource, realParent))
-    throw new Error(t('Cannot move an instance inside itself.', '不能将实例移入自身目录。'));
+    throw new Error(
+      t(
+        'Cannot move an instance inside itself.',
+        '不能将实例移入自身目录。',
+        '不能將實例移入自身目錄。',
+      ),
+    );
   if (!inside(source, path.resolve(instance.directory)))
     throw new Error('Invalid instance directory.');
   await rejectSymlinkParents(source, instance.directory);
@@ -165,6 +177,7 @@ export async function moveInstance(
         t(
           `Instance moved. Remove the remaining source files manually: ${source}`,
           `实例已移动，请手动清理原目录中剩余的文件：${source}`,
+          `實例已移動，請手動清理原目錄中剩餘的檔案：${source}`,
         ),
         `Instance moved. Remove the remaining source files manually: ${source}`,
       );

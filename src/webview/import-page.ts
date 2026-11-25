@@ -8,8 +8,8 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
   const source = input('source', ctx.state().defaults.instanceDirectory);
   const mode = select('mode', 'link', [
-    ['link', L('Manage in place', '原地管理')],
-    ['copy', L('Copy into Minecraft directory', '复制到 Minecraft 目录')],
+    ['link', L('Manage in place', '原地管理', '原地管理')],
+    ['copy', L('Copy into Minecraft directory', '复制到 Minecraft 目录', '複製到 Minecraft 目錄')],
   ]);
   const root = input('root', ctx.state().defaults.gameDirectory);
   const group = input('group');
@@ -17,8 +17,8 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
   group.setAttribute('list', 'import-groups');
   const filter = input('importFilter');
   filter.type = 'search';
-  filter.placeholder = L('Filter instances…', '筛选实例…');
-  filter.setAttribute('aria-label', L('Filter instances', '筛选实例'));
+  filter.placeholder = L('Filter instances…', '筛选实例…', '篩選實例…');
+  filter.setAttribute('aria-label', L('Filter instances', '筛选实例', '篩選實例'));
   const selectedCount = h('span', { class: 'muted', role: 'status' });
   let working = false;
   const results = h('div', { class: 'management-list', 'aria-live': 'polite' });
@@ -37,7 +37,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
     }
   >();
   const submit = ctx.button(
-    L('Import selected', '导入所选实例'),
+    L('Import selected', '导入所选实例', '匯入所選實例'),
     async () => {
       const selected = [...choices.values()].filter(
         (value) => value.checkbox.checked && !value.unavailable,
@@ -50,6 +50,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
           status.textContent = L(
             `Importing ${selected.length} instances…`,
             `正在导入 ${selected.length} 个实例…`,
+            `正在匯入 ${selected.length} 個實例…`,
           );
           const result = await ctx.request<BatchImportResult>('launcher.importInstances', {
             entries: selected.map((value) => ({
@@ -70,6 +71,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
           status.textContent = L(
             `${result.imported.length} imported${result.cancelled ? ' · Cancelled' : ''}.`,
             `已导入 ${result.imported.length} 个${result.cancelled ? ' · 已取消' : ''}。`,
+            `已匯入 ${result.imported.length} 個${result.cancelled ? ' · 已取消' : ''}。`,
           );
           if (result.failed.length)
             ctx.error(
@@ -98,8 +100,8 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
       value.unavailable = value.unsupported || value.done || (mode.value === 'link' && registered);
       value.status.hidden = !registered && !value.done;
       value.status.textContent = value.done
-        ? L('Imported', '已导入')
-        : L('Already registered', '已在列表中');
+        ? L('Imported', '已导入', '已匯入')
+        : L('Already registered', '已在列表中', '已在清單中');
       if (value.unavailable) value.checkbox.checked = false;
     }
     const count = values.filter((value) => value.checkbox.checked && !value.unavailable).length;
@@ -108,14 +110,14 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
       working || !values.some((value) => !value.unavailable && !value.row.hidden);
     clear.disabled = working || !count;
     filter.disabled = working;
-    selectedCount.textContent = L(`${count} selected`, `已选择 ${count} 个`);
+    selectedCount.textContent = L(`${count} selected`, `已选择 ${count} 个`, `已選擇 ${count} 個`);
     for (const value of values) {
       value.checkbox.disabled = working || value.unavailable;
       value.name.disabled = working || value.unavailable;
     }
   }
   const selectAll = ctx.button(
-    L('Select all', '全选'),
+    L('Select all', '全选', '全選'),
     () => {
       for (const value of choices.values())
         if (!value.unavailable && !value.row.hidden) value.checkbox.checked = true;
@@ -125,7 +127,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
     true,
   );
   const clear = ctx.button(
-    L('Clear selection', '取消选择'),
+    L('Clear selection', '取消选择', '取消選擇'),
     () => {
       for (const value of choices.values()) value.checkbox.checked = false;
       updateSelection();
@@ -140,19 +142,21 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
         !`${value.name.value} ${value.candidate.minecraft} ${value.candidate.loader} ${value.candidate.directory}`
           .toLowerCase()
           .includes(query);
-    selectAll.textContent = query ? L('Select filtered', '选择筛选结果') : L('Select all', '全选');
+    selectAll.textContent = query
+      ? L('Select filtered', '选择筛选结果', '選擇篩選結果')
+      : L('Select all', '全选', '全選');
     updateSelection();
   }
   filter.oninput = filterRows;
   const scan = ctx.button(
-    L('Scan', '扫描'),
+    L('Scan', '扫描', '掃描'),
     async () => {
       if (working) return;
       working = true;
       updateSelection();
       try {
         await busy(form, async () => {
-          status.textContent = L('Scanning…', '正在扫描…');
+          status.textContent = L('Scanning…', '正在扫描…', '正在掃描…');
           choices.clear();
           results.replaceChildren();
           submit.disabled = true;
@@ -170,12 +174,16 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
             const checkbox = h('input', {
               type: 'checkbox',
               disabled: unsupported,
-              'aria-label': L(`Import ${candidate.name}`, `导入 ${candidate.name}`),
+              'aria-label': L(
+                `Import ${candidate.name}`,
+                `导入 ${candidate.name}`,
+                `匯入 ${candidate.name}`,
+              ),
             });
             const name = input('importName', candidate.name);
             name.required = true;
             name.maxLength = 100;
-            name.setAttribute('aria-label', L('Instance name', '实例名称'));
+            name.setAttribute('aria-label', L('Instance name', '实例名称', '實例名稱'));
             checkbox.onchange = updateSelection;
             const importStatus = h('span', { class: 'badge', hidden: true });
             const row = h(
@@ -199,13 +207,18 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
                     warning
                       .replace(
                         'Unsupported MultiMC component:',
-                        L('Unsupported MultiMC component:', '不支持的 MultiMC 组件：'),
+                        L(
+                          'Unsupported MultiMC component:',
+                          '不支持的 MultiMC 组件：',
+                          '不支援的 MultiMC 元件：',
+                        ),
                       )
                       .replace(
                         'Legacy jar mods require a compatible launcher.',
                         L(
                           'Legacy jar mods require a compatible launcher.',
                           '旧式 Jar 模组需要使用兼容的启动器。',
+                          '舊式 Jar 模組需要使用相容的啟動器。',
                         ),
                       )
                       .replace(
@@ -213,6 +226,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
                         L(
                           'The configured Java path is unavailable; global or automatic Java selection will be used.',
                           '原有 Java 路径不可用，将使用全局或自动选择的 Java。',
+                          '原有 Java 路徑不可用，將使用全域或自動選擇的 Java。',
                         ),
                       ),
                   ),
@@ -234,10 +248,11 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
           if (!found.candidates.length)
             results.append(
               blank(
-                L('No supported instances found', '未找到可识别的实例'),
+                L('No supported instances found', '未找到可识别的实例', '未找到可識別的實例'),
                 L(
                   'Select a game folder containing version metadata, or export a .mrpack from the original launcher.',
                   '请选择包含版本信息的游戏目录，或从原启动器导出 .mrpack 整合包。',
+                  '請選擇包含版本資訊的遊戲目錄，或從原啟動器匯出 .mrpack 整合包。',
                 ),
               ),
             );
@@ -246,19 +261,20 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
               h(
                 'details',
                 {},
-                h('summary', {}, L('Skipped folders', '已跳过的目录')),
+                h('summary', {}, L('Skipped folders', '已跳过的目录', '已跳過的目錄')),
                 h('pre', { class: 'import-warnings' }, found.warnings.join('\n')),
               ),
             );
           status.textContent = L(
             `${found.candidates.length} instance(s) found.`,
             `找到 ${found.candidates.length} 个实例。`,
+            `找到 ${found.candidates.length} 個實例。`,
           );
           syncMode();
           filterRows();
         });
       } catch (error) {
-        status.textContent = L('Scan failed.', '扫描失败。');
+        status.textContent = L('Scan failed.', '扫描失败。', '掃描失敗。');
         throw error;
       } finally {
         working = false;
@@ -267,7 +283,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
     },
     'secondary',
   );
-  const destination = field(L('Minecraft directory', 'Minecraft 目录'), root);
+  const destination = field(L('Minecraft directory', 'Minecraft 目录', 'Minecraft 目錄'), root);
   const hint = h('p', { class: 'field-hint' });
   function syncMode() {
     destination.hidden = mode.value !== 'copy';
@@ -276,10 +292,12 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
         ? L(
             'Changes to mods, settings and worlds also affect the original launcher. Removing the instance keeps its files.',
             '模组、设置和存档的更改也会在原启动器中生效。移除实例时保留游戏文件。',
+            '模組、設定和存檔的更改也會在原啟動器中生效。移除實例時保留遊戲檔案。',
           )
         : L(
             'Copies mods, settings and worlds. Missing game resources are installed on first launch.',
             '复制模组、设置和存档；缺失的游戏资源会在首次启动时补齐。',
+            '複製模組、設定和存檔；缺失的遊戲資源會在首次啟動時補齊。',
           );
   }
   mode.onchange = () => {
@@ -298,13 +316,17 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
       'fieldset',
       {},
       field(
-        L('Source folder or ZIP export', '来源目录或 ZIP 导出文件'),
+        L(
+          'Source folder, ZIP export or sjmclcfg.json',
+          '来源目录、ZIP 导出文件或 sjmclcfg.json',
+          '來源目錄、ZIP 匯出檔案或 sjmclcfg.json',
+        ),
         h(
           'div',
           { class: 'input-action' },
           source,
           ctx.button(
-            L('Browse…', '浏览…'),
+            L('Browse…', '浏览…', '瀏覽…'),
             async () => {
               const path = await ctx.request<string | undefined>('launcher.pickInstanceSource');
               if (path) {
@@ -323,14 +345,14 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
         { class: 'inline-actions' },
         scan,
         ctx.button(
-          L('Import .mrpack…', '导入 .mrpack…'),
+          L('Import .mrpack…', '导入 .mrpack…', '匯入 .mrpack…'),
           () => ctx.request('action', { action: 'importPack' }),
           'secondary',
         ),
       ),
-      field(L('Import method', '导入方式'), mode),
+      field(L('Import method', '导入方式', '匯入方式'), mode),
       destination,
-      field(L('Group (optional)', '分组（可选）'), group),
+      field(L('Group (optional)', '分组（可选）', '分組（選用）'), group),
       h(
         'datalist',
         { id: 'import-groups' },
@@ -343,10 +365,10 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
   form.onsubmit = (event) => event.preventDefault();
   main.append(
     heading(
-      L('Import instances', '导入实例'),
+      L('Import instances', '导入实例', '匯入實例'),
       L(
-        'Minecraft / HMCL / PCL · Prism / MultiMC · Modrinth',
-        'Minecraft / HMCL / PCL · Prism / MultiMC · Modrinth',
+        'Minecraft / HMCL / PCL / SJMCL · Prism / MultiMC · Modrinth',
+        'Minecraft / HMCL / PCL / SJMCL · Prism / MultiMC · Modrinth',
       ),
     ),
     form,
@@ -364,7 +386,7 @@ export function renderImport(main: HTMLElement, ctx: PageContext) {
       'div',
       { class: 'inline-actions page-actions' },
       ctx.button(
-        L('Back to instances', '返回实例列表'),
+        L('Back to instances', '返回实例列表', '返回實例清單'),
         () => ctx.navigate('instances'),
         'secondary',
       ),

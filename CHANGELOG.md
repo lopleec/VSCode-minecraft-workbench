@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.3 — 2026-11-25
+
+### Added
+
+- Traditional Chinese for the workbench, native commands, settings and independently selectable agreement pages.
+- Import SJMCL instances and `sjmclcfg.json`, including active Java, memory, resolution and version-isolation settings. ([#18](https://github.com/lopleec/VSCode-minecraft-workbench/issues/18))
+- Microsoft sign-in guidance with authorization codes, progress, cancellation, retry and clearer application/account errors. Client IDs remain user-configured. ([#10](https://github.com/lopleec/VSCode-minecraft-workbench/issues/10))
+
+### Fixed
+
+- Detect PCL Forge and NeoForge profiles from patches, launch arguments, libraries and launcher metadata; resolve patch inheritance without reinstalling complete imports. ([#16](https://github.com/lopleec/VSCode-minecraft-workbench/issues/16), [#17](https://github.com/lopleec/VSCode-minecraft-workbench/pull/17))
+- Correct BMCLAPI Maven routes and NeoForge version discovery for clients and servers, including legacy 1.20.1 artifacts. Failed mirrors fall back to the origin even with retries disabled. ([#15](https://github.com/lopleec/VSCode-minecraft-workbench/issues/15))
+- Prefer available XWayland for GNOME Wayland game and development clients in automatic mode, retaining window decorations while preserving explicit backend choices. ([#14](https://github.com/lopleec/VSCode-minecraft-workbench/issues/14))
+- Apply the configured connection limit to HTTP and SOCKS proxies.
+
+### 新增
+
+- 工作台、原生命令及设置支持繁体中文，协议页可独立选择语言。
+- 导入 SJMCL 实例及 `sjmclcfg.json`，保留启用的 Java、内存、分辨率和版本隔离设置。
+- Microsoft 登录增加验证码、进度、取消及重试入口，并完善应用与账户错误说明；Client ID 仍由用户配置。
+
+### 修复
+
+- 从补丁、启动参数、运行库及启动器配置识别 PCL Forge／NeoForge；正确解析补丁继承，完整实例无需重新安装。
+- 修正 BMCLAPI Maven 路由与客户端、服务端的 NeoForge 版本获取，支持旧版 1.20.1 制品；关闭重试后，镜像失败仍会回源。
+- 自动模式在 GNOME Wayland 下优先使用可用的 XWayland，保留游戏及开发客户端窗口装饰；手动指定后端优先。
+- HTTP 与 SOCKS 代理统一遵守连接数限制。
+
+Thanks to [redstaroverplank](https://github.com/redstaroverplank) and [Scaredrock14413](https://github.com/Scaredrock14413) for the PCL compatibility and Traditional Chinese contributions.
+
 ## 0.5.2 — 2026-11-11
 
 ### Added

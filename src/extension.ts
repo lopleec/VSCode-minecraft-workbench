@@ -48,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
       t(
         'Minecraft Workbench could not start. See Output for details.',
         'Minecraft Workbench 启动失败，请查看输出。',
+        'Minecraft Workbench 啟動失敗，請查看輸出。',
       ),
     );
     throw error;
@@ -71,11 +72,12 @@ async function initialize(
     sidebar.refresh();
     updateStatus(status, store);
     if (!consent.accepted) {
-      status.text = '$(shield) ' + t('Agreements required', '请先确认协议');
+      status.text = '$(shield) ' + t('Agreements required', '请先确认协议', '請先確認協議');
       status.command = 'minecraftWorkbench.agreements';
       status.tooltip = t(
         'Review the agreements to use Minecraft Workbench.',
         '确认协议后使用 Minecraft Workbench。',
+        '確認協議後使用 Minecraft Workbench。',
       );
     }
     workbench?.refresh();
@@ -94,7 +96,7 @@ async function initialize(
     void vscode.commands.executeCommand(
       'setContext',
       'minecraftWorkbench.language',
-      t('en', 'zh-cn'),
+      t('en', 'zh-cn', 'zh-tw'),
     );
   };
   const consent = new Consent(context.globalState, refresh);
@@ -110,9 +112,19 @@ async function initialize(
   )
     root = legacy;
   if (!path.isAbsolute(root)) {
-    sidebar.fail(t('Storage directory must be an absolute path.', '存储目录必须是绝对路径。'));
+    sidebar.fail(
+      t(
+        'Storage directory must be an absolute path.',
+        '存储目录必须是绝对路径。',
+        '儲存目錄必須是絕對路徑。',
+      ),
+    );
     void vscode.window.showErrorMessage(
-      t('Storage directory must be an absolute path.', '存储目录必须是绝对路径。'),
+      t(
+        'Storage directory must be an absolute path.',
+        '存储目录必须是绝对路径。',
+        '儲存目錄必須是絕對路徑。',
+      ),
     );
     return;
   }
@@ -122,12 +134,17 @@ async function initialize(
   } catch (error) {
     output.error(String(error));
     sidebar.fail(
-      t('Could not read instance data. See Output for details.', '无法读取实例数据，请查看输出。'),
+      t(
+        'Could not read instance data. See Output for details.',
+        '无法读取实例数据，请查看输出。',
+        '無法讀取實例資料，請查看輸出。',
+      ),
     );
     void vscode.window.showErrorMessage(
       t(
         'Minecraft Workbench could not read its state. Check the output before changing or restoring state.json.',
         'Minecraft Workbench 无法读取状态文件。请先查看输出，再处理或恢复 state.json。',
+        'Minecraft Workbench 無法讀取狀態檔案。請先查看輸出，再處理或還原 state.json。',
       ),
     );
     return;
@@ -178,6 +195,7 @@ async function initialize(
       t(
         'Invalid proxy configuration. Open extension settings to correct it.',
         '代理设置无效，请在扩展设置中修正。',
+        'Proxy 設定無效，請在擴充套件設定中修正。',
       ),
     );
   context.subscriptions.push({
@@ -200,7 +218,7 @@ async function initialize(
   for (const execution of vscode.tasks.taskExecutions)
     if (execution.task.definition.type === 'minecraftWorkbench') jobs.taskStarted(execution, true);
   const java = new Java(store, network);
-  const accounts = new Accounts(store, context.secrets, network, () => consent.accepted);
+  const accounts = new Accounts(store, context.secrets, network, () => consent.accepted, refresh);
   const curseforge = new CurseForge(network, context.secrets);
   context.subscriptions.push(curseforge);
   const content = new ContentService(
@@ -309,7 +327,7 @@ async function initialize(
       ];
       const selected = await vscode.window.showQuickPick(
         sections.map((section) => ({ label: t(...sidebarTitles[section]), section })),
-        { title: t('Show Sidebar View', '显示侧栏分类') },
+        { title: t('Show Sidebar View', '显示侧栏分类', '顯示側邊欄分類') },
       );
       if (selected)
         await vscode.commands.executeCommand(`minecraftWorkbench.${selected.section}.focus`);
@@ -394,18 +412,21 @@ async function initialize(
       if (store.state.mode !== 'server') return ui.checkUpdates();
       const server = servers.selected;
       if (!server) return workbench!.open('servers');
-      const updates = await jobs.run(['Check content updates', '检查内容更新'], () =>
-        content.updates(serverTarget(server)),
+      const updates = await jobs.run(
+        ['Check content updates', '检查内容更新', '檢查內容更新'],
+        () => content.updates(serverTarget(server)),
       );
       if (!updates.length)
-        return vscode.window.showInformationMessage(t('No updates available.', '暂无可用更新。'));
+        return vscode.window.showInformationMessage(
+          t('No updates available.', '暂无可用更新。', '暫無可用更新。'),
+        );
       const selected = await vscode.window.showQuickPick(
         updates.map((update) => ({
           label: update.item.name,
           description: update.version.version_number,
           update,
         })),
-        { canPickMany: true, title: t('Select updates', '选择更新') },
+        { canPickMany: true, title: t('Select updates', '选择更新', '選擇更新') },
       );
       for (const item of selected || [])
         await new ServerActions(servers, content, jobs).handle('server.content', {
@@ -422,7 +443,7 @@ async function initialize(
       const warnings = await content.conflicts(serverTarget(servers.selected));
       const document = await vscode.workspace.openTextDocument({
         language: 'plaintext',
-        content: warnings.join('\n') || t('No conflicts found.', '未发现冲突。'),
+        content: warnings.join('\n') || t('No conflicts found.', '未发现冲突。', '未發現衝突。'),
       });
       await vscode.window.showTextDocument(document);
     },
@@ -439,7 +460,11 @@ async function initialize(
       vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(store.root)),
     proxyCredentials: async () => {
       const username = await vscode.window.showInputBox({
-        title: t('Proxy username (empty to clear)', '代理用户名（留空清除）'),
+        title: t(
+          'Proxy username (empty to clear)',
+          '代理用户名（留空清除）',
+          'Proxy 使用者名稱（留空清除）',
+        ),
         ignoreFocusOut: true,
       });
       if (username === undefined) return;
@@ -447,7 +472,7 @@ async function initialize(
         await context.secrets.delete('minecraftWorkbench.proxyCredentials');
       } else {
         const password = await vscode.window.showInputBox({
-          title: t('Proxy password', '代理密码'),
+          title: t('Proxy password', '代理密码', 'Proxy 密碼'),
           password: true,
           ignoreFocusOut: true,
         });
@@ -457,24 +482,23 @@ async function initialize(
           JSON.stringify({ username, password }),
         );
       }
-      const reload = t('Reload window', '重新加载窗口');
+      const reload = t('Reload window', '重新加载窗口', '重新載入視窗');
       if (
         (await vscode.window.showInformationMessage(
-          t('Proxy credentials saved.', '代理凭据已保存。'),
+          t('Proxy credentials saved.', '代理凭据已保存。', 'Proxy 驗證資訊已儲存。'),
           reload,
         )) === reload
       )
         await vscode.commands.executeCommand('workbench.action.reloadWindow');
     },
     help: async () => {
-      const language = config<string>('language', 'auto');
-      const zh =
-        language === 'zh-cn' || (language === 'auto' && vscode.env.language.startsWith('zh'));
-      const name = zh
-        ? 'README.zh-CN.md'
-        : (await exists(path.join(context.extensionPath, 'README.md')))
-          ? 'README.md'
-          : 'readme.md';
+      const locale = t('en', 'zh-cn', 'zh-tw');
+      const name =
+        locale !== 'en'
+          ? `README.${locale === 'zh-tw' ? 'zh-TW' : 'zh-CN'}.md`
+          : (await exists(path.join(context.extensionPath, 'README.md')))
+            ? 'README.md'
+            : 'readme.md';
       await vscode.commands.executeCommand(
         'markdown.showPreview',
         vscode.Uri.file(path.join(context.extensionPath, name)),
@@ -482,7 +506,7 @@ async function initialize(
     },
   };
   for (const [name, command] of Object.entries(commands)) {
-    for (const suffix of ['', '.zh'])
+    for (const suffix of ['', '.zh', '.zh-tw'])
       context.subscriptions.push(
         vscode.commands.registerCommand(`minecraftWorkbench.${name}${suffix}`, (item?: Item) =>
           ui.guard(async () => {
@@ -524,12 +548,13 @@ async function initialize(
           'downloadChunkSize',
         ].some((key) => event.affectsConfiguration(`minecraftWorkbench.${key}`))
       ) {
-        const reload = t('Reload window', '重新加载窗口');
+        const reload = t('Reload window', '重新加载窗口', '重新載入視窗');
         void vscode.window
           .showInformationMessage(
             t(
               'Reload the window to apply network or storage changes.',
               '重新加载窗口以应用网络或存储设置。',
+              '重新載入視窗以應用網路或儲存設定。',
             ),
             reload,
           )

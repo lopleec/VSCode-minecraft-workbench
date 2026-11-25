@@ -116,15 +116,24 @@ export class Terracotta implements vscode.Disposable {
         t(
           'Accept the workbench agreements and trust this workspace first.',
           '请先确认工作台协议并信任工作区。',
+          '請先確認工作台協議並信任工作區。',
         ),
       );
     if (!this.enabled)
       throw new Error(
-        t('Enable Terracotta Beta in Settings first.', '请先在设置中开启陶瓦联机 Beta。'),
+        t(
+          'Enable Terracotta Beta in Settings first.',
+          '请先在设置中开启陶瓦联机 Beta。',
+          '請先在設定中開啟陶瓦連線 Beta。',
+        ),
       );
     if (!this.accepted)
       throw new Error(
-        t('Read and accept the Terracotta notices first.', '请先阅读并确认陶瓦联机须知。'),
+        t(
+          'Read and accept the Terracotta notices first.',
+          '请先阅读并确认陶瓦联机须知。',
+          '請先閱讀並確認陶瓦連線須知。',
+        ),
       );
   }
   requireAvailable() {

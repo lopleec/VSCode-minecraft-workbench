@@ -9,14 +9,18 @@ export async function showOutput(store: Store, jobs: Jobs, minecraft: Minecraft,
   const choices: (vscode.QuickPickItem & { open(): unknown })[] = [
     {
       label: 'Minecraft Workbench',
-      description: t('Installation, launch and task logs', '安装、启动与任务日志'),
+      description: t(
+        'Installation, launch and task logs',
+        '安装、启动与任务日志',
+        '安裝、啟動與工作日誌',
+      ),
       open: () => jobs.output.show(true),
     },
   ];
   if (store.state.mode === 'launcher' && store.selected) {
     const instance = store.selected;
     choices.push({
-      label: t('Game log', '游戏日志'),
+      label: t('Game log', '游戏日志', '遊戲日誌'),
       description: instance.name,
       open: () => minecraft.logs(instance),
     });
@@ -24,7 +28,7 @@ export async function showOutput(store: Store, jobs: Jobs, minecraft: Minecraft,
   if (store.state.mode === 'server' && servers.selected) {
     const server = servers.selected;
     choices.push({
-      label: t('Server output', '服务端输出'),
+      label: t('Server output', '服务端输出', '伺服器輸出'),
       description: server.name,
       open: () => servers.showLog(server),
     });
@@ -34,12 +38,12 @@ export async function showOutput(store: Store, jobs: Jobs, minecraft: Minecraft,
       if (store.state.projects.some((project) => terminal.name.includes(`${project.name}: `)))
         choices.push({
           label: terminal.name,
-          description: t('Gradle terminal', 'Gradle 终端'),
+          description: t('Gradle terminal', 'Gradle 终端', 'Gradle 終端'),
           open: () => terminal.show(true),
         });
   const choice =
     choices.length === 1
       ? choices[0]
-      : await vscode.window.showQuickPick(choices, { title: t('Output', '输出') });
+      : await vscode.window.showQuickPick(choices, { title: t('Output', '输出', '輸出') });
   await choice?.open();
 }

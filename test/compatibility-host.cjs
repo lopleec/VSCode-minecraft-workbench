@@ -29,6 +29,27 @@ exports.run = async () => {
   const commands = await vscode.commands.getCommands(true);
   for (const command of extension.packageJSON.contributes.commands)
     assert.ok(commands.includes(command.command), command.command);
+  await api.workbench.handle('settings.update', { key: 'language', value: 'zh-tw' });
+  assert.equal(api.workbench.snapshot().locale, 'zh-tw');
+  assert.equal((await api.workbench.handle('settings.read', {})).javaPath.label, '預設 Java 路徑');
+  await api.workbench.handle('settings.update', { key: 'language', value: 'en' });
+  assert.equal(api.workbench.snapshot().locale, 'en');
+  api.accounts.signInStatus = {
+    phase: 'waiting',
+    code: 'TEST-CODE',
+    url: 'https://microsoft.com/devicelogin',
+  };
+  assert.equal(
+    (await api.workbench.handle('ready', {})).microsoftSignIn,
+    undefined,
+    'MCP state excludes authorization codes',
+  );
+  assert.equal(
+    api.workbench.snapshot(true).microsoftSignIn.code,
+    'TEST-CODE',
+    'Only the interactive view receives the code',
+  );
+  api.accounts.signInStatus = undefined;
   for (const section of [
     'home',
     'instances',

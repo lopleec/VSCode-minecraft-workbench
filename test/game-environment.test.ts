@@ -47,6 +47,34 @@ test('Snap GTK paths are restored from saved originals, including unset values',
   assert.equal(env.GIO_MODULE_DIR, '/system/modules');
 });
 
+test('GNOME Wayland defaults to available XWayland for both SDL and GLFW and keeps explicit choices', () => {
+  const source = {
+    DISPLAY: ':0',
+    WAYLAND_DISPLAY: 'wayland-0',
+    XDG_SESSION_TYPE: 'wayland',
+    XDG_CURRENT_DESKTOP: 'ubuntu:GNOME',
+  };
+  const env = gameEnvironment(source, 'linux');
+  assert.equal(env.SDL_VIDEO_DRIVER, 'x11');
+  assert.equal(env.SDL_VIDEODRIVER, 'x11');
+  assert.equal(env.XDG_SESSION_TYPE, 'x11');
+  assert.equal(env.WAYLAND_DISPLAY, undefined);
+  assert.equal(source.WAYLAND_DISPLAY, 'wayland-0');
+  assert.equal(gameEnvironment(source, 'linux', 'wayland').WAYLAND_DISPLAY, 'wayland-0');
+  assert.equal(
+    gameEnvironment({ ...source, SDL_VIDEO_DRIVER: 'wayland' }, 'linux').SDL_VIDEO_DRIVER,
+    'wayland',
+  );
+  assert.equal(
+    gameEnvironment({ ...source, DISPLAY: undefined }, 'linux').XDG_SESSION_TYPE,
+    'wayland',
+  );
+  assert.equal(
+    gameEnvironment({ ...source, XDG_CURRENT_DESKTOP: 'KDE' }, 'linux').WAYLAND_DISPLAY,
+    'wayland-0',
+  );
+});
+
 test('X11 sessions, explicit SDL backends and non-Linux launches retain their intended environment', () => {
   const x11 = { DISPLAY: ':0', XDG_SESSION_TYPE: 'x11', GDK_BACKEND: 'x11' };
   assert.deepEqual(gameEnvironment(x11, 'linux'), x11);

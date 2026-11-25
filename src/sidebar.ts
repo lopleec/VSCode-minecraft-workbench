@@ -2,15 +2,15 @@ import * as vscode from 'vscode';
 import { t } from './config';
 import type { Item, Section, View } from './views';
 
-export const sidebarTitles: Record<Section, [string, string]> = {
-  home: ['Workbench', '工作台'],
-  instances: ['Instances', '实例'],
-  projects: ['Projects', '项目'],
-  servers: ['Servers', '服务端'],
-  content: ['Content', '内容'],
-  accounts: ['Accounts', '账户'],
+export const sidebarTitles: Record<Section, [string, string, string?]> = {
+  home: ['Workbench', '工作台', '工作台'],
+  instances: ['Instances', '实例', '實例'],
+  projects: ['Projects', '项目', '專案'],
+  servers: ['Servers', '服务端', '伺服器'],
+  content: ['Content', '内容', '內容'],
+  accounts: ['Accounts', '账户', '帳戶'],
   java: ['Java', 'Java'],
-  downloads: ['Tasks', '任务'],
+  downloads: ['Tasks', '任务', '工作'],
 };
 
 export class Sidebar implements vscode.Disposable {

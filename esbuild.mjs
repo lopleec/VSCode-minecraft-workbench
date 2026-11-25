@@ -2,7 +2,12 @@ import { context } from 'esbuild';
 import path from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
 const production = process.argv.includes('--production');
-const output = { minify: production, sourcemap: !production, sourcesContent: false };
+const output = {
+  minify: production,
+  sourcemap: !production,
+  sourcesContent: false,
+  charset: 'utf8',
+};
 // XMCL 6.3.6 references an unpublished utils entry; unzip 2.2.0 points main at an omitted source file.
 const alias = {
   '@xmcl/unzip': path.resolve('node_modules/@xmcl/unzip/dist/index.js'),

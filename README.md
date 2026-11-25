@@ -2,11 +2,11 @@
 
 A Minecraft Java Edition launcher, mod development workspace and server manager for VS Code.
 
-[Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [MIT License](LICENSE)
+[Releases](https://github.com/lopleec/VSCode-minecraft-workbench/releases/latest) · [简体中文](#简体中文) · [中文使用说明](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [MIT License](LICENSE)
 
 **Java settings**, **Tasks** and **Output** are separate entries under **More**. Projects belong to Developer Mode; each mode shows its own management pages. Separate Java and Tasks panes can be enabled with `minecraftWorkbench.showRuntimeViews`. The extension Settings page follows the extension language and also links to VS Code Settings.
 
-Native sidebar views, commands, settings, tasks and output channels keep the extension at home in VS Code. Editor pages follow your theme, including light, dark and high contrast. The default language follows VS Code; English and Simplified Chinese can also be selected manually.
+Native sidebar views, commands, settings, tasks and output channels keep the extension at home in VS Code. Editor pages follow your theme, including light, dark and high contrast. The default language follows VS Code; English, Simplified Chinese and Traditional Chinese can also be selected manually.
 
 ![Modrinth discovery in VS Code with the Dark Modern theme](docs/images/discover-dark.png)
 
@@ -131,6 +131,8 @@ Open **Instances → Import instance** to scan a Minecraft/HMCL/PCL directory, a
 
 **Export Instance** creates a Prism/MultiMC ZIP, optionally including worlds. **Import Modpack** and **Export .mrpack** use the [Modrinth pack format](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack). Current Modrinth App installations without a `profile.json` should be exported as `.mrpack` first. Legacy jar mods and unrecognized MultiMC components are reported instead of silently dropped. Standard HMCL patch profiles support in-place management without rewriting the original metadata. For ZIPs over 512 MB, extract or copy the instance folder directly.
 
+SJMCL imports accept a game directory or its `sjmclcfg.json`. Active instance-specific Java, memory, resolution and version isolation settings are imported; inactive overrides and launcher commands are not. Metadata is read from the selected folder, without following the stored `versionPath` to unrelated directories.
+
 **World backups → Import worlds / Export world** accepts standard Java world folders and ZIPs, including worlds from other launchers. Existing world names create a separate numbered copy. Bedrock `.mcworld` files require conversion and are not Java world imports.
 
 Minecraft language initially follows the extension language, which follows VS Code by default. The automatic setting preserves a language chosen in-game. Override it in the instance settings or `minecraftWorkbench.gameLanguage` (`auto`, `preserve`, or a Minecraft code such as `en_us`, `zh_cn`).
@@ -146,7 +148,7 @@ Before entering credentials, confirm the full resolved authentication API addres
 
 For Microsoft sign-in, enter your own public-client application ID in **Tools → Accounts** or `minecraftWorkbench.microsoftClientId`. It must support device code flow, personal Microsoft accounts, Xbox sign-in and Minecraft Services access. An application ID alone does not guarantee Minecraft Services approval. No client secret is needed or collected.
 
-Sign-in uses Microsoft's device login page. Refresh and Minecraft access tokens are stored in **VS Code SecretStorage**, refreshed before expiry and before launch. A failed refresh requires signing in again. Removing an account deletes its saved credentials. Account names and UUIDs are local metadata. The extension collects no telemetry.
+**Sign in with Microsoft** saves a newly entered Client ID and opens Microsoft’s device login page. The account page shows the authorization code and current step, with Copy code, Open sign-in, Cancel and Retry controls. Authorization codes are temporary and are excluded from launcher logs and MCP state. Refresh and Minecraft access tokens are stored in **VS Code SecretStorage**, refreshed before expiry and before launch. A failed refresh requires signing in again. Removing an account deletes its saved credentials. Account names and UUIDs are local metadata. The extension collects no telemetry.
 
 ## Terracotta multiplayer (Beta)
 
@@ -213,7 +215,7 @@ Expand **Project settings** for a project-specific Java executable, Gradle optio
 
 ## Settings, downloads and storage
 
-On Linux, game and development-client processes restore the original GTK settings saved by the VS Code Snap launcher and avoid inheriting an X11-only GTK backend in a Wayland session. `minecraftWorkbench.linuxWindowSystem` defaults to `auto`; choose `x11` (XWayland) or `wayland` when required by the desktop. GNOME native Wayland window decorations require the system libdecor library and a decoration plugin; see the [SDL Wayland documentation](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md).
+On Linux, game and development-client processes restore the original GTK settings saved by the VS Code Snap launcher. Automatic mode prefers available X11 / XWayland on GNOME Wayland, retaining title bars and window controls for SDL and GLFW games. Other desktops keep their session backend. Explicit `minecraftWorkbench.linuxWindowSystem` choices (`x11` or `wayland`) take priority. Native Wayland requires compatible game libraries and libdecor; see the [SDL Wayland documentation](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md).
 
 Open **Minecraft Workbench: Settings** for settings in the extension language, with a link to VS Code Settings. **Change Language** and the sidebar language item switch language immediately. Editor pages use **Tools** for accounts, Java, tasks and settings; the target selector appears only on pages that use it. The extension language can be set independently from VS Code. The Workbench view keeps mode, language and Settings visible. Views retain VS Code's draggable dividers and native scrolling. Use **Workbench → … → Show Sidebar View** to reveal and focus a hidden or off-screen section. The collapsed **More** group contains Java, Tasks, Output and agreements. Expand **Settings** for proxy credentials, MCP, storage and documentation; clicking its label opens extension settings.
 
@@ -266,7 +268,7 @@ Bug reports, feature requests, translations and pull requests are welcome.
 
 - **Bugs:** search [existing issues](https://github.com/lopleec/VSCode-minecraft-workbench/issues) first, then [open an issue](https://github.com/lopleec/VSCode-minecraft-workbench/issues/new). Include reproduction steps, expected and actual behavior, extension and VS Code versions, operating system and architecture. For game issues, include the Minecraft, loader and Java versions, relevant mods and a short log excerpt.
 - **Feature requests:** describe the use case and the workflow you would like to improve in an [issue](https://github.com/lopleec/VSCode-minecraft-workbench/issues/new). Screenshots or small examples help explain UI suggestions.
-- **Pull requests:** fork the repository, create a branch and keep the change focused. Explain the problem, the change and how it was checked. Discuss substantial changes in an issue first. Follow the existing code style, update both languages when changing UI text or documentation, and include screenshots for UI changes. Run the relevant checks listed above before opening a [pull request](https://github.com/lopleec/VSCode-minecraft-workbench/pulls).
+- **Pull requests:** fork the repository, create a branch and keep the change focused. Explain the problem, the change and how it was checked. Discuss substantial changes in an issue first. Follow the existing code style, update all supported languages when changing UI text or documentation, and include screenshots for UI changes. Run the relevant checks listed above before opening a [pull request](https://github.com/lopleec/VSCode-minecraft-workbench/pulls).
 
 Remove tokens, proxy credentials, account details and personal paths from shared logs and screenshots. Keep downloaded game files, worlds, local instance data and generated VSIX files out of source contributions. Contributions are licensed under the project's [MIT License](LICENSE); third-party content retains its own license.
 
@@ -282,7 +284,7 @@ Built with the [VS Code API](https://code.visualstudio.com/api), [XMCL](https://
 
 **Java 设置**、**任务**、**输出**分别放在 **更多**。模组项目只出现在开发模式，各模式使用对应的管理页面。可通过 `minecraftWorkbench.showRuntimeViews` 单独显示 Java 和任务分栏。插件设置页跟随插件语言，也保留 VS Code 原生设置入口。
 
-在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文或简体中文。
+在 VS Code 中启动 Minecraft Java 版、管理实例并开发模组。使用原生侧栏、命令、设置、任务和输出窗口；编辑器页面适配深色、浅色与高对比主题。默认跟随 VS Code 语言，也可单独手动选择英文、简体中文或繁体中文。
 
 ### 安装与开始使用
 
@@ -396,7 +398,7 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 正版登录需在 **工具 → 账户** 或 `minecraftWorkbench.microsoftClientId` 中填写自己的公共客户端应用 ID。应用必须支持设备代码流程、个人 Microsoft 账户、Xbox 登录并获得 Minecraft Services 访问许可；仅创建应用 ID 不保证获得 Minecraft Services 许可。不需要也不会收集客户端密钥。
 
-通过 Microsoft 设备登录页面授权。刷新令牌和 Minecraft 访问令牌存于 **VS Code SecretStorage**，到期前及启动前自动刷新；刷新失败需重新登录。移除账户会删除保存的凭据，账户名和 UUID 作为本地元数据保存。插件不收集遥测。
+点击 **使用 Microsoft 登录** 会保存新填写的 Client ID，并打开 Microsoft 设备登录页面。账户页显示验证码与当前步骤，提供复制、重新打开授权页面、取消和重试入口。验证码只临时保存在内存中，不写入启动器日志或 MCP 状态。刷新令牌和 Minecraft 访问令牌存于 **VS Code SecretStorage**，到期前及启动前自动刷新；刷新失败需重新登录。移除账户会删除保存的凭据，账户名和 UUID 作为本地元数据保存。插件不收集遥测。
 
 ### 开服模式
 
@@ -450,7 +452,7 @@ Gradle 通过项目 wrapper 在 VS Code Tasks 中运行，首次会下载 Gradle
 
 ### 网络、目录与诊断
 
-Linux 游戏及开发客户端会恢复 VS Code Snap 启动器保存的原始 GTK 设置，避免在 Wayland 会话中继承仅限 X11 的 GTK 后端。`minecraftWorkbench.linuxWindowSystem` 默认 `auto`，也可手动选择 `x11`（XWayland）或 `wayland`。GNOME 的原生 Wayland 标题栏需要系统安装 libdecor 和窗口装饰插件，详见 [SDL Wayland 文档](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md)。
+Linux 游戏及开发客户端会恢复 VS Code Snap 保存的原始 GTK 设置。自动模式在 GNOME Wayland 下优先使用可用的 X11 / XWayland，为 SDL 和 GLFW 游戏保留标题栏与窗口按钮；其他桌面沿用原会话后端。手动指定 `minecraftWorkbench.linuxWindowSystem`（`x11` 或 `wayland`）优先。原生 Wayland 需要兼容的游戏库和 libdecor，详见 [SDL Wayland 文档](https://github.com/libsdl-org/SDL/blob/main/docs/README-wayland.md)。
 
 编辑器使用 **工具** 菜单进入账户、Java、任务及设置，实例选择只出现在需要目标的页面。工作台保留模式、语言和设置；**更多** 默认收起，包含 Java、任务、输出和协议。展开 **设置** 可管理代理凭据、MCP、存储目录或查看文档；点击设置文字打开插件设置页，其中保留 VS Code 原生设置入口。MCP 默认关闭。分类保留 VS Code 原生分栏、分隔线和滚动；在 **工作台 → … → 显示侧栏分类** 中可直接找回被隐藏或移到下方的分类。
 
@@ -534,11 +536,13 @@ npm run package
 
 新建实例统一使用 **Prism / MultiMC 格式**：以实例名称建立目录，其中包含 `instance.cfg`、`mmc-pack.json` 和 `.minecraft` 游戏目录。世界存档仍是 `saves/世界名称/` 下的原生 Java 版存档。版本文件、运行库和资源使用系统 Minecraft 目录，也可通过 `minecraftWorkbench.gameDirectory` 更改。`minecraftWorkbench.instanceDirectory` 可单独指定实例父目录，包括现有的 PrismLauncher `instances` 目录。旧版工作台实例继续兼容。
 
-在 **实例 → 导入实例** 中扫描 Minecraft/HMCL/PCL 目录、Prism/MultiMC 实例目录、Modrinth 档案目录或 ZIP 导出文件，预览会显示识别出的 Minecraft 和 Loader 版本。**原地管理**保留原目录，与原启动器共用文件，移除登记时保留游戏文件；**复制导入**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界存档。不会导入原启动器的执行钩子或账户数据库。标准 Minecraft / HMCL / PCL 实例的运行文件完整时会直接识别为已安装，缺失资源时才补齐。
+在 **实例 → 导入实例** 中扫描 Minecraft/HMCL/PCL/SJMCL 目录、Prism/MultiMC 实例目录、Modrinth 档案目录或 ZIP 导出文件，预览会显示识别出的 Minecraft 和 Loader 版本。**原地管理**保留原目录，与原启动器共用文件，移除登记时保留游戏文件；**复制导入**创建独立的 Prism/MultiMC 实例，保留模组、配置和世界存档。不会导入原启动器的执行钩子或账户数据库。标准 Minecraft / HMCL / PCL 实例的运行文件完整时会直接识别为已安装，缺失资源时才补齐。
 
 **导出实例**生成 Prism/MultiMC ZIP，可选包含世界存档；**导入整合包 / 导出 .mrpack** 使用 [Modrinth 格式](https://support.modrinth.com/en/articles/8802351-modrinth-modpack-format-mrpack)。新版 Modrinth App 若未保留 `profile.json`，请先导出 `.mrpack`。旧式 Jar 模组、无法识别的 MultiMC 组件会明确提示，不会静默忽略。支持原地管理标准 HMCL 补丁配置，保留原始元数据。ZIP 超过 512 MB 时，请先解压或直接复制实例目录。
 
 **存档备份 → 导入 / 导出世界存档**支持原生 Java 版世界目录和 ZIP，可使用其他启动器中的存档。同名世界另建编号副本。基岩版 `.mcworld` 需先转换格式。
+
+SJMCL 可选择游戏目录或其中的 `sjmclcfg.json`，导入启用的实例 Java、内存、分辨率与版本隔离设置；不继承未启用的覆盖配置或启动命令，不按配置内的 `versionPath` 跳转到其他目录。
 
 游戏语言首次跟随扩展，扩展默认跟随 VS Code。自动模式保留玩家在游戏中选择的语言；可在实例设置或 `minecraftWorkbench.gameLanguage` 中覆盖，取值为 `auto`、`preserve` 或 `en_us`、`zh_cn` 等 Minecraft 语言代码。
 

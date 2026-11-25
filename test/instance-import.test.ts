@@ -203,6 +203,65 @@ test('HMCL patch metadata accepts flat vanilla profiles and preserves library an
   }
 });
 
+test('PCL Forge and NeoForge versions report loader versions from patches, arguments, libraries and Setup.ini', async () => {
+  const root = await temp();
+  try {
+    const versions = path.join(root, 'versions');
+    await writeJson(path.join(versions, 'PCL Neo', 'PCL Neo.json'), {
+      ...profile('PCL Neo', { root: true }),
+      patches: [
+        { ...profile('game'), version: '1.21.1', priority: 0 },
+        { id: 'neoforge', version: '21.1.233', priority: 1000, inheritsFrom: '1.21.1' },
+      ],
+    });
+    await writeJson(path.join(versions, 'PCL Forge', 'PCL Forge.json'), {
+      ...profile('PCL Forge', { root: true }),
+      patches: [
+        { ...profile('game'), version: '1.20.1', priority: 0 },
+        { id: 'forge', version: '1.20.1-47.4.0', priority: 1000, inheritsFrom: '1.20.1' },
+      ],
+    });
+    await writeJson(
+      path.join(versions, 'Arguments Neo', 'Arguments Neo.json'),
+      profile('Arguments Neo', {
+        clientVersion: '1.21.1',
+        arguments: { game: ['--fml.neoForgeVersion', '21.1.242'], jvm: [] },
+        libraries: [{ name: 'net.neoforged.fancymodloader:loader:4.0.43' }],
+      }),
+    );
+    await writeJson(
+      path.join(versions, 'Setup Neo', 'Setup Neo.json'),
+      profile('Setup Neo', {
+        clientVersion: '1.21.1',
+        libraries: [{ name: 'net.neoforged.fancymodloader:loader:4.0.42' }],
+      }),
+    );
+    await put(root, 'versions/Setup Neo/PCL/Setup.ini', 'VersionNeoForge:21.1.233\n');
+    await writeJson(
+      path.join(versions, 'Legacy Forge', 'Legacy Forge.json'),
+      profile('Legacy Forge', {
+        clientVersion: '1.20.1',
+        libraries: [{ name: 'net.minecraftforge:fmlloader:1.20.1-47.4.6' }],
+      }),
+    );
+    const found = await scanInstances(root);
+    const candidate = (name: string) => found.candidates.find((item) => item.name === name)!;
+    assert.equal(found.candidates.length, 5);
+    assert.equal(candidate('PCL Neo').loader, 'neoforge');
+    assert.equal(candidate('PCL Neo').loaderVersion, '21.1.233');
+    assert.equal(candidate('PCL Forge').loader, 'forge');
+    assert.equal(candidate('PCL Forge').loaderVersion, '47.4.0');
+    assert.equal(candidate('Arguments Neo').loader, 'neoforge');
+    assert.equal(candidate('Arguments Neo').loaderVersion, '21.1.242');
+    assert.equal(candidate('Setup Neo').loader, 'neoforge');
+    assert.equal(candidate('Setup Neo').loaderVersion, '21.1.233');
+    assert.equal(candidate('Legacy Forge').loader, 'forge');
+    assert.equal(candidate('Legacy Forge').loaderVersion, '47.4.6');
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
 test('new instances use portable Prism/MultiMC metadata, readable unique names, and system game roots', async () => {
   const root = await temp();
   try {

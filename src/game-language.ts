@@ -7,8 +7,8 @@ import { readJson, rejectSymlinkParents, writeJson, writeText } from './files';
 
 export function minecraftLanguage(locale: string): string {
   const normalized = locale.toLowerCase().replaceAll('-', '_');
-  if (normalized === 'zh_tw' || normalized === 'zh_hant') return 'zh_tw';
-  if (normalized === 'zh_hk') return 'zh_hk';
+  if (normalized === 'zh_hk' || normalized === 'zh_hant_hk') return 'zh_hk';
+  if (/^zh_(tw|mo|hant)(_|$)/.test(normalized)) return 'zh_tw';
   if (normalized.startsWith('zh')) return 'zh_cn';
   const languages: Record<string, string> = {
     en: 'en_us',

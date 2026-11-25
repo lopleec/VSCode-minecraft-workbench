@@ -5,7 +5,7 @@ import type { ServerPreview } from '../server-import';
 
 export function renderServerImport(main: HTMLElement, ctx: PageContext) {
   const L = ctx.text;
-  main.append(heading(L('Import server', '导入服务端')));
+  main.append(heading(L('Import server', '导入服务端', '匯入伺服器')));
   const directory = input('serverDirectory');
   directory.required = true;
   const name = input('name');
@@ -20,29 +20,29 @@ export function renderServerImport(main: HTMLElement, ctx: PageContext) {
     h(
       'div',
       { class: 'form-grid' },
-      field(L('Name', '名称'), name),
-      field(L('Software', '服务端类型'), engine),
-      field(L('Minecraft version', 'Minecraft 版本'), minecraft),
-      field(L('Launch JAR', '启动 JAR'), jar),
+      field(L('Name', '名称', '名稱'), name),
+      field(L('Software', '服务端类型', '伺服器類型'), engine),
+      field(L('Minecraft version', 'Minecraft 版本', 'Minecraft 版本'), minecraft),
+      field(L('Launch JAR', '启动 JAR', '啟動 JAR'), jar),
     ),
   );
   const submit = h(
     'button',
     { class: 'primary', type: 'submit', disabled: true },
-    L('Import', '导入'),
+    L('Import', '导入', '匯入'),
   );
   const info = h('p', { role: 'status' });
   const form = h(
     'form',
     { class: 'management-form' },
     field(
-      L('Server directory', '服务端目录'),
+      L('Server directory', '服务端目录', '伺服器目錄'),
       h(
         'div',
         { class: 'input-action' },
         directory,
         ctx.button(
-          L('Browse…', '浏览…'),
+          L('Browse…', '浏览…', '瀏覽…'),
           async () => {
             const value = await ctx.request<string | undefined>('launcher.pickDirectory');
             if (value) {
@@ -52,7 +52,7 @@ export function renderServerImport(main: HTMLElement, ctx: PageContext) {
           },
           'secondary',
         ),
-        ctx.button(L('Detect', '识别'), inspect, 'secondary'),
+        ctx.button(L('Detect', '识别', '識別'), inspect, 'secondary'),
       ),
     ),
     fields,
@@ -62,6 +62,7 @@ export function renderServerImport(main: HTMLElement, ctx: PageContext) {
       L(
         'Manage the existing files in place. The Minecraft EULA must be confirmed before the first start.',
         '原地管理已有文件，首次启动前需确认 Minecraft EULA。',
+        '原地管理已有檔案，首次啟動前需確認 Minecraft EULA。',
       ),
     ),
     info,
@@ -69,7 +70,7 @@ export function renderServerImport(main: HTMLElement, ctx: PageContext) {
       'div',
       { class: 'inline-actions' },
       submit,
-      ctx.button(L('Cancel', '取消'), () => ctx.navigate('servers'), 'secondary'),
+      ctx.button(L('Cancel', '取消', '取消'), () => ctx.navigate('servers'), 'secondary'),
     ),
   );
   let inspected = '';
@@ -87,7 +88,7 @@ export function renderServerImport(main: HTMLElement, ctx: PageContext) {
     engine.value = preview.engine;
     minecraft.value = preview.minecraft;
     jar.replaceChildren(
-      h('option', { value: '' }, preview.argumentFile || L('Automatic', '自动')),
+      h('option', { value: '' }, preview.argumentFile || L('Automatic', '自动', '自動')),
       ...preview.jars.map((file) => h('option', { value: file }, file)),
     );
     fields.disabled = false;

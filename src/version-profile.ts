@@ -5,6 +5,25 @@ import { exists, filename, readJson, rejectSymlinkParents } from './files';
 
 type Profile = Record<string, any>;
 
+export function profileParent(profile: Profile): string | undefined {
+  if (typeof profile.inheritsFrom === 'string') return filename(profile.inheritsFrom);
+  if (!Array.isArray(profile.patches)) return;
+  const embedded = new Set(
+    profile.patches
+      .filter((p) => p && ['game', 'net.minecraft'].includes(p.id))
+      .flatMap((p) => (typeof p.version === 'string' ? [p.version] : [])),
+  );
+  const parents = new Set<string>();
+  for (const patch of profile.patches) {
+    if (patch?.inheritsFrom === undefined) continue;
+    if (typeof patch.inheritsFrom !== 'string') throw new Error('Invalid version inheritance.');
+    const parent = filename(patch.inheritsFrom);
+    if (!embedded.has(parent)) parents.add(parent);
+  }
+  if (parents.size > 1) throw new Error('Conflicting instance patch parents.');
+  return parents.values().next().value;
+}
+
 export async function versionChain(root: string, version: string, signal?: AbortSignal) {
   const chain: Profile[] = [];
   const seen = new Set<string>();
@@ -24,8 +43,8 @@ export async function versionChain(root: string, version: string, signal?: Abort
     if (!profile || typeof profile !== 'object' || Array.isArray(profile))
       throw new Error('Invalid instance metadata.');
     if (profile.id !== id) throw new Error(`Version profile ID does not match its folder: ${id}`);
-    chain.push(profile);
-    id = typeof profile.inheritsFrom === 'string' ? profile.inheritsFrom : undefined;
+    id = profileParent(profile);
+    chain.push({ ...profile, inheritsFrom: id });
   }
   return chain;
 }
@@ -40,13 +59,8 @@ export function normalizeProfile(profile: Profile): Profile {
   let result: Profile = profile.root === true && !profile.inheritsFrom ? {} : { ...profile };
   delete result.patches;
   for (const patch of patches) {
-    if (
-      !patch ||
-      typeof patch !== 'object' ||
-      Array.isArray(patch) ||
-      patch.patches?.length ||
-      patch.inheritsFrom
-    )
+    // Embedded base-game references are annotations; external parents are resolved by versionChain.
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch) || patch.patches?.length)
       throw new Error('Unsupported nested instance patch.');
     const arguments_ = {
       game: [...(result.arguments?.game || []), ...(patch.arguments?.game || [])],
@@ -63,7 +77,7 @@ export function normalizeProfile(profile: Profile): Profile {
     if (result.arguments || patch.arguments) result.arguments = arguments_;
     result.libraries = libraries;
   }
-  return { ...result, id: profile.id, jar: profile.jar, inheritsFrom: profile.inheritsFrom };
+  return { ...result, id: profile.id, jar: profile.jar, inheritsFrom: profileParent(profile) };
 }
 
 export async function resolveGameVersion(root: string, version: string, signal?: AbortSignal) {

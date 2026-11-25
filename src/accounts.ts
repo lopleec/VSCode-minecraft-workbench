@@ -5,6 +5,9 @@ import { Network, HttpError } from './network';
 import { config, t } from './config';
 import { offlineUuid } from './files';
 import { Authlib, accountSecretKey } from './authlib';
+import { setTimeout as delay } from 'node:timers/promises';
+import { describeError } from './errors';
+import { MicrosoftSignInStatus, microsoftSignInError } from './microsoft-login';
 
 const oauth = 'https://login.microsoftonline.com/consumers/oauth2/v2.0';
 const scope = 'XboxLive.signin offline_access';
@@ -12,11 +15,14 @@ export class Accounts implements vscode.Disposable {
   readonly authlib: Authlib;
   private readonly refreshing = new Map<string, Promise<string>>();
   private readonly timer: NodeJS.Timeout;
+  private signingIn?: AbortController;
+  signInStatus?: MicrosoftSignInStatus;
   constructor(
     private readonly store: Store,
     private readonly secrets: vscode.SecretStorage,
     private readonly net: Network,
     private readonly canRefresh: () => boolean = () => true,
+    private readonly changed: () => void = () => {},
   ) {
     this.authlib = new Authlib(store, secrets, net);
     this.timer = setInterval(() => {
@@ -36,6 +42,7 @@ export class Accounts implements vscode.Disposable {
         t(
           'Set Minecraft Workbench: Microsoft Client ID in Settings first.',
           '请先在设置中填写 Minecraft Workbench: Microsoft Client ID。',
+          '請先在設定中填寫 Minecraft Workbench: Microsoft Client ID。',
         ),
       );
     return clientId;
@@ -43,7 +50,11 @@ export class Accounts implements vscode.Disposable {
   async offline(name: string) {
     if (!/^[A-Za-z0-9_]{3,16}$/.test(name))
       throw new Error(
-        t('Use 3–16 letters, numbers or underscores.', '名称需为 3–16 位字母、数字或下划线。'),
+        t(
+          'Use 3–16 letters, numbers or underscores.',
+          '名称需为 3–16 位字母、数字或下划线。',
+          '名稱需為 3–16 位字母、數字或下劃線。',
+        ),
       );
     const id = offlineUuid(name);
     if (!this.store.state.accounts.some((a) => a.id === id))
@@ -52,6 +63,44 @@ export class Accounts implements vscode.Disposable {
     await this.store.save();
   }
   async login(signal: AbortSignal, report: (message: string, english?: string) => void) {
+    if (this.signingIn)
+      throw new Error(
+        t(
+          'Microsoft sign-in is already in progress.',
+          'Microsoft 登录正在进行。',
+          'Microsoft 登入正在進行。',
+        ),
+      );
+    const controller = new AbortController();
+    this.signingIn = controller;
+    const loginSignal = AbortSignal.any([signal, controller.signal]);
+    this.setSignInStatus({ phase: 'requesting' });
+    try {
+      loginSignal.throwIfAborted();
+      await this.deviceLogin(loginSignal, report);
+      this.setSignInStatus({ phase: 'done' });
+    } catch (failure) {
+      const error = loginSignal.aborted ? failure : microsoftSignInError(failure);
+      this.setSignInStatus({
+        phase: loginSignal.aborted ? 'cancelled' : 'failed',
+        error: loginSignal.aborted ? undefined : describeError(error),
+      });
+      throw error;
+    } finally {
+      this.signingIn = undefined;
+    }
+  }
+  cancelSignIn() {
+    this.signingIn?.abort();
+  }
+  private setSignInStatus(status: MicrosoftSignInStatus) {
+    this.signInStatus = status;
+    this.changed();
+  }
+  private async deviceLogin(
+    signal: AbortSignal,
+    report: (message: string, english?: string) => void,
+  ) {
     const clientId = this.clientId();
     const device = await this.net.json<{
       device_code: string;
@@ -64,30 +113,41 @@ export class Accounts implements vscode.Disposable {
       form: new URLSearchParams({ client_id: clientId, scope }),
       signal,
     });
-    await vscode.env.clipboard.writeText(device.user_code);
+    const uri = new URL(device.verification_uri);
+    if (
+      uri.protocol !== 'https:' ||
+      !['microsoft.com', 'www.microsoft.com', 'login.microsoftonline.com'].includes(uri.hostname) ||
+      uri.username ||
+      uri.password ||
+      !/^[A-Z0-9-]{4,24}$/i.test(device.user_code) ||
+      !Number.isFinite(device.expires_in) ||
+      device.expires_in <= 0 ||
+      device.expires_in > 3600
+    )
+      throw new Error('Invalid Microsoft device authorization response.');
+    const deadline = Date.now() + device.expires_in * 1000;
+    this.setSignInStatus({
+      phase: 'waiting',
+      code: device.user_code,
+      url: uri.href,
+      expiresAt: deadline,
+    });
+    await Promise.resolve(vscode.env.clipboard.writeText(device.user_code)).catch(() => {});
     report(
       t(
-        `Enter code ${device.user_code} (copied to clipboard)`,
-        `输入验证码 ${device.user_code}（已复制）`,
+        'Complete Microsoft authorization in your browser. The code is shown in Accounts.',
+        '请在浏览器中完成 Microsoft 授权，验证码显示在账户页。',
+        '請在瀏覽器中完成 Microsoft 授權，驗證碼顯示在帳戶頁。',
       ),
       'Microsoft sign-in: waiting for device authorization',
     );
-    await vscode.env.openExternal(vscode.Uri.parse(device.verification_uri));
-    const deadline = Date.now() + device.expires_in * 1000;
-    let interval = Math.max(device.interval, 5);
+    await Promise.resolve(vscode.env.openExternal(vscode.Uri.parse(uri.href))).catch(() => false);
+    let interval = Number.isFinite(device.interval)
+      ? Math.max(5, Math.min(60, device.interval))
+      : 5;
     while (Date.now() < deadline) {
-      await new Promise<void>((resolve, reject) => {
-        const abort = () => {
-          clearTimeout(timer);
-          reject(signal.reason);
-        };
-        const timer = setTimeout(() => {
-          signal.removeEventListener('abort', abort);
-          resolve();
-        }, interval * 1000);
-        signal.addEventListener('abort', abort, { once: true });
-        if (signal.aborted) abort();
-      });
+      await delay(Math.min(interval * 1000, deadline - Date.now()), undefined, { signal });
+      if (Date.now() >= deadline) break;
       try {
         const response = await this.net.json<{ access_token: string; refresh_token: string }>(
           `${oauth}/token`,
@@ -101,7 +161,17 @@ export class Accounts implements vscode.Disposable {
             signal,
           },
         );
+        this.setSignInStatus({ phase: 'exchanging' });
+        report(
+          t(
+            'Checking Xbox and Minecraft profile',
+            '验证 Xbox 与 Minecraft 档案',
+            '驗證 Xbox 與 Minecraft 個人檔案',
+          ),
+          'Checking Xbox and Minecraft profile',
+        );
         const profile = await this.exchange(response.access_token, signal);
+        signal.throwIfAborted();
         await this.secrets.store(
           this.key(profile.id),
           JSON.stringify({
@@ -133,7 +203,11 @@ export class Accounts implements vscode.Disposable {
       }
     }
     throw new Error(
-      t('Sign-in code expired. Start sign-in again.', '登录验证码已过期，请重新登录。'),
+      t(
+        'Sign-in code expired. Start sign-in again.',
+        '登录验证码已过期，请重新登录。',
+        '登入驗證碼已過期，請重新登入。',
+      ),
     );
   }
   private async exchange(msToken: string, signal?: AbortSignal) {
@@ -179,7 +253,11 @@ export class Accounts implements vscode.Disposable {
     );
     if (!profile.id || !profile.name)
       throw new Error(
-        t('A Minecraft Java profile is required.', '该账户需要拥有 Minecraft Java 版档案。'),
+        t(
+          'A Minecraft Java profile is required.',
+          '该账户需要拥有 Minecraft Java 版档案。',
+          '該帳戶需要擁有 Minecraft Java 版檔案。',
+        ),
       );
     return {
       ...profile,
@@ -191,7 +269,10 @@ export class Accounts implements vscode.Disposable {
     if (account.kind === 'offline') return '0';
     if (account.kind === 'authlib') return this.authlib.token(account);
     const stored = await this.secrets.get(this.key(account.id));
-    if (!stored) throw new Error(t('Sign in to this account again.', '请重新登录该账户。'));
+    if (!stored)
+      throw new Error(
+        t('Sign in to this account again.', '请重新登录该账户。', '請重新登入該帳戶。'),
+      );
     let tokens: Tokens;
     try {
       tokens = JSON.parse(stored) as Tokens;
@@ -200,6 +281,7 @@ export class Accounts implements vscode.Disposable {
         t(
           'Stored login credentials are invalid. Sign in again.',
           '保存的登录凭据无效，请重新登录。',
+          '儲存的登入驗證資訊無效，請重新登入。',
         ),
       );
     }
@@ -259,6 +341,7 @@ export class Accounts implements vscode.Disposable {
     await this.store.save();
   }
   dispose() {
+    this.cancelSignIn();
     clearInterval(this.timer);
   }
 }

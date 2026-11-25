@@ -5,7 +5,7 @@ import { modrinthProjects } from '../modrinth';
 export function renderBatchInput(
   panel: HTMLElement,
   ui: {
-    text(en: string, zh: string): string;
+    text(en: string, zh: string, zhTw?: string): string;
     button(
       label: string,
       action: () => unknown,
@@ -21,7 +21,11 @@ export function renderBatchInput(
     rows: 9,
     required: true,
     spellcheck: false,
-    'aria-label': L('Modrinth mod links or project IDs', 'Modrinth 模组链接或项目 ID'),
+    'aria-label': L(
+      'Modrinth mod links or project IDs',
+      'Modrinth 模组链接或项目 ID',
+      'Modrinth 模組連結或項目 ID',
+    ),
     placeholder: 'https://modrinth.com/mod/sodium\nhttps://modrinth.com/mod/lithium',
   });
   const error = h('p', { class: 'danger', role: 'alert' });
@@ -31,7 +35,11 @@ export function renderBatchInput(
     h(
       'label',
       { class: 'field' },
-      h('span', { class: 'field-label' }, L('Modrinth links or IDs', 'Modrinth 链接或 ID')),
+      h(
+        'span',
+        { class: 'field-label' },
+        L('Modrinth links or IDs', 'Modrinth 链接或 ID', 'Modrinth 連結或 ID'),
+      ),
       input,
     ),
     h(
@@ -40,10 +48,11 @@ export function renderBatchInput(
       L(
         'One per line. Versions, loaders and required dependencies are matched automatically.',
         '每行一个。自动匹配游戏版本、加载器和必需前置。',
+        '每行一個。自動匹配遊戲版本、載入器和必需前置。',
       ),
     ),
     error,
-    h('button', { class: 'primary', type: 'submit' }, L('Match versions', '匹配版本')),
+    h('button', { class: 'primary', type: 'submit' }, L('Match versions', '匹配版本', '匹配版本')),
   );
   form.onsubmit = (event) => {
     event.preventDefault();
@@ -53,12 +62,17 @@ export function renderBatchInput(
       error.textContent = L(
         'Enter up to 100 Modrinth mod links or project IDs.',
         '请输入最多 100 个 Modrinth 模组链接或项目 ID。',
+        '請輸入最多 100 個 Modrinth 模組連結或項目 ID。',
       );
     }
   };
   panel.replaceChildren(
-    h('div', { class: 'detail-heading' }, ui.button(L('Close', '关闭'), ui.close, 'text-button')),
-    h('div', { class: 'detail-title' }, h('h1', {}, L('Batch install', '批量安装'))),
+    h(
+      'div',
+      { class: 'detail-heading' },
+      ui.button(L('Close', '关闭', '關閉'), ui.close, 'text-button'),
+    ),
+    h('div', { class: 'detail-title' }, h('h1', {}, L('Batch install', '批量安装', '批量安裝'))),
     h('div', { class: 'detail-scroll' }, form),
   );
 }
@@ -67,7 +81,7 @@ export async function renderBatchInstall(
   panel: HTMLElement,
   projects: string[],
   ui: {
-    text(en: string, zh: string): string;
+    text(en: string, zh: string, zhTw?: string): string;
     request<T>(method: string, params: Record<string, unknown>): Promise<T>;
     button(
       label: string,
@@ -84,15 +98,19 @@ export async function renderBatchInstall(
   const body = h(
     'div',
     { class: 'detail-scroll' },
-    h('p', { role: 'status' }, L('Matching versions…', '匹配版本…')),
+    h('p', { role: 'status' }, L('Matching versions…', '匹配版本…', '匹配版本…')),
   );
   panel.replaceChildren(
     h(
       'div',
       { class: 'detail-heading' },
-      ui.button(L('← Back', '← 返回'), ui.close, 'text-button'),
+      ui.button(L('← Back', '← 返回', '← 返回'), ui.close, 'text-button'),
     ),
-    h('div', { class: 'detail-title' }, h('h1', {}, L('Install selected mods', '安装所选模组'))),
+    h(
+      'div',
+      { class: 'detail-title' },
+      h('h1', {}, L('Install selected mods', '安装所选模组', '安裝所選模組')),
+    ),
     body,
   );
   try {
@@ -109,7 +127,11 @@ export async function renderBatchInstall(
         ),
       ),
       ...result.unavailable.map((item) =>
-        h('p', { class: 'danger' }, `${item.name}: ${L('No compatible version', '没有兼容版本')}`),
+        h(
+          'p',
+          { class: 'danger' },
+          `${item.name}: ${L('No compatible version', '没有兼容版本', '沒有相容版本')}`,
+        ),
       ),
       ...(dependencies.length
         ? [
@@ -119,7 +141,11 @@ export async function renderBatchInstall(
               h(
                 'summary',
                 {},
-                L(`Dependencies (${dependencies.length})`, `前置依赖（${dependencies.length}）`),
+                L(
+                  `Dependencies (${dependencies.length})`,
+                  `前置依赖（${dependencies.length}）`,
+                  `前置相依性（${dependencies.length}）`,
+                ),
               ),
               ...dependencies.map((entry) => h('p', {}, entry.version.name)),
             ),
@@ -133,8 +159,13 @@ export async function renderBatchInstall(
         ? L(
             `Install compatible mods (${installable.length})`,
             `安装兼容的模组（${installable.length}）`,
+            `安裝相容的模組（${installable.length}）`,
           )
-        : L(`Install (${installable.length})`, `安装（${installable.length}）`),
+        : L(
+            `Install (${installable.length})`,
+            `安装（${installable.length}）`,
+            `安裝（${installable.length}）`,
+          ),
       async () => {
         confirm.disabled = true;
         try {

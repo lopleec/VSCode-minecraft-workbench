@@ -461,6 +461,12 @@ export const mcpOperations: McpOperation[] = [
     required: ['id', 'action'],
   },
   {
+    name: 'account_microsoft_cancel',
+    method: 'launcher.cancelSignIn',
+    description:
+      'Cancel interactive Microsoft sign-in. Authorization codes and tokens are never returned.',
+  },
+  {
     name: 'java_action',
     method: 'launcher.javaAction',
     description:

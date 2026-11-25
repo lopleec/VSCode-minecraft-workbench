@@ -21,7 +21,10 @@ export class InstanceSetup {
     const input = value as Record<string, unknown>;
     const manifest = await this.minecraft.manifest();
     const version = manifest.versions.find((entry) => entry.id === input.minecraft);
-    if (!version) throw new Error(t('Select a Minecraft version.', '请选择 Minecraft 版本。'));
+    if (!version)
+      throw new Error(
+        t('Select a Minecraft version.', '请选择 Minecraft 版本。', '請選擇 Minecraft 版本。'),
+      );
     const loader = input.loader as Loader;
     if (!['vanilla', 'fabric', 'quilt', 'forge', 'neoforge'].includes(loader))
       throw new Error('Invalid mod loader');
@@ -29,7 +32,13 @@ export class InstanceSetup {
     if (loader !== 'vanilla') {
       const available = await this.minecraft.loaders(loader, version.id);
       if (typeof input.loaderVersion !== 'string' || !available.includes(input.loaderVersion))
-        throw new Error(t('Select a compatible loader version.', '请选择兼容的加载器版本。'));
+        throw new Error(
+          t(
+            'Select a compatible loader version.',
+            '请选择兼容的加载器版本。',
+            '請選擇相容的載入器版本。',
+          ),
+        );
       loaderVersion = input.loaderVersion;
     }
     const settings = validateInstanceSettings({ ...existing, ...input }, this.store.state.accounts);
@@ -44,6 +53,7 @@ export class InstanceSetup {
           t(
             'Duplicate this linked instance before changing its version.',
             '请先复制原地管理的实例，再更改版本。',
+            '請先複製原地管理的實例，再更改版本。',
           ),
         );
       const previous = { ...existing };
@@ -67,7 +77,13 @@ export class InstanceSetup {
     }
     const parent = input.parentDirectory || minecraftDirectory();
     if (typeof parent !== 'string' || !path.isAbsolute(parent) || parent.includes('\0'))
-      throw new Error(t('Choose an absolute parent directory.', '请选择绝对路径的父目录。'));
+      throw new Error(
+        t(
+          'Choose an absolute parent directory.',
+          '请选择绝对路径的父目录。',
+          '請選擇絕對路徑的上層目錄。',
+        ),
+      );
     const id = randomUUID();
     const instance: Instance = {
       ...settings,
