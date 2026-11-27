@@ -6,6 +6,9 @@ export interface MemoryLimits {
   minMemory: number;
   maxMemory: number;
 }
+export function normalizeMemory(value: number): number {
+  return Math.max(128, Math.floor(value / 8) * 8);
+}
 export function recommendMemory(totalBytes: number, percentage = 25) {
   if (!Number.isFinite(totalBytes) || totalBytes <= 0) throw new Error('Invalid system memory');
   const totalMemory = Math.floor(totalBytes / 1024 ** 2);
@@ -29,12 +32,17 @@ export function resolveMemory(
     typeof value === 'number' && Number.isInteger(value) && value >= 128 && value <= 1048576
       ? value
       : undefined;
-  const maxMemory =
-    valid(instance.maxMemory) ?? valid(defaults.maxMemory) ?? recommendation.maxMemory;
-  const minMemory =
-    valid(instance.minMemory) ??
-    valid(defaults.minMemory) ??
-    Math.min(recommendation.minMemory, maxMemory);
+  const maxMemory = normalizeMemory(
+    valid(instance.maxMemory) ?? valid(defaults.maxMemory) ?? recommendation.maxMemory,
+  );
+  const minMemory = Math.min(
+    maxMemory,
+    normalizeMemory(
+      valid(instance.minMemory) ??
+        valid(defaults.minMemory) ??
+        Math.min(recommendation.minMemory, maxMemory),
+    ),
+  );
   return { minMemory, maxMemory };
 }
 export function memorySettings(instance: Partial<Instance> = {}) {

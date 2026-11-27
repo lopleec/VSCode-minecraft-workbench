@@ -1,6 +1,7 @@
 import { Account, Instance } from './models';
 import { validGameLanguage } from './game-language';
 import { instanceGroup } from './instance-groups';
+import { normalizeMemory } from './memory';
 
 export type InstanceSettings = Pick<
   Instance,
@@ -29,7 +30,7 @@ export function validateInstanceSettings(value: unknown, accounts: Account[]): I
     if (value === '' || value === undefined || value === null) return undefined;
     if (!Number.isInteger(value) || Number(value) < 128 || Number(value) > 1048576)
       throw new Error('Invalid memory limit');
-    return Number(value);
+    return normalizeMemory(Number(value));
   };
   const minMemory = memory('minMemory');
   const maxMemory = memory('maxMemory');

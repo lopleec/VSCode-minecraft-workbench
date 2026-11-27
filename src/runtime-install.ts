@@ -32,6 +32,7 @@ import { loaderInfo } from './instance-import';
 import { resolveGameVersion } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 import { forgeMaven } from './versions';
+import { detectLwjgl3ify, installLwjgl3ify } from './lwjgl3ify';
 
 const exec = promisify(execFile);
 interface RuntimeServices {
@@ -47,11 +48,13 @@ export async function installRuntime(
   services: RuntimeServices,
   signal: AbortSignal,
   report: (message: string, english?: string) => void,
-): Promise<{ versionId: string; loaderVersion?: string }> {
+): Promise<{ versionId: string; loaderVersion?: string; preserveVersion?: boolean }> {
   const root = runtimeDirectory(instance);
   const folder = new MinecraftFolder(root);
   let loaderVersion = instance.loaderVersion;
+  const lwjgl3ify = await detectLwjgl3ify(instance);
   if (
+    !lwjgl3ify &&
     !instance.installed &&
     !instance.preserveVersion &&
     (instance.loader === 'vanilla' || loaderVersion)
@@ -324,6 +327,34 @@ export async function installRuntime(
     }
     return { versionId, loaderVersion };
   };
+  if (lwjgl3ify) {
+    const installed = await installLwjgl3ify(instance, {
+      net: services.net,
+      root,
+      signal,
+      report,
+    });
+    report(
+      t(
+        `lwjgl3ify runtime ready (Java ${installed.javaMajor})`,
+        `lwjgl3ify 运行环境已就绪（Java ${installed.javaMajor}）`,
+        `lwjgl3ify 執行環境已就緒（Java ${installed.javaMajor}）`,
+      ),
+      `lwjgl3ify runtime ready (Java ${installed.javaMajor})`,
+    );
+    const resolved = await resolveGameVersion(root, installed.versionId, signal);
+    await clientFiles(resolved);
+    await assets(resolved);
+    signal.throwIfAborted();
+    const natives = path.join(instance.directory, '.workbench', 'natives');
+    await rejectSymlinkParents(instance.directory, natives);
+    await fs.rm(natives, { recursive: true, force: true });
+    return {
+      versionId: installed.versionId,
+      loaderVersion: installed.forgeVersion,
+      preserveVersion: true,
+    };
+  }
   let versionId = instance.versionId || instance.minecraft;
   if (instance.preserveVersion && instance.versionId) {
     let profiles;
