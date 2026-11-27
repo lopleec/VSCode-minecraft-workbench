@@ -117,6 +117,10 @@ Stop a running instance before changing its content, versions or restoring world
 
 Java selection uses the **instance override → global default → automatic detection/download** order. Instance Java is optional. Changing other instance settings preserves an existing override; clear the instance field to return to the global default.
 
+### lwjgl3ify
+
+Forge 1.7.10 instances can run on LWJGL3 and modern Java with [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify). Enable **Use lwjgl3ify** in **Instance settings → Java & memory**, then run **Install / repair**. The workbench downloads the matching release version profile, LWJGL3 libraries, the lwjgl3ify coremod and UniMixins, and downloads the Java version required by that profile when it is missing. Prism/MultiMC instances with lwjgl3ify components are detected during import, and a 1.7.10 Forge instance whose `mods/` already contains a lwjgl3ify jar is detected on launch; the instance setting can force it on or off. Keep only one lwjgl3ify jar in `mods/`. Hodgepodge is still recommended for mod compatibility. An instance or global Java older than the profile requirement is skipped automatically for lwjgl3ify; leaving Java on automatic remains the simplest choice.
+
 ## Existing instances and storage
 
 Use **Instances → Select multiple** to move instances into a group, stop, repair or remove them together. Selection is off by default. Groups appear in the native sidebar and as collapsible sections in the instance list; search, group filters and sorting help manage large collections. Select a group in the filter to rename it or ungroup its instances. Game files stay in their existing folders.
@@ -396,6 +400,10 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 通过侧栏 **语言** 或命令面板 **切换语言** 即时切换；也可在插件设置中选择语言。语言可独立于 VS Code 设置。
 
 修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除实例会将整个游戏目录移至系统废纸篓（系统支持时）。
+
+### lwjgl3ify
+
+Forge 1.7.10 实例可通过 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 使用 LWJGL3 和现代 Java。在 **实例设置 → Java 与内存** 中勾选 **使用 lwjgl3ify**，然后执行 **安装 / 修复**。工作台会下载对应的版本配置、LWJGL3 运行库、lwjgl3ify 核心模组和 UniMixins，并在缺少该配置要求的 Java 时自动下载。导入带 lwjgl3ify 组件的 Prism/MultiMC 实例时会自动识别；Forge 1.7.10 实例启动时若 `mods/` 中已有 lwjgl3ify JAR 也会自动启用，可在实例设置中强制开启或关闭。`mods/` 中只能保留一个 lwjgl3ify JAR；仍建议安装 Hodgepodge 以改善模组兼容性。若实例或全局 Java 低于版本配置要求，lwjgl3ify 会自动跳过它；将 Java 留空（自动选择）仍是最省事的方式。
 
 ### 账户与 Microsoft 登录
 

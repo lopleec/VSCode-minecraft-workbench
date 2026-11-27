@@ -10,6 +10,7 @@ import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } fr
 import { InstanceSettings, validateInstanceSettings } from './instance-settings';
 import { normalizeProfile, resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
+import { isLwjgl3ifyProfile, lwjgl3ifyModVersion } from './lwjgl3ify';
 
 type Json = Record<string, any>;
 export interface ImportCandidate {
@@ -27,6 +28,7 @@ export interface ImportCandidate {
   maxMemory?: number;
   java?: string;
   resolution?: Instance['resolution'];
+  lwjgl3ify?: boolean;
   warnings: string[];
 }
 export interface ImportScan {
@@ -271,6 +273,11 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
       ? gameConfig.performance.maxMemAllocation
       : undefined;
   const resolution = gameConfig?.gameWindow?.resolution;
+  const lwjgl3ify =
+    info.loader === 'forge' &&
+    minecraft === '1.7.10' &&
+    !chain.some((profile) => isLwjgl3ifyProfile(profile)) &&
+    !!(await lwjgl3ifyModVersion(directory).catch(() => undefined));
   return candidate({
     name:
       override?.name || (typeof sjmcl?.name === 'string' && sjmcl.name.trim() ? sjmcl.name : id),
@@ -281,6 +288,7 @@ async function standard(root: string, id: string, override?: Json): Promise<Impo
     versionId: id,
     format: sjmcl ? 'sjmcl' : 'standard',
     java,
+    lwjgl3ify,
     maxMemory: Number.isInteger(memory) && memory >= 128 && memory <= 1048576 ? memory : undefined,
     resolution:
       resolution &&
@@ -313,14 +321,26 @@ async function multiMC(folder: string): Promise<ImportCandidate | undefined> {
   const directory = await fs.realpath(
     path.join(folder, (await exists(path.join(folder, '.minecraft'))) ? '.minecraft' : 'minecraft'),
   );
+  const lwjgl3ifyComponents = pack.components.filter(
+    (c: Json) => typeof c.uid === 'string' && /^me\.eigenraven\.lwjgl3ify(?:\.|$)/.test(c.uid),
+  );
   const warnings = pack.components
     .filter(
       (c: Json) =>
-        !['net.minecraft', 'org.lwjgl', 'org.lwjgl3', ...Object.keys(componentLoaders)].includes(
-          c.uid,
-        ),
+        ![
+          'net.minecraft',
+          'org.lwjgl',
+          'org.lwjgl3',
+          ...Object.keys(componentLoaders),
+          ...lwjgl3ifyComponents.map((c: Json) => c.uid),
+        ].includes(c.uid),
     )
     .map((c: Json) => `Unsupported MultiMC component: ${String(c.uid)}`);
+  const lwjgl3ify =
+    lwjgl3ifyComponents.length > 0 ||
+    (loader === 'forge' &&
+      game.version === '1.7.10' &&
+      !!(await lwjgl3ifyModVersion(directory).catch(() => undefined)));
   const requestedJava =
     settings.OverrideJavaLocation === 'true' || settings.OverrideJava === 'true'
       ? settings.JavaPath
@@ -353,6 +373,7 @@ async function multiMC(folder: string): Promise<ImportCandidate | undefined> {
     minMemory: memory('MinMemAlloc'),
     maxMemory: memory('MaxMemAlloc'),
     java,
+    lwjgl3ify,
     warnings,
   });
 }
@@ -580,7 +601,8 @@ export class InstanceImporter {
             layout: source.format === 'multimc' ? ('multimc' as const) : undefined,
           };
     const target = location.directory;
-    const preserveVersion = !!source.versionId;
+    const lwjgl3ify = source.lwjgl3ify === true;
+    const preserveVersion = !!source.versionId && !lwjgl3ify;
     const instance: Instance = {
       ...settings,
       id: randomUUID(),
@@ -591,6 +613,7 @@ export class InstanceImporter {
       ...location,
       sourceFormat: source.format,
       linked: mode === 'link',
+      lwjgl3ify: lwjgl3ify || undefined,
       preserveVersion,
       versionId: preserveVersion ? source.versionId : undefined,
       installed: false,

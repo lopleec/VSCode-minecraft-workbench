@@ -34,6 +34,7 @@ export class InstanceFiles {
         runtimeDirectory: runtimeDirectory(instance),
         versionId: instance.versionId,
         format: instance.layout === 'multimc' ? 'multimc' : 'standard',
+        lwjgl3ify: instance.lwjgl3ify,
         warnings: [],
       },
       'copy',

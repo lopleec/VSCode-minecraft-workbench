@@ -728,9 +728,9 @@ export class Workbench implements vscode.Disposable {
       }
       case 'saveInstance':
         if (instance) {
-          await this.ui.saveInstance(instance, params.value);
+          const result = await this.ui.saveInstance(instance, params.value);
           this.refresh();
-          return true;
+          return result;
         }
         throw new Error('Instance not found');
       case 'selectInstance':

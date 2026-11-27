@@ -25,6 +25,7 @@ import { validateInstanceSettings } from './instance-settings';
 import { extensionId } from './build-info';
 import { importWorlds, exportWorld } from './worlds';
 import { authenticationPresets } from './auth-presets';
+import { LWJGL3IFY_MINECRAFT } from './lwjgl3ify';
 
 class Cancelled extends Error {}
 async function input(
@@ -340,10 +341,25 @@ export class UI {
     if (!value || typeof value !== 'object' || Array.isArray(value))
       throw new Error('Invalid instance settings');
     const previous = structuredClone(instance);
-    Object.assign(
-      instance,
-      validateInstanceSettings({ ...instance, ...value }, this.store.state.accounts),
-    );
+    const settings = validateInstanceSettings({ ...instance, ...value }, this.store.state.accounts);
+    if (
+      settings.lwjgl3ify &&
+      (instance.minecraft !== LWJGL3IFY_MINECRAFT || instance.loader !== 'forge')
+    )
+      throw new Error(
+        t(
+          'lwjgl3ify requires a Forge 1.7.10 instance.',
+          'lwjgl3ify 仅支持 Forge 1.7.10 实例。',
+          'lwjgl3ify 僅支援 Forge 1.7.10 實例。',
+        ),
+      );
+    Object.assign(instance, settings);
+    const reinstall = previous.lwjgl3ify !== instance.lwjgl3ify;
+    if (reinstall) {
+      instance.installed = false;
+      instance.versionId = undefined;
+      instance.preserveVersion = false;
+    }
     try {
       await writeInstanceMetadata(instance);
       await this.store.save();
@@ -354,6 +370,7 @@ export class UI {
       await writeInstanceMetadata(instance).catch(() => {});
       throw error;
     }
+    return { reinstall };
   }
   async cloneInstance(item?: Item) {
     const instance = await this.instance(item);

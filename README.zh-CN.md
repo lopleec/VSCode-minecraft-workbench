@@ -110,6 +110,10 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 修改内容、版本或恢复存档前需停止实例。恢复前自动备份当前存档。删除实例会将整个游戏目录移至系统废纸篓（系统支持时）。
 
+### lwjgl3ify
+
+Forge 1.7.10 实例可通过 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 使用 LWJGL3 和现代 Java。在 **实例设置 → Java 与内存** 中勾选 **使用 lwjgl3ify**，然后执行 **安装 / 修复**。工作台会下载对应的版本配置、LWJGL3 运行库、lwjgl3ify 核心模组和 UniMixins，并在缺少该配置要求的 Java 时自动下载。导入带 lwjgl3ify 组件的 Prism/MultiMC 实例时会自动识别；Forge 1.7.10 实例启动时若 `mods/` 中已有 lwjgl3ify JAR 也会自动启用，可在实例设置中强制开启或关闭。`mods/` 中只能保留一个 lwjgl3ify JAR；仍建议安装 Hodgepodge 以改善模组兼容性。若实例或全局 Java 低于版本配置要求，lwjgl3ify 会自动跳过它；将 Java 留空（自动选择）仍是最省事的方式。
+
 ### 账户与 Microsoft 登录
 
 **插件不内置 Microsoft Client ID**；留空时使用离线账户。离线身份无法通过要求 Microsoft / Minecraft 验证的服务器认证。

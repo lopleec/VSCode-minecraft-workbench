@@ -241,7 +241,20 @@ async function action(name: string) {
           : L('No conflicts found.', '未发现冲突。', '未發現衝突。');
     }
   } else await call('action', { action: name });
+  const keepInstanceForm = name === 'detectJava' && page === 'instance';
   boot = await call<Bootstrap>('ready');
+  if (keepInstanceForm) {
+    // Java detection only affects future launches; keep unsaved instance settings.
+    updateJobs();
+    notice(
+      L(
+        'Java detection finished. Detected runtimes are listed under Java.',
+        'Java 检测完成，检测到的运行时显示在“Java”页面。',
+        'Java 偵測完成，偵測到的執行階段顯示在「Java」頁面。',
+      ),
+    );
+    return;
+  }
   render();
   if (resultMessage) notice(resultMessage);
 }
@@ -1895,6 +1908,7 @@ function renderInstance() {
     return;
   }
   const running = boot.instanceStatus[instance.id] !== 'stopped';
+  const lwjgl3ifySupported = instance.minecraft === '1.7.10' && instance.loader === 'forge';
   const globalMemory = h('input', {
     type: 'checkbox',
     name: 'globalMemory',
@@ -2037,6 +2051,38 @@ function renderInstance() {
       'fieldset',
       { disabled: running },
       h('legend', {}, L('Java & memory', 'Java 与内存', 'Java 與記憶體')),
+      field(
+        L('lwjgl3ify runtime', 'lwjgl3ify 运行环境', 'lwjgl3ify 執行環境'),
+        formSelect(
+          'lwjgl3ify',
+          instance.lwjgl3ify === undefined ? '' : String(instance.lwjgl3ify),
+          lwjgl3ifySupported
+            ? [
+                [
+                  '',
+                  L(
+                    'Automatic (use an installed lwjgl3ify jar)',
+                    '自动（使用已安装的 lwjgl3ify JAR）',
+                    '自動（使用已安裝的 lwjgl3ify JAR）',
+                  ),
+                ],
+                ['false', L('Disabled', '禁用', '停用')],
+                ['true', L('Enabled', '启用', '啟用')],
+              ]
+            : [['', L('Forge 1.7.10 only', '仅适用于 Forge 1.7.10', '僅適用於 Forge 1.7.10')]],
+        ),
+        lwjgl3ifySupported
+          ? L(
+              'Runs Forge 1.7.10 with LWJGL3 and modern Java. After changing this option, use Install / repair to prepare the runtime.',
+              '使用 LWJGL3 和现代 Java 运行 Forge 1.7.10。更改此选项后，请执行“安装 / 修复”以准备运行环境。',
+              '使用 LWJGL3 和現代 Java 執行 Forge 1.7.10。變更此選項後，請執行「安裝 / 修復」以準備執行環境。',
+            )
+          : L(
+              'lwjgl3ify is available for Forge 1.7.10 instances only.',
+              'lwjgl3ify 仅适用于 Forge 1.7.10 实例。',
+              'lwjgl3ify 僅適用於 Forge 1.7.10 實例。',
+            ),
+      ),
       field(
         L('Java executable', 'Java 可执行文件', 'Java 執行檔'),
         formInput('java', instance.java || '', 'text', L('Automatic', '自动选择', '自動選擇')),
@@ -2228,7 +2274,8 @@ function renderInstance() {
 async function saveForm(form: HTMLFormElement, instance: Instance) {
   const values = new FormData(form);
   const value = (name: string) => String(values.get(name) || '');
-  await call('saveInstance', {
+  const supportsLwjgl3ify = instance.minecraft === '1.7.10' && instance.loader === 'forge';
+  const saved = await call<{ reinstall?: boolean }>('saveInstance', {
     instanceId: instance.id,
     value: {
       name: value('name'),
@@ -2236,6 +2283,11 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
       gameLanguage: value('gameLanguage'),
       accountId: value('accountId'),
       java: value('java'),
+      lwjgl3ify: supportsLwjgl3ify
+        ? value('lwjgl3ify') === ''
+          ? undefined
+          : value('lwjgl3ify') === 'true'
+        : undefined,
       minMemory: values.has('globalMemory') ? undefined : Number(value('minMemory')),
       maxMemory: values.has('globalMemory') ? undefined : Number(value('maxMemory')),
       gc: value('gc'),
@@ -2262,7 +2314,15 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
   });
   boot = await call<Bootstrap>('ready');
   syncMemoryControls?.();
-  notice(L('Instance settings saved.', '实例设置已保存。', '實例設定已儲存。'));
+  notice(
+    saved?.reinstall
+      ? L(
+          'Saved. Use Install / repair to prepare the lwjgl3ify runtime.',
+          '已保存。请执行“安装 / 修复”以准备 lwjgl3ify 运行环境。',
+          '已儲存。請執行「安裝 / 修復」以準備 lwjgl3ify 執行環境。',
+        )
+      : L('Instance settings saved.', '实例设置已保存。', '實例設定已儲存。'),
+  );
 }
 window.addEventListener('message', (event: MessageEvent) => {
   const message = event.data;

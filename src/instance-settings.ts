@@ -17,6 +17,7 @@ export type InstanceSettings = Pick<
   | 'jvmArgs'
   | 'gameArgs'
   | 'gameLanguage'
+  | 'lwjgl3ify'
 >;
 export function validateInstanceSettings(value: unknown, accounts: Account[]): InstanceSettings {
   if (!value || typeof value !== 'object') throw new Error('Invalid instance settings');
@@ -78,10 +79,13 @@ export function validateInstanceSettings(value: unknown, accounts: Account[]): I
   };
   if (input.backupBeforeLaunch !== undefined && typeof input.backupBeforeLaunch !== 'boolean')
     throw new Error('Invalid backup preference');
+  if (input.lwjgl3ify !== undefined && typeof input.lwjgl3ify !== 'boolean')
+    throw new Error('Invalid lwjgl3ify preference');
   return {
     name,
     group: instanceGroup(input.group),
     gameLanguage,
+    lwjgl3ify: input.lwjgl3ify as boolean | undefined,
     accountId,
     java: text('java'),
     minMemory,

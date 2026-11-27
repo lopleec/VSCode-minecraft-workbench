@@ -17,7 +17,7 @@ for (const name of [
   'extension/TERMS.md',
 ])
   assert.ok(entries.includes(name), `Missing ${name}`);
-assert.ok(bytes <= 672 * 1024, `VSIX exceeds 672 KiB: ${bytes} bytes`);
+assert.ok(bytes <= 688 * 1024, `VSIX exceeds 688 KiB: ${bytes} bytes`);
 assert.ok(
   !entries.some((name) =>
     /\.map$|bundle-meta\.json$|^extension\/(?:docs\/images|src|test|tests|scripts|fixtures|coverage|output|\.playwright-cli|node_modules)\//.test(

@@ -5,7 +5,7 @@ import { ChildProcess, spawn } from 'node:child_process';
 import { launch, type LaunchOption } from '@xmcl/core';
 import { Store } from './store';
 import { Network, HttpError } from './network';
-import { Java, preferredJava } from './java';
+import { Java, inspectJava, preferredJava } from './java';
 import { Accounts } from './accounts';
 import { Jobs } from './jobs';
 import { Instance, Loader, VersionManifest } from './models';
@@ -23,6 +23,7 @@ import { resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 import { gameJavaExecutable } from './game-java';
 import { gameEnvironment } from './game-environment';
+import { detectLwjgl3ify } from './lwjgl3ify';
 
 export class Minecraft {
   readonly running = new Map<string, ChildProcess>();
@@ -128,6 +129,7 @@ export class Minecraft {
             const ready =
               !instance.installed &&
               instance.preserveVersion &&
+              !instance.lwjgl3ify &&
               (await isRuntimeReady(instance, signal));
             const result = ready
               ? { versionId: instance.versionId!, loaderVersion: instance.loaderVersion }
@@ -163,6 +165,20 @@ export class Minecraft {
     this.assertIdle(instance);
     if (this.running.has(instance.id) || this.installing.has(instance.id))
       throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
+    if (instance.lwjgl3ify === undefined) {
+      const mod = await detectLwjgl3ify(instance);
+      if (mod) {
+        instance.lwjgl3ify = true;
+        instance.installed = false;
+        instance.versionId = undefined;
+        instance.preserveVersion = false;
+        this.jobs.output.info(
+          `[${instance.name}] Detected lwjgl3ify ${mod}; preparing its runtime before launch.`,
+        );
+        await this.store.save();
+        this.changed();
+      }
+    }
     if (!instance.installed) await this.install(instance);
     if (this.starting.has(instance.id) || this.running.has(instance.id))
       throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
@@ -198,13 +214,34 @@ export class Minecraft {
             instance.versionId || instance.minecraft,
             signal,
           );
+          if (instance.lwjgl3ify)
+            this.jobs.output.info(
+              `[${instance.name}] LWJGL3ify: enabled (Java ${version.javaVersion?.majorVersion || 17}+, ${version.mainClass})`,
+            );
           phase('Preparing Java', '准备 Java', '準備 Java');
-          const java = await this.java.ensure(
-            version.javaVersion?.majorVersion || 8,
-            signal,
-            report,
-            preferredJava(instance.java),
-          );
+          const requiredJava = version.javaVersion?.majorVersion || 8;
+          let preferred = preferredJava(instance.java);
+          if (instance.lwjgl3ify && preferred) {
+            const selected = await inspectJava(preferred, signal).catch(() => undefined);
+            signal.throwIfAborted();
+            if (!selected || selected.major < requiredJava) {
+              const message = selected
+                ? t(
+                    `The selected Java ${selected.major} is too old for lwjgl3ify; using automatic Java ${requiredJava}.`,
+                    `所选 Java ${selected.major} 低于 lwjgl3ify 要求，将自动使用 Java ${requiredJava}。`,
+                    `所選 Java ${selected.major} 低於 lwjgl3ify 要求，將自動使用 Java ${requiredJava}。`,
+                  )
+                : t(
+                    `The configured Java could not be used for lwjgl3ify; using automatic Java ${requiredJava}.`,
+                    `配置的 Java 无法用于 lwjgl3ify，将自动使用 Java ${requiredJava}。`,
+                    `設定的 Java 無法用於 lwjgl3ify，將自動使用 Java ${requiredJava}。`,
+                  );
+              report(message);
+              this.jobs.output.info(`[${instance.name}] ${message}`);
+              preferred = undefined;
+            }
+          }
+          const java = await this.java.ensure(requiredJava, signal, report, preferred);
           this.jobs.output.info(
             `[${instance.name}] Using Java ${java.major} (${java.version}): ${java.path}`,
           );
