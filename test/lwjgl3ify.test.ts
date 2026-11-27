@@ -7,7 +7,6 @@ import { createHash } from 'node:crypto';
 import AdmZip from 'adm-zip';
 import { Instance } from '../src/models';
 import { Store } from '../src/store';
-import { UI } from '../src/ui';
 import { writeJson } from '../src/files';
 import { InstanceImporter, scanInstances } from '../src/instance-import';
 import { resolveGameVersion } from '../src/version-profile';
@@ -287,10 +286,11 @@ test('installRuntime prepares lwjgl3ify without installing a plain Forge profile
       loaderVersion: '10.13.4.1614',
       directory: path.join(root, 'game'),
       runtimeDirectory: path.join(root, 'runtime'),
-      lwjgl3ify: true,
       createdAt: '',
     };
     await fs.mkdir(instance.directory, { recursive: true });
+    await fs.mkdir(path.join(instance.directory, 'mods'), { recursive: true });
+    await fs.writeFile(path.join(instance.directory, 'mods', 'lwjgl3ify-3.1.1.jar'), 'mod');
     const client = new AdmZip();
     client.addFile('fixture.txt', Buffer.from('client'));
     const clientBytes = client.toBuffer();
@@ -384,47 +384,6 @@ test('installRuntime prepares lwjgl3ify without installing a plain Forge profile
   }
 });
 
-test('changing the lwjgl3ify setting invalidates the installed runtime and rejects other versions', async () => {
-  const root = await temp();
-  const store = new Store(path.join(root, 'state'), () => {});
-  const instance: Instance = {
-    id: 'x',
-    name: 'Game',
-    minecraft: '1.7.10',
-    loader: 'forge',
-    directory: path.join(root, 'game'),
-    installed: true,
-    versionId: 'forge',
-    preserveVersion: true,
-    createdAt: '',
-  };
-  store.state.instances.push(instance);
-  const ui = Object.create(UI.prototype) as UI;
-  Object.assign(ui, {
-    store,
-    minecraft: { assertIdle: () => {} },
-    content: { isBusy: () => false },
-  });
-  try {
-    assert.deepEqual(await ui.saveInstance(instance, { lwjgl3ify: true }), { reinstall: true });
-    assert.equal(instance.lwjgl3ify, true);
-    assert.equal(instance.installed, false);
-    assert.equal(instance.versionId, undefined);
-    assert.equal(instance.preserveVersion, false);
-    await assert.rejects(
-      () =>
-        ui.saveInstance(
-          { ...instance, minecraft: '1.12.2', versionId: undefined, installed: false },
-          { lwjgl3ify: true },
-        ),
-      /1\.7\.10|Forge/,
-    );
-  } finally {
-    store.dispose();
-    await fs.rm(root, { recursive: true, force: true });
-  }
-});
-
 test('Prism instances using lwjgl3ify import without unsupported-component warnings', async () => {
   const root = await temp();
   const store = new Store(path.join(root, 'state'), () => {});
@@ -449,7 +408,6 @@ test('Prism instances using lwjgl3ify import without unsupported-component warni
     const scan = await scanInstances(folder);
     assert.deepEqual(scan.warnings, []);
     const candidate = scan.candidates[0];
-    assert.equal(candidate.lwjgl3ify, true);
     assert.equal(candidate.loader, 'forge');
     assert.equal(candidate.loaderVersion, '10.13.4.1614');
     const instance = await new InstanceImporter(store).import(
@@ -459,7 +417,6 @@ test('Prism instances using lwjgl3ify import without unsupported-component warni
       'GTNH',
       path.join(root, 'target'),
     );
-    assert.equal(instance.lwjgl3ify, true);
     assert.equal(instance.preserveVersion, false);
     assert.equal(instance.installed, false);
   } finally {
@@ -494,7 +451,6 @@ test('standard Forge 1.7.10 instances with a lwjgl3ify jar are detected once', a
     });
     const candidate = (await scanInstances(runtime)).candidates[0];
     assert.equal(candidate.loader, 'forge');
-    assert.equal(candidate.lwjgl3ify, true);
     const instance: Instance = {
       id: 'detect',
       name: 'Detect',
@@ -505,7 +461,6 @@ test('standard Forge 1.7.10 instances with a lwjgl3ify jar are detected once', a
       createdAt: '',
     };
     assert.equal(await detectLwjgl3ify(instance), '3.1.1');
-    assert.equal(await detectLwjgl3ify({ ...instance, lwjgl3ify: false }), undefined);
     await writeJson(path.join(runtime, 'versions', '1.7.10', '1.7.10.json'), {
       id: '1.7.10',
       type: 'release',
@@ -517,13 +472,19 @@ test('standard Forge 1.7.10 instances with a lwjgl3ify jar are detected once', a
             artifact: { url: 'https://example.test/patches.jar', size: 1, sha1: '0'.repeat(40) },
           },
         },
+        {
+          name: 'net.minecraftforge:forge:1.7.10-10.13.4.1614-1.7.10:universal',
+          downloads: {
+            artifact: { url: 'https://example.test/forge.jar', size: 1, sha1: '0'.repeat(40) },
+          },
+        },
       ],
       arguments: { game: [], jvm: [] },
       assets: '1.7.10',
       downloads: { client: { url: 'https://example.test/client', sha1: '0'.repeat(40), size: 1 } },
     });
     const upgraded = (await scanInstances(runtime)).candidates[0];
-    assert.equal(upgraded.lwjgl3ify, false);
+    assert.equal(upgraded.loader, 'forge');
     assert.equal(await detectLwjgl3ify(instance), undefined);
   } finally {
     await fs.rm(root, { recursive: true, force: true });

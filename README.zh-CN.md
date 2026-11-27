@@ -102,7 +102,7 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 ### 内存、语言与实例设置
 
-内存在**创建后的实例设置**或全局设置中调整。默认最小、最大内存为 `0`（自动）：最大值取**系统内存的 25%**，向下取整到 128 MB，上限 8 GiB；最小值随之调整，通常为 256–1024 MB。可修改全局百分比，或取消 **使用全局内存设置**，为实例单独填写。手动值优先。
+内存在**创建后的实例设置**或全局设置中调整。默认最小、最大内存为 `0`（自动）：最大值取**系统内存的 25%**，向下取整到 128 MB，上限 8 GiB；最小值随之调整，通常为 256–1024 MB。可修改全局百分比，或取消 **使用全局内存设置**，为实例单独填写。手动值优先，并向下对齐到 8 MB，以确保设置值与 JVM 堆上限一致。
 
 ![浅色主题下的中文实例设置](docs/images/settings-zh-light.png)
 
@@ -112,7 +112,7 @@ Modrinth / CurseForge 整合包保留可管理文件的下载或本地来源记�
 
 ### lwjgl3ify
 
-Forge 1.7.10 实例可通过 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 使用 LWJGL3 和现代 Java。在 **实例设置 → Java 与内存** 中勾选 **使用 lwjgl3ify**，然后执行 **安装 / 修复**。工作台会下载对应的版本配置、LWJGL3 运行库、lwjgl3ify 核心模组和 UniMixins，并在缺少该配置要求的 Java 时自动下载。导入带 lwjgl3ify 组件的 Prism/MultiMC 实例时会自动识别；Forge 1.7.10 实例启动时若 `mods/` 中已有 lwjgl3ify JAR 也会自动启用，可在实例设置中强制开启或关闭。`mods/` 中只能保留一个 lwjgl3ify JAR；仍建议安装 Hodgepodge 以改善模组兼容性。若实例或全局 Java 低于版本配置要求，lwjgl3ify 会自动跳过它；将 Java 留空（自动选择）仍是最省事的方式。
+Forge 1.7.10 实例在 `mods/` 中存在 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 时会自动使用 LWJGL3 和现代 Java。可通过 **内容 → 浏览内容** 安装，或保留从 Prism/MultiMC、整合包导入的 JAR，然后执行 **安装 / 修复**；首次启动也会准备运行环境。工作台会下载对应的版本配置、LWJGL3 运行库、核心模组和 UniMixins，并在缺少该配置要求的 Java 时自动下载。启动时会自动选择运行环境；移除 lwjgl3ify JAR 后会恢复普通 Forge 运行环境。`mods/` 中只能保留一个 lwjgl3ify JAR；仍建议安装 Hodgepodge 以改善模组兼容性。若实例或全局 Java 低于版本配置要求，lwjgl3ify 会自动跳过它；将 Java 留空（自动选择）仍是最省事的方式。
 
 ### 账户与 Microsoft 登录
 

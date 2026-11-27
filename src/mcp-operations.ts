@@ -252,7 +252,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'instance_create_or_change_version',
     method: 'launcher.saveSetup',
     description:
-      'Create an isolated client instance or change its Minecraft/loader version. Memory is configured separately. Set edit=true and instanceId to change an existing instance. lwjgl3ify is available for Forge 1.7.10 only.',
+      'Create an isolated client instance or change its Minecraft/loader version. Memory is configured separately. Set edit=true and instanceId to change an existing instance.',
     properties: {
       ...instanceId,
       edit: bool,
@@ -265,7 +265,6 @@ export const mcpOperations: McpOperation[] = [
           minecraft: str('Minecraft version'),
           loader: choice(['vanilla', 'fabric', 'quilt', 'forge', 'neoforge']),
           loaderVersion: str('Loader version'),
-          lwjgl3ify: bool,
           parentDirectory: str(
             'Absolute shared Minecraft directory; omit for the standard system path',
           ),
@@ -286,7 +285,7 @@ export const mcpOperations: McpOperation[] = [
     name: 'instance_save_settings',
     method: 'saveInstance',
     description:
-      'Save client name, group, java path, accountId, minMemory/maxMemory (MB), gc (default/g1/zgc), jvmArgs and gameArgs arrays, resolution {width,height,fullscreen}, server address, backupBeforeLaunch and lwjgl3ify (Forge 1.7.10 only). Omit memory fields for global automatic memory.',
+      'Save client name, group, java path, accountId, minMemory/maxMemory (MB), gc (default/g1/zgc), jvmArgs and gameArgs arrays, resolution {width,height,fullscreen}, server address, backupBeforeLaunch. Omit memory fields for global automatic memory.',
     properties: { ...instanceId, value: { type: 'object' } },
     required: ['instanceId', 'value'],
   },

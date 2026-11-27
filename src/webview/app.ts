@@ -1908,7 +1908,6 @@ function renderInstance() {
     return;
   }
   const running = boot.instanceStatus[instance.id] !== 'stopped';
-  const lwjgl3ifySupported = instance.minecraft === '1.7.10' && instance.loader === 'forge';
   const globalMemory = h('input', {
     type: 'checkbox',
     name: 'globalMemory',
@@ -1925,6 +1924,24 @@ function renderInstance() {
   minimum.required = true;
   maximum.required = true;
   const memoryHint = h('p', { class: 'field-hint', id: 'memory-recommendation' });
+  const customResolution = h('input', {
+    type: 'checkbox',
+    name: 'customResolution',
+    checked: !!instance.resolution,
+  });
+  const width = formInput('width', instance.resolution?.width || boot.defaults.width, 'number');
+  const height = formInput('height', instance.resolution?.height || boot.defaults.height, 'number');
+  const fullscreen = h('input', {
+    type: 'checkbox',
+    name: 'fullscreen',
+    checked: instance.resolution?.fullscreen ?? boot.defaults.fullscreen,
+  });
+  const useCustomResolution = () => {
+    customResolution.checked = true;
+  };
+  width.addEventListener('input', useCustomResolution);
+  height.addEventListener('input', useCustomResolution);
+  fullscreen.addEventListener('change', useCustomResolution);
   syncMemoryControls = () => {
     if (globalMemory.checked) {
       minimum.value = String(boot.defaults.minMemory);
@@ -1970,7 +1987,13 @@ function renderInstance() {
         { class: 'inline-actions' },
         button(
           running ? L('Stop', '停止', '停止') : L('Launch', '启动', '啟動'),
-          () => action(running ? 'stop' : 'launch'),
+          () =>
+            running
+              ? action('stop')
+              : (async () => {
+                  await saveForm(form, instance);
+                  await action('launch');
+                })(),
           'primary',
         ),
         button(
@@ -2052,38 +2075,6 @@ function renderInstance() {
       { disabled: running },
       h('legend', {}, L('Java & memory', 'Java 与内存', 'Java 與記憶體')),
       field(
-        L('lwjgl3ify runtime', 'lwjgl3ify 运行环境', 'lwjgl3ify 執行環境'),
-        formSelect(
-          'lwjgl3ify',
-          instance.lwjgl3ify === undefined ? '' : String(instance.lwjgl3ify),
-          lwjgl3ifySupported
-            ? [
-                [
-                  '',
-                  L(
-                    'Automatic (use an installed lwjgl3ify jar)',
-                    '自动（使用已安装的 lwjgl3ify JAR）',
-                    '自動（使用已安裝的 lwjgl3ify JAR）',
-                  ),
-                ],
-                ['false', L('Disabled', '禁用', '停用')],
-                ['true', L('Enabled', '启用', '啟用')],
-              ]
-            : [['', L('Forge 1.7.10 only', '仅适用于 Forge 1.7.10', '僅適用於 Forge 1.7.10')]],
-        ),
-        lwjgl3ifySupported
-          ? L(
-              'Runs Forge 1.7.10 with LWJGL3 and modern Java. After changing this option, use Install / repair to prepare the runtime.',
-              '使用 LWJGL3 和现代 Java 运行 Forge 1.7.10。更改此选项后，请执行“安装 / 修复”以准备运行环境。',
-              '使用 LWJGL3 和現代 Java 執行 Forge 1.7.10。變更此選項後，請執行「安裝 / 修復」以準備執行環境。',
-            )
-          : L(
-              'lwjgl3ify is available for Forge 1.7.10 instances only.',
-              'lwjgl3ify 仅适用于 Forge 1.7.10 实例。',
-              'lwjgl3ify 僅適用於 Forge 1.7.10 實例。',
-            ),
-      ),
-      field(
         L('Java executable', 'Java 可执行文件', 'Java 執行檔'),
         formInput('java', instance.java || '', 'text', L('Automatic', '自动选择', '自動選擇')),
         L(
@@ -2136,30 +2127,24 @@ function renderInstance() {
       h(
         'label',
         { class: 'check' },
-        h('input', { type: 'checkbox', name: 'customResolution', checked: !!instance.resolution }),
+        customResolution,
         L('Use custom window settings', '使用独立窗口设置', '使用獨立視窗設定'),
       ),
       h(
         'div',
         { class: 'form-grid' },
-        field(
-          L('Width', '宽度', '寬度'),
-          formInput('width', instance.resolution?.width || boot.defaults.width, 'number'),
-        ),
-        field(
-          L('Height', '高度', '高度'),
-          formInput('height', instance.resolution?.height || boot.defaults.height, 'number'),
-        ),
+        field(L('Width', '宽度', '寬度'), width),
+        field(L('Height', '高度', '高度'), height),
       ),
+      h('label', { class: 'check' }, fullscreen, L('Fullscreen', '全屏', '全螢幕')),
       h(
-        'label',
-        { class: 'check' },
-        h('input', {
-          type: 'checkbox',
-          name: 'fullscreen',
-          checked: instance.resolution?.fullscreen ?? boot.defaults.fullscreen,
-        }),
-        L('Fullscreen', '全屏', '全螢幕'),
+        'p',
+        { class: 'field-hint' },
+        L(
+          'Changing the width, height or fullscreen option enables custom window settings automatically.',
+          '修改宽度、高度或全屏选项会自动启用独立窗口设置。',
+          '修改寬度、高度或全螢幕選項會自動啟用獨立視窗設定。',
+        ),
       ),
       field(
         L('Join server on launch', '启动后加入服务器', '啟動後加入伺服器'),
@@ -2274,8 +2259,7 @@ function renderInstance() {
 async function saveForm(form: HTMLFormElement, instance: Instance) {
   const values = new FormData(form);
   const value = (name: string) => String(values.get(name) || '');
-  const supportsLwjgl3ify = instance.minecraft === '1.7.10' && instance.loader === 'forge';
-  const saved = await call<{ reinstall?: boolean }>('saveInstance', {
+  await call('saveInstance', {
     instanceId: instance.id,
     value: {
       name: value('name'),
@@ -2283,11 +2267,6 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
       gameLanguage: value('gameLanguage'),
       accountId: value('accountId'),
       java: value('java'),
-      lwjgl3ify: supportsLwjgl3ify
-        ? value('lwjgl3ify') === ''
-          ? undefined
-          : value('lwjgl3ify') === 'true'
-        : undefined,
       minMemory: values.has('globalMemory') ? undefined : Number(value('minMemory')),
       maxMemory: values.has('globalMemory') ? undefined : Number(value('maxMemory')),
       gc: value('gc'),
@@ -2314,15 +2293,7 @@ async function saveForm(form: HTMLFormElement, instance: Instance) {
   });
   boot = await call<Bootstrap>('ready');
   syncMemoryControls?.();
-  notice(
-    saved?.reinstall
-      ? L(
-          'Saved. Use Install / repair to prepare the lwjgl3ify runtime.',
-          '已保存。请执行“安装 / 修复”以准备 lwjgl3ify 运行环境。',
-          '已儲存。請執行「安裝 / 修復」以準備 lwjgl3ify 執行環境。',
-        )
-      : L('Instance settings saved.', '实例设置已保存。', '實例設定已儲存。'),
-  );
+  notice(L('Instance settings saved.', '实例设置已保存。', '實例設定已儲存。'));
 }
 window.addEventListener('message', (event: MessageEvent) => {
   const message = event.data;

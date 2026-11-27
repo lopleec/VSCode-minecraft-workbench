@@ -91,18 +91,10 @@ export async function lwjgl3ifyModVersion(directory: string): Promise<string | u
   return jars.length ? assetVersion(jars[0]) : undefined;
 }
 
-/**
- * Returns the lwjgl3ify mod version when the instance should switch to the LWJGL3
- * runtime automatically: explicit settings win, and an existing lwjgl3ify profile is kept.
- */
+/** Returns the lwjgl3ify mod version when the instance should use the LWJGL3 runtime. */
 export async function detectLwjgl3ify(instance: Instance): Promise<string | undefined> {
-  if (
-    instance.lwjgl3ify !== undefined ||
-    instance.minecraft !== LWJGL3IFY_MINECRAFT ||
-    instance.loader !== 'forge'
-  )
-    return undefined;
-  const mod = await lwjgl3ifyModVersion(instance.directory).catch(() => undefined);
+  if (instance.minecraft !== LWJGL3IFY_MINECRAFT || instance.loader !== 'forge') return undefined;
+  const mod = await lwjgl3ifyModVersion(instance.directory);
   if (!mod) return undefined;
   const current = await resolveGameVersion(
     runtimeDirectory(instance),

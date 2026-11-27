@@ -4,6 +4,7 @@ import { watch, FSWatcher } from 'node:fs';
 import { State } from './models';
 import { readJson, writeJson } from './files';
 import { mergeState } from './state-merge';
+import { normalizeMemory } from './memory';
 
 export class Store {
   state: State = {
@@ -37,8 +38,17 @@ export class Store {
       throw new Error('Invalid state file');
     state.servers ??= [];
     if (!Array.isArray(state.servers)) throw new Error('Invalid servers in state file');
+    const baseline = structuredClone(state);
+    const align = (value: unknown) =>
+      typeof value === 'number' && Number.isInteger(value) && value >= 128 && value <= 1048576
+        ? normalizeMemory(value)
+        : value;
+    for (const entry of [...state.instances, ...state.servers]) {
+      entry.minMemory = align(entry.minMemory) as number | undefined;
+      entry.maxMemory = align(entry.maxMemory) as number | undefined;
+    }
     this.state = state;
-    this.baseline = structuredClone(state);
+    this.baseline = baseline;
     await fs.mkdir(this.root, { recursive: true });
     this.watcher?.close();
     this.watcher = watch(this.root, { persistent: false }, (_event, name) => {

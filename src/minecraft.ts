@@ -23,7 +23,7 @@ import { resolveGameVersion, versionChain } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 import { gameJavaExecutable } from './game-java';
 import { gameEnvironment } from './game-environment';
-import { detectLwjgl3ify } from './lwjgl3ify';
+import { detectLwjgl3ify, isLwjgl3ifyProfile, lwjgl3ifyModVersion } from './lwjgl3ify';
 
 export class Minecraft {
   readonly running = new Map<string, ChildProcess>();
@@ -126,10 +126,22 @@ export class Minecraft {
             'Preparing shared game files',
           );
           await this.runtimeQueue.run(runtimeDirectory(instance), signal, async () => {
+            if (
+              instance.minecraft === '1.7.10' &&
+              instance.loader === 'forge' &&
+              instance.versionId?.startsWith('lwjgl3ify-')
+            ) {
+              const mod = await lwjgl3ifyModVersion(instance.directory);
+              if (!mod) {
+                instance.versionId = undefined;
+                instance.preserveVersion = false;
+              }
+            }
+            const lwjgl3ify = await detectLwjgl3ify(instance).catch(() => undefined);
             const ready =
               !instance.installed &&
               instance.preserveVersion &&
-              !instance.lwjgl3ify &&
+              !lwjgl3ify &&
               (await isRuntimeReady(instance, signal));
             const result = ready
               ? { versionId: instance.versionId!, loaderVersion: instance.loaderVersion }
@@ -165,18 +177,32 @@ export class Minecraft {
     this.assertIdle(instance);
     if (this.running.has(instance.id) || this.installing.has(instance.id))
       throw new Error(t('This instance is busy.', '实例正在运行或安装。', '實例正在執行或安裝。'));
-    if (instance.lwjgl3ify === undefined) {
-      const mod = await detectLwjgl3ify(instance);
-      if (mod) {
-        instance.lwjgl3ify = true;
-        instance.installed = false;
-        instance.versionId = undefined;
-        instance.preserveVersion = false;
-        this.jobs.output.info(
-          `[${instance.name}] Detected lwjgl3ify ${mod}; preparing its runtime before launch.`,
-        );
-        await this.store.save();
-        this.changed();
+    if (instance.minecraft === '1.7.10' && instance.loader === 'forge') {
+      let failed = false;
+      const mod = await lwjgl3ifyModVersion(instance.directory).catch(() => {
+        failed = true;
+      });
+      if (!failed) {
+        const detected = mod ? await detectLwjgl3ify(instance) : undefined;
+        if (detected) {
+          instance.installed = false;
+          instance.versionId = undefined;
+          instance.preserveVersion = false;
+          this.jobs.output.info(
+            `[${instance.name}] Detected lwjgl3ify ${detected}; preparing its runtime before launch.`,
+          );
+          await this.store.save();
+          this.changed();
+        } else if (!mod && instance.versionId?.startsWith('lwjgl3ify-')) {
+          instance.installed = false;
+          instance.versionId = undefined;
+          instance.preserveVersion = false;
+          this.jobs.output.info(
+            `[${instance.name}] lwjgl3ify jar removed; restoring the Forge runtime before launch.`,
+          );
+          await this.store.save();
+          this.changed();
+        }
       }
     }
     if (!instance.installed) await this.install(instance);
@@ -214,14 +240,15 @@ export class Minecraft {
             instance.versionId || instance.minecraft,
             signal,
           );
-          if (instance.lwjgl3ify)
+          const lwjgl3ify = isLwjgl3ifyProfile(version);
+          if (lwjgl3ify)
             this.jobs.output.info(
               `[${instance.name}] LWJGL3ify: enabled (Java ${version.javaVersion?.majorVersion || 17}+, ${version.mainClass})`,
             );
           phase('Preparing Java', '准备 Java', '準備 Java');
           const requiredJava = version.javaVersion?.majorVersion || 8;
           let preferred = preferredJava(instance.java);
-          if (instance.lwjgl3ify && preferred) {
+          if (lwjgl3ify && preferred) {
             const selected = await inspectJava(preferred, signal).catch(() => undefined);
             signal.throwIfAborted();
             if (!selected || selected.major < requiredJava) {
@@ -271,8 +298,8 @@ export class Minecraft {
               ),
             );
           const resolution = instance.resolution || {
-            width: config('windowWidth', 1280),
-            height: config('windowHeight', 720),
+            width: config('windowWidth', 854),
+            height: config('windowHeight', 480),
             fullscreen: config('fullscreen', false),
           };
           const supportsQuickPlay = version.arguments.game.some((argument) =>

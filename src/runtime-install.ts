@@ -32,7 +32,7 @@ import { loaderInfo } from './instance-import';
 import { resolveGameVersion } from './version-profile';
 import { isRuntimeReady } from './runtime-status';
 import { forgeMaven } from './versions';
-import { installLwjgl3ify } from './lwjgl3ify';
+import { detectLwjgl3ify, installLwjgl3ify } from './lwjgl3ify';
 
 const exec = promisify(execFile);
 interface RuntimeServices {
@@ -52,8 +52,9 @@ export async function installRuntime(
   const root = runtimeDirectory(instance);
   const folder = new MinecraftFolder(root);
   let loaderVersion = instance.loaderVersion;
+  const lwjgl3ify = await detectLwjgl3ify(instance);
   if (
-    !instance.lwjgl3ify &&
+    !lwjgl3ify &&
     !instance.installed &&
     !instance.preserveVersion &&
     (instance.loader === 'vanilla' || loaderVersion)
@@ -326,8 +327,8 @@ export async function installRuntime(
     }
     return { versionId, loaderVersion };
   };
-  if (instance.lwjgl3ify) {
-    const lwjgl3ify = await installLwjgl3ify(instance, {
+  if (lwjgl3ify) {
+    const installed = await installLwjgl3ify(instance, {
       net: services.net,
       root,
       signal,
@@ -335,13 +336,13 @@ export async function installRuntime(
     });
     report(
       t(
-        `lwjgl3ify runtime ready (Java ${lwjgl3ify.javaMajor})`,
-        `lwjgl3ify 运行环境已就绪（Java ${lwjgl3ify.javaMajor}）`,
-        `lwjgl3ify 執行環境已就緒（Java ${lwjgl3ify.javaMajor}）`,
+        `lwjgl3ify runtime ready (Java ${installed.javaMajor})`,
+        `lwjgl3ify 运行环境已就绪（Java ${installed.javaMajor}）`,
+        `lwjgl3ify 執行環境已就緒（Java ${installed.javaMajor}）`,
       ),
-      `lwjgl3ify runtime ready (Java ${lwjgl3ify.javaMajor})`,
+      `lwjgl3ify runtime ready (Java ${installed.javaMajor})`,
     );
-    const resolved = await resolveGameVersion(root, lwjgl3ify.versionId, signal);
+    const resolved = await resolveGameVersion(root, installed.versionId, signal);
     await clientFiles(resolved);
     await assets(resolved);
     signal.throwIfAborted();
@@ -349,8 +350,8 @@ export async function installRuntime(
     await rejectSymlinkParents(instance.directory, natives);
     await fs.rm(natives, { recursive: true, force: true });
     return {
-      versionId: lwjgl3ify.versionId,
-      loaderVersion: lwjgl3ify.forgeVersion,
+      versionId: installed.versionId,
+      loaderVersion: installed.forgeVersion,
       preserveVersion: true,
     };
   }

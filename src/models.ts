@@ -59,7 +59,6 @@ export interface Instance {
   sourceFormat?: 'standard' | 'multimc' | 'modrinth' | 'workbench' | 'sjmcl';
   linked?: boolean;
   preserveVersion?: boolean;
-  lwjgl3ify?: boolean;
   resourceDirectories?: string[];
   gameLanguage?: string;
   java?: string;

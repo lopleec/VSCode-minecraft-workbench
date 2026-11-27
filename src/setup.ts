@@ -7,7 +7,6 @@ import { Instance, Loader } from './models';
 import { t, trusted } from './config';
 import { validateInstanceSettings } from './instance-settings';
 import { minecraftDirectory, reserveInstanceLocation, writeInstanceMetadata } from './game-paths';
-import { LWJGL3IFY_MINECRAFT } from './lwjgl3ify';
 
 export class InstanceSetup {
   constructor(
@@ -43,17 +42,6 @@ export class InstanceSetup {
       loaderVersion = input.loaderVersion;
     }
     const settings = validateInstanceSettings({ ...existing, ...input }, this.store.state.accounts);
-    if (settings.lwjgl3ify && (version.id !== LWJGL3IFY_MINECRAFT || loader !== 'forge')) {
-      if (input.lwjgl3ify === true)
-        throw new Error(
-          t(
-            'lwjgl3ify requires a Forge 1.7.10 instance.',
-            'lwjgl3ify 仅支持 Forge 1.7.10 实例。',
-            'lwjgl3ify 僅支援 Forge 1.7.10 實例。',
-          ),
-        );
-      settings.lwjgl3ify = undefined;
-    }
     if (existing) {
       this.minecraft.assertIdle(existing);
       const changed =

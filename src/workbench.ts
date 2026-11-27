@@ -143,8 +143,8 @@ export class Workbench implements vscode.Disposable {
           automaticMaximum: memory.automaticMaximum,
         },
         gc: config('gc', 'default'),
-        width: config('windowWidth', 1280),
-        height: config('windowHeight', 720),
+        width: config('windowWidth', 854),
+        height: config('windowHeight', 480),
         fullscreen: config('fullscreen', false),
         backup: config('backupBeforeLaunch', false),
         gameDirectory: minecraftDirectory(),
@@ -728,9 +728,9 @@ export class Workbench implements vscode.Disposable {
       }
       case 'saveInstance':
         if (instance) {
-          const result = await this.ui.saveInstance(instance, params.value);
+          await this.ui.saveInstance(instance, params.value);
           this.refresh();
-          return result;
+          return true;
         }
         throw new Error('Instance not found');
       case 'selectInstance':

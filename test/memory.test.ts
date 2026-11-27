@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { recommendMemory, resolveMemory } from '../src/memory';
+import { normalizeMemory, recommendMemory, resolveMemory } from '../src/memory';
 
 test('automatic memory scales with system RAM and leaves headroom on small machines', () => {
   for (const [ram, minimum, maximum] of [
@@ -38,4 +38,18 @@ test('manual instance and global memory settings override recommendations withou
     minMemory: 256,
     maxMemory: 256,
   });
+});
+test('memory limits align to the JVM heap granularity', () => {
+  assert.equal(normalizeMemory(8196), 8192);
+  assert.equal(normalizeMemory(8192), 8192);
+  assert.equal(normalizeMemory(8200), 8200);
+  assert.equal(normalizeMemory(127), 128);
+  assert.deepEqual(
+    resolveMemory(
+      { minMemory: 8196, maxMemory: 8196 },
+      { minMemory: 0, maxMemory: 0 },
+      recommendMemory(16 * 1024 ** 3),
+    ),
+    { minMemory: 8192, maxMemory: 8192 },
+  );
 });

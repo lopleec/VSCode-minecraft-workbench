@@ -106,7 +106,7 @@ Modrinth / CurseForge 整合包保留可管理檔案的下載或本機來源記�
 
 ### 記憶體、語言與實例設定
 
-記憶體在**建立後的實例設定**或全域設定中調整。預設最小、最大記憶體為 `0`（自動）：最大值取**系統記憶體的 25%**，向下取整到 128 MB，上限 8 GiB；最小值隨之調整，通常為 256–1024 MB。可修改全域百分比，或取消 **使用全域記憶體設定**，為實例單獨填寫。手動值優先。
+記憶體在**建立後的實例設定**或全域設定中調整。預設最小、最大記憶體為 `0`（自動）：最大值取**系統記憶體的 25%**，向下取整到 128 MB，上限 8 GiB；最小值隨之調整，通常為 256–1024 MB。可修改全域百分比，或取消 **使用全域記憶體設定**，為實例單獨填寫。手動值優先，並向下對齊到 8 MB，以確保設定值與 JVM 堆上限一致。
 
 ![淺色主題下的中文實例設定](https://github.com/lopleec/VSCode-minecraft-workbench/raw/main/docs/images/settings-zh-light.png)
 
@@ -116,7 +116,7 @@ Modrinth / CurseForge 整合包保留可管理檔案的下載或本機來源記�
 
 ### lwjgl3ify
 
-Forge 1.7.10 實例可透過 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 使用 LWJGL3 和現代 Java。在 **實例設定 → Java 與記憶體** 中勾選 **使用 lwjgl3ify**，然後執行 **安裝 / 修復**。工作台會下載對應的版本設定、LWJGL3 執行階段程式庫、lwjgl3ify 核心模組和 UniMixins，並在缺少該設定要求的 Java 時自動下載。匯入帶有 lwjgl3ify 元件的 Prism/MultiMC 實例時會自動識別；Forge 1.7.10 實例啟動時若 `mods/` 中已有 lwjgl3ify JAR 也會自動啟用，可在實例設定中強制開啟或關閉。`mods/` 中只能保留一個 lwjgl3ify JAR；仍建議安裝 Hodgepodge 以改善模組相容性。若實例或全域 Java 低於版本設定要求，lwjgl3ify 會自動跳過它；將 Java 留空（自動選擇）仍是最省事的方式。
+Forge 1.7.10 實例在 `mods/` 中存在 [lwjgl3ify](https://github.com/GTNewHorizons/lwjgl3ify) 時會自動使用 LWJGL3 和現代 Java。可透過 **內容 → 瀏覽內容** 安裝，或保留從 Prism/MultiMC、整合包匯入的 JAR，然後執行 **安裝 / 修復**；首次啟動也會準備執行環境。工作台會下載對應的版本設定、LWJGL3 執行階段程式庫、核心模組和 UniMixins，並在缺少該設定要求的 Java 時自動下載。啟動時會自動選擇執行環境；移除 lwjgl3ify JAR 後會恢復一般 Forge 執行環境。`mods/` 中只能保留一個 lwjgl3ify JAR；仍建議安裝 Hodgepodge 以改善模組相容性。若實例或全域 Java 低於版本設定要求，lwjgl3ify 會自動跳過它；將 Java 留空（自動選擇）仍是最省事的方式。
 
 ### 帳戶與 Microsoft 登入
 
