@@ -241,7 +241,19 @@ async function action(name: string) {
           : L('No conflicts found.', '未发现冲突。', '未發現衝突。');
     }
   } else await call('action', { action: name });
+  const keepInstanceForm = name === 'detectJava' && page === 'instance';
   boot = await call<Bootstrap>('ready');
+  if (keepInstanceForm) {
+    updateJobs();
+    notice(
+      L(
+        'Java detection finished. Detected runtimes are listed under Java.',
+        'Java 检测完成，检测到的运行时显示在“Java”页面。',
+        'Java 偵測完成，偵測到的執行階段顯示在「Java」頁面。',
+      ),
+    );
+    return;
+  }
   render();
   if (resultMessage) notice(resultMessage);
 }
@@ -1911,6 +1923,24 @@ function renderInstance() {
   minimum.required = true;
   maximum.required = true;
   const memoryHint = h('p', { class: 'field-hint', id: 'memory-recommendation' });
+  const customResolution = h('input', {
+    type: 'checkbox',
+    name: 'customResolution',
+    checked: !!instance.resolution,
+  });
+  const width = formInput('width', instance.resolution?.width || boot.defaults.width, 'number');
+  const height = formInput('height', instance.resolution?.height || boot.defaults.height, 'number');
+  const fullscreen = h('input', {
+    type: 'checkbox',
+    name: 'fullscreen',
+    checked: instance.resolution?.fullscreen ?? boot.defaults.fullscreen,
+  });
+  const useCustomResolution = () => {
+    customResolution.checked = true;
+  };
+  width.addEventListener('input', useCustomResolution);
+  height.addEventListener('input', useCustomResolution);
+  fullscreen.addEventListener('change', useCustomResolution);
   syncMemoryControls = () => {
     if (globalMemory.checked) {
       minimum.value = String(boot.defaults.minMemory);
@@ -1956,7 +1986,13 @@ function renderInstance() {
         { class: 'inline-actions' },
         button(
           running ? L('Stop', '停止', '停止') : L('Launch', '启动', '啟動'),
-          () => action(running ? 'stop' : 'launch'),
+          () =>
+            running
+              ? action('stop')
+              : (async () => {
+                  await saveForm(form, instance);
+                  await action('launch');
+                })(),
           'primary',
         ),
         button(
@@ -2090,30 +2126,24 @@ function renderInstance() {
       h(
         'label',
         { class: 'check' },
-        h('input', { type: 'checkbox', name: 'customResolution', checked: !!instance.resolution }),
+        customResolution,
         L('Use custom window settings', '使用独立窗口设置', '使用獨立視窗設定'),
       ),
       h(
         'div',
         { class: 'form-grid' },
-        field(
-          L('Width', '宽度', '寬度'),
-          formInput('width', instance.resolution?.width || boot.defaults.width, 'number'),
-        ),
-        field(
-          L('Height', '高度', '高度'),
-          formInput('height', instance.resolution?.height || boot.defaults.height, 'number'),
-        ),
+        field(L('Width', '宽度', '寬度'), width),
+        field(L('Height', '高度', '高度'), height),
       ),
+      h('label', { class: 'check' }, fullscreen, L('Fullscreen', '全屏', '全螢幕')),
       h(
-        'label',
-        { class: 'check' },
-        h('input', {
-          type: 'checkbox',
-          name: 'fullscreen',
-          checked: instance.resolution?.fullscreen ?? boot.defaults.fullscreen,
-        }),
-        L('Fullscreen', '全屏', '全螢幕'),
+        'p',
+        { class: 'field-hint' },
+        L(
+          'Changing the width, height or fullscreen option enables custom window settings automatically.',
+          '修改宽度、高度或全屏选项会自动启用独立窗口设置。',
+          '修改寬度、高度或全螢幕選項會自動啟用獨立視窗設定。',
+        ),
       ),
       field(
         L('Join server on launch', '启动后加入服务器', '啟動後加入伺服器'),

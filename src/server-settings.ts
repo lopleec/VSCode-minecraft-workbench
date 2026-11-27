@@ -1,5 +1,5 @@
 import { ServerProfile, ContentTarget } from './models';
-import { memorySettings } from './memory';
+import { memorySettings, normalizeMemory } from './memory';
 import { filename } from './files';
 
 export const propertyDefaults: Record<string, string> = {
@@ -147,7 +147,7 @@ export function validateServerRuntime(raw: Record<string, unknown>): Partial<Ser
       (!Number.isInteger(value) || Number(value) < 128 || Number(value) > 1048576)
     )
       throw new Error(`Invalid ${key}`);
-    if (Object.hasOwn(raw, key)) result[key] = Number(value) || undefined;
+    if (Object.hasOwn(raw, key)) result[key] = value ? normalizeMemory(Number(value)) : undefined;
   }
   if (
     raw.javaMajor !== undefined &&

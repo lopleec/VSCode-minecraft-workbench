@@ -313,12 +313,19 @@ async function multiMC(folder: string): Promise<ImportCandidate | undefined> {
   const directory = await fs.realpath(
     path.join(folder, (await exists(path.join(folder, '.minecraft'))) ? '.minecraft' : 'minecraft'),
   );
+  const lwjgl3ifyComponents = pack.components.filter(
+    (c: Json) => typeof c.uid === 'string' && /^me\.eigenraven\.lwjgl3ify(?:\.|$)/.test(c.uid),
+  );
   const warnings = pack.components
     .filter(
       (c: Json) =>
-        !['net.minecraft', 'org.lwjgl', 'org.lwjgl3', ...Object.keys(componentLoaders)].includes(
-          c.uid,
-        ),
+        ![
+          'net.minecraft',
+          'org.lwjgl',
+          'org.lwjgl3',
+          ...Object.keys(componentLoaders),
+          ...lwjgl3ifyComponents.map((c: Json) => c.uid),
+        ].includes(c.uid),
     )
     .map((c: Json) => `Unsupported MultiMC component: ${String(c.uid)}`);
   const requestedJava =

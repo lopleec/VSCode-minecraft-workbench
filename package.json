@@ -2907,14 +2907,14 @@
           },
           "minecraftWorkbench.windowWidth": {
             "type": "integer",
-            "default": 1280,
+            "default": 854,
             "markdownDescription": "%setting.windowWidth%",
             "minimum": 320,
             "maximum": 16384
           },
           "minecraftWorkbench.windowHeight": {
             "type": "integer",
-            "default": 720,
+            "default": 480,
             "markdownDescription": "%setting.windowHeight%",
             "minimum": 320,
             "maximum": 16384
