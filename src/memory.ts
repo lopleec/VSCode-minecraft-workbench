@@ -6,11 +6,6 @@ export interface MemoryLimits {
   minMemory: number;
   maxMemory: number;
 }
-/**
- * JVM heap sizes are aligned to an 8 MB boundary, so a value such as 8196 MB
- * would actually start with a 8200 MB maximum heap. Store and pass only aligned
- * values so the configured limit matches the runtime limit.
- */
 export function normalizeMemory(value: number): number {
   return Math.max(128, Math.floor(value / 8) * 8);
 }

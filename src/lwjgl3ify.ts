@@ -33,7 +33,6 @@ export interface Lwjgl3ifyRelease {
   modUrl: string;
   modSize: number;
   modSha256?: string;
-  /** Present when GitHub's JSON API was unavailable and the profile was fetched directly. */
   profileText?: string;
 }
 export interface Lwjgl3ifyInstall {
@@ -68,7 +67,6 @@ function assetVersion(name: string): string | undefined {
   return /^v?(\d+(?:\.\d+){1,3})/i.exec(match[1])?.[1];
 }
 
-/** The version of the lwjgl3ify coremod jar installed in the instance, if any. */
 export async function lwjgl3ifyModVersion(directory: string): Promise<string | undefined> {
   const mods = path.join(directory, 'mods');
   const entries = await fs
@@ -91,7 +89,6 @@ export async function lwjgl3ifyModVersion(directory: string): Promise<string | u
   return jars.length ? assetVersion(jars[0]) : undefined;
 }
 
-/** Returns the lwjgl3ify mod version when the instance should use the LWJGL3 runtime. */
 export async function detectLwjgl3ify(instance: Instance): Promise<string | undefined> {
   if (instance.minecraft !== LWJGL3IFY_MINECRAFT || instance.loader !== 'forge') return undefined;
   const mod = await lwjgl3ifyModVersion(instance.directory);
@@ -103,7 +100,6 @@ export async function detectLwjgl3ify(instance: Instance): Promise<string | unde
   return current && isLwjgl3ifyProfile(current) ? undefined : mod;
 }
 
-/** Whether a version profile already replaces launchwrapper with RetroFuturaBootstrap. */
 export function isLwjgl3ifyProfile(profile: unknown): boolean {
   if (!profile || typeof profile !== 'object') return false;
   const value = profile as Record<string, unknown>;
@@ -124,7 +120,6 @@ export function isLwjgl3ifyProfile(profile: unknown): boolean {
   );
 }
 
-/** Validate and normalize the standalone profile published with a lwjgl3ify release. */
 export function prepareLwjgl3ifyProfile(
   value: unknown,
   minecraft = LWJGL3IFY_MINECRAFT,
@@ -368,10 +363,6 @@ async function ensureUniMixins(
   }
 }
 
-/**
- * Installs the launcher-side half of lwjgl3ify: the standalone LWJGL3 version profile,
- * its libraries, and the coremod jars. Runtime libraries are downloaded by installRuntime.
- */
 export async function installLwjgl3ify(
   instance: Instance,
   options: {

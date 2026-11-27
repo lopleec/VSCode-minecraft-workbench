@@ -244,7 +244,6 @@ async function action(name: string) {
   const keepInstanceForm = name === 'detectJava' && page === 'instance';
   boot = await call<Bootstrap>('ready');
   if (keepInstanceForm) {
-    // Java detection only affects future launches; keep unsaved instance settings.
     updateJobs();
     notice(
       L(
